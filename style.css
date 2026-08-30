@@ -91,7 +91,18 @@ header h1 {
 .controls {
     display: flex;
     align-items: center;
+    justify-content: center; /* Центрирует кнопки по горизонтали */
     gap: 20px;
+    width: 450px; /* Делаем ширину блока кнопок точно такой же, как у карточки */
+    margin: 0 auto; /* Центрирует сам блок на экране */
+}
+
+/* ДОБАВЬТЕ ЭТОТ БЛОК НИЖЕ: */
+main {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px; /* Ровный отступ между карточкой и кнопками */
 }
 
 button {
@@ -124,4 +135,91 @@ button:hover {
         width: 90vw;
         height: 320px;
     }
+}
+/* --- СТИЛИ ДЛЯ ГЛАВНОГО МЕНЮ --- */
+
+/* Сетка, которая красиво расставляет плитки */
+.menu-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 25px;
+    width: 100%;
+    max-width: 1000px;
+    margin-top: 20px;
+    padding: 0 20px;
+    box-sizing: border-box;
+}
+
+/* Сама плитка меню */
+.menu-item {
+    background: white;
+    border: 2px solid #e2e8f0;
+    border-radius: 16px;
+    padding: 30px;
+    text-decoration: none; /* Убираем синее подчеркивание ссылки */
+    color: #2c3e50;
+    text-align: left;
+    transition: all 0.3s ease;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Эффект при наведении на активную плитку */
+.menu-item:not(.locked):hover {
+    transform: translateY(-5px);
+    border-color: #3182ce;
+    box-shadow: 0 10px 20px rgba(49, 130, 206, 0.1);
+}
+
+.menu-item .icon {
+    font-size: 40px;
+    margin-bottom: 15px;
+}
+
+.menu-item h2 {
+    margin: 0 0 10px 0;
+    color: #1a365d;
+    font-size: 20px;
+}
+
+.menu-item p {
+    margin: 0;
+    font-size: 14px;
+    color: #4a5568;
+    line-height: 1.5;
+}
+
+/* Стили для закрытых разделов */
+.menu-item.locked {
+    background: #f7fafc;
+    border-color: #edf2f7;
+    cursor: not-allowed;
+    opacity: 0.8;
+}
+
+.menu-item .badge {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    background: #e2e8f0;
+    color: #4a5568;
+    font-size: 11px;
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-weight: bold;
+}
+
+/* Кнопка "Назад" на странице карточек */
+.back-link {
+    display: inline-block;
+    color: #3182ce;
+    text-decoration: none;
+    font-weight: 600;
+    margin-bottom: 15px;
+    transition: 0.2s;
+}
+
+.back-link:hover {
+    color: #2b6cb0;
 }
