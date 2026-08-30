@@ -8,15 +8,32 @@
 </head>
 <body>
     <header>
-        <h1>Психология образования: Подготовка к ГОСу</h1>
-        <p>Добро пожаловать в вашу интерактивную базу знаний</p>
+        <h1>Психология образования: Тренажер терминов</h1>
+        <p>Интерактивные флэш-карточки для подготовки к ГОСам</p>
     </header>
 
     <main>
-        <section id="welcome-message">
-            <h2>Проект успешно запущен!</h2>
-            <p>В сентябре здесь появятся билеты, тесты по дисциплинам и флэш-карточки.</p>
-        </section>
+        <!-- Контейнер для 3D-эффекта -->
+        <div class="card-perspective">
+            <div class="flash-card" id="myCard">
+                <!-- Лицевая сторона (Термин) -->
+                <div class="card-side card-front">
+                    <h2 id="term-text">Загрузка...</h2>
+                    <span class="tap-hint">Кликните, чтобы узнать определение</span>
+                </div>
+                <!-- Обратная сторона (Определение) -->
+                <div class="card-side card-back">
+                    <p id="definition-text">Загрузка...</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Кнопки управления -->
+        <div class="controls">
+            <button id="prev-btn">⬅️ Назад</button>
+            <span id="counter-text">0 / 0</span>
+            <button id="next-btn">Вперед ➡️</button>
+        </div>
     </main>
 
     <script src="script.js"></script>
