@@ -132,17 +132,10 @@ button:hover {
 /* Адаптивность под мобилки */
 @media (max-width: 500px) {
     .flash-card {
-        width: 100% !important;
-        min-width: 290px; /* Защита для совсем маленьких экранов */
-        max-width: 100%; /* Убираем жесткий лимит в 350px */
+        width: 90vw;
         height: 320px;
     }
-    .controls {
-        width: 100% !important;
-        max-width: 100%;
-    }
 }
-
 /* --- СТИЛИ ДЛЯ ГЛАВНОГО МЕНЮ --- */
 
 /* Сетка, которая красиво расставляет плитки */
@@ -242,36 +235,19 @@ button:hover {
         grid-template-columns: repeat(3, 1fr); /* На ПК выстраиваем ровно 3 плитки в один ряд */
         gap: 25px;
     }
-    /* ДОБАВЬТЕ ЭТОТ КОД ВНУТРЬ БЛОКА @media (max-width: 768px) ПЕРЕД ЕГО ЗАКРЫТИЕМ: */
-
-    /* Текст билета теперь занимает всю ширину экрана смартфона без ограничений */
-    .tickets-layout, .ticket-viewer {
-        width: 100% !important;
-        padding: 15px !important;
-    }
-
-    /* Выравниваем кнопку теста "Следующий вопрос" строго по центру на мобильных */
-    .quiz-footer {
-        justify-content: center !important;
-        width: 100%;
-    }
-    
-    #quiz-next-btn {
-        width: 100%; /* Делаем кнопку широкой и удобной для нажатия пальцем */
-        max-width: 280px;
-    }
 }
 
 /* Корректировка размеров карточки для мобильных устройств в самом низу */
 @media (max-width: 500px) {
     .flash-card {
-        width: 100%; /* Карточка подстроится под ширину экрана телефона */
-        max-width: 350px;
-        height: 280px;
+        width: 100% !important;
+        min-width: 290px; /* Защита для совсем маленьких экранов */
+        max-width: 100%; /* Убираем жесткий лимит в 350px */
+        height: 320px;
     }
     .controls {
-        width: 100%;
-        max-width: 350px;
+        width: 100% !important;
+        max-width: 100%;
     }
 }
 /* --- СТИЛИ ДЛЯ МОДУЛЯ «ЭКЗАМЕНАЦИОННЫЕ БИЛЕТЫ» --- */
@@ -404,10 +380,25 @@ button:hover {
 
 /* 📱 Адаптация для мобильных устройств (экраны меньше 768px) */
 @media (max-width: 768px) {
-    .tickets-layout {
-        flex-direction: column; /* Перестраиваем колонки в одну ленту сверху вниз */
+    body {
+        padding: 10px !important; /* Уменьшаем общие отступы сайта на телефонах в два раза */
     }
     
+    .tickets-layout {
+        flex-direction: column; 
+        gap: 15px;
+        width: 100% !important;
+        padding: 0 !important; /* Убираем отступы у главного контейнера */
+        margin: 0 !important;
+    }
+
+    .ticket-viewer {
+        width: 100% !important;
+        padding: 20px 15px !important; /* Минимальные отступы только для текста, чтобы не прилипал к краям экрана */
+        border-radius: 12px;
+        box-shadow: none; /* Убираем тень, чтобы сэкономить место */
+    }
+
     .tickets-sidebar {
         flex: none;
         width: 100%;
@@ -436,8 +427,21 @@ button:hover {
         box-shadow: 0 4px 6px rgba(0,0,0,0.05);
         outline: none;
     }
-}/* --- СТИЛИ ДЛЯ МОДУЛЯ «ИНТЕРАКТИВНЫЕ ТЕСТЫ» --- */
 
+    /* Выравниваем кнопку теста "Следующий вопрос" строго по центру на мобильных */
+    .quiz-footer {
+        justify-content: center !important;
+        width: 100%;
+    }
+    
+    #quiz-next-btn {
+        width: 100%; /* Делаем кнопку широкой и удобной для нажатия пальцем */
+        max-width: 280px;
+    }
+
+}
+
+/* --- СТИЛИ ДЛЯ МОДУЛЯ «ИНТЕРАКТИВНЫЕ ТЕСТЫ» --- */
 /* Карточка теста */
 .quiz-card {
     background: white;
