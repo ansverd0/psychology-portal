@@ -567,3 +567,102 @@ button:hover {
 .menu-item.content-module:hover {
     border-color: #4299e1;
 }
+
+/* --- СТИЛИ ДЛЯ ВИКИ-ПОДСКАЗОК В СТАТЬЯХ --- */
+
+/* Сам подсвеченный термин в тексте */
+.wiki-term {
+    color: #3182ce;
+    border-bottom: 1px dashed #3182ce;
+    cursor: help;
+    position: relative;
+    display: inline-block;
+    font-weight: 500;
+}
+
+/* Эффект при наведении на термин */
+.wiki-term:hover {
+    color: #2b6cb0;
+    background-color: #ebf8ff;
+}
+
+/* Всплывающее окошко с определением (по умолчанию скрыто) */
+.wiki-term::after {
+    content: attr(data-tooltip); /* Берет текст из JS */
+    position: absolute;
+    bottom: 130%; /* Появляется строго над словом */
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: #2d3748; /* Темный академический цвет окошка */
+    color: white;
+    padding: 10px 15px;
+    border-radius: 8px;
+    font-size: 13px;
+    line-height: 1.4;
+    width: 250px; /* Фиксированная аккуратная ширина подсказки */
+    white-space: normal;
+    box-shadow: 0 10px 15px rgba(0, 0, 0, 0.1);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease-in-out;
+    z-index: 999;
+    text-align: left;
+    font-weight: normal;
+}
+
+/* Маленький аккуратный стрелочка-указатель под окошком */
+.wiki-term::before {
+    content: "";
+    position: absolute;
+    bottom: 110%;
+    left: 50%;
+    transform: translateX(-50%);
+    border-width: 6px;
+    border-style: solid;
+    border-color: #2d3748 transparent transparent transparent;
+    opacity: 0;
+    transition: opacity 0.2s ease-in-out;
+    z-index: 999;
+}
+
+/* Показываем окошко и стрелочку при наведении мыши */
+.wiki-term:hover::after,
+.wiki-term:hover::before {
+    opacity: 1;
+}
+
+/* --- СТИЛИ ДЛЯ БЛОКА "ЧТО НОВОГО?" --- */
+
+/* Особый стиль для плитки новостей */
+.menu-item.news-module {
+    background: linear-gradient(135deg, #ffffff 0%, #f7fafc 100%);
+    border-color: #bee3f8;
+}
+
+/* Эффект при наведении на плитку новостей */
+.menu-item.news-module:hover {
+    border-color: #3182ce;
+    box-shadow: 0 10px 20px rgba(49, 130, 206, 0.15);
+}
+
+/* Оформление строки с датой */
+.menu-item .update-date {
+    margin-top: auto; /* Прижимает дату к самому низу карточки */
+    padding-top: 15px;
+    font-size: 13px;
+    color: #4a5568;
+    border-top: 1px dashed #e2e8f0;
+}
+
+.menu-item .update-date strong {
+    color: #2b6cb0;
+}
+
+/* Принудительное включение двух колонок для разделов психологии на ПК */
+@media (min-width: 768px) {
+    #sections-page-marker.tickets-layout {
+        display: flex !important;
+        flex-direction: row !important;
+        align-items: flex-start !important;
+    }
+}

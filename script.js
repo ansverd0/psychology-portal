@@ -38,6 +38,9 @@ async function loadDatabase() {
          if (document.getElementById('library-page-marker')) {
             initLibrary();
         }
+        if (document.getElementById('news-page-marker')) {
+            initNews();
+        }
     } catch (error) {
         console.error("Ошибка загрузки базы данных:", error);
     }
@@ -266,15 +269,37 @@ function initSections() {
     }
 }
 
+// Словарь методических терминов для автоподсказок (Вики-эффект)
+const psychologyGlossary = {
+    "ВПФ": "Высшие психические функции — сложные, прижизненно формирующиеся психические процессы (логическая память, целенаправленное внимание, мышление, речь).",
+    "ЗБР": "Зона ближайшего развития — область еще не созревших, но находящихся в процессе созревания психических процессов (выполняется с помощью взрослого).",
+    "интериоризация": "Переход внешних практических действий во внутренний, психический план (формирование внутреннего мира человека).",
+    "ведущая деятельность": "Деятельность, в связи с которой происходят главные изменения в психике ребенка и внутри которой развиваются новые процессы."
+};
+
 function showSectionContent(section) {
     const contentContainer = document.getElementById('section-content');
     if (!contentContainer) return;
     
+    let processedContent = section.content;
+
+    // Автоматически ищем ключевые слова из словаря в тексте и оборачиваем их в специальный тег
+    Object.keys(psychologyGlossary).forEach(term => {
+        // Создаем регулярное выражение, чтобы искать слово с учетом регистра
+        const regex = new RegExp(`\\b${term}\\b|(?<=\\s|^)${term}(?=\\s|[.,!?;:-]|$)`, 'gi');
+        
+        processedContent = processedContent.replace(regex, (match) => {
+            return `<span class="wiki-term" data-tooltip="${psychologyGlossary[term]}">${match}</span>`;
+        });
+    });
+    
     contentContainer.innerHTML = `
         <h2>${section.title}</h2>
-${section.content}
-`;
-}// Железный запуск всей системы при открытии любой страницы сайтаloadDatabase();
+        <div class="content-text">${processedContent}</div>
+    `;
+}
+
+
 // ==========================================
 // ЛОГИКА МОДУЛЯ «ЛИТЕРАТУРА»
 // ==========================================
@@ -297,5 +322,29 @@ function initLibrary() {
         container.appendChild(bookCard);
     });
 }
+// ==========================================
+// ЛОГИКА МОДУЛЯ «ЧЕНДЖЛОГ / НОВОСТИ»
+// ==========================================
+function initNews() {
+    const newsData = appDatabase.news;
+    const container = document.getElementById('news-timeline');
+    if (!newsData || !container) return;
 
+    container.innerHTML = '';
+
+    newsData.forEach(item => {
+        const newsCard = document.createElement('div');
+        newsCard.style.cssText = "background: white; border: 2px solid #e2e8f0; border-radius: 16px; padding: 25px; margin-bottom: 25px; text-align: left;";
+        
+        // Превращаем массив строк изменений в красивый маркированный список
+        const changesList = item.changes.map(change => `<li style="margin-bottom: 8px; line-height: 1.5; color: #4a5568;">${change}</li>`).join('');
+        
+        newsCard.innerHTML = `
+            <div style="display: inline-block; background: #ebf8ff; color: #2b6cb0; font-size: 13px; font-weight: bold; padding: 4px 10px; border-radius: 12px; margin-bottom: 12px;">📅 ${item.date}</div>
+            <h2 style="margin: 0 0 15px 0; color: #1a365d; font-size: 20px; border-bottom: 1px dashed #e2e8f0; padding-bottom: 10px;">${item.title}</h2>
+            <ul style="margin: 0; padding-left: 20px;">${changesList}</ul>
+        `;
+        container.appendChild(newsCard);
+    });
+}
 loadDatabase();
