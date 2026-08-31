@@ -1,8 +1,8 @@
-// Глобальные переменные для данных
+// Глобальные переменные для хранения данных
 let appDatabase = {}; 
 let currentCardIndex = 0;     
-let currentTestIndex = 0; // Индекс текущего вопроса в тесте
-let score = 0;            // Количество правильных ответов
+let currentTestIndex = 0; 
+let score = 0;            
 
 // Элементы модуля карточек
 const cardElement = document.getElementById('myCard');
@@ -16,21 +16,27 @@ const nextBtn = document.getElementById('next-btn');
 const ticketsListContainer = document.querySelector('.tickets-sidebar');
 const ticketContentContainer = document.getElementById('ticket-content');
 
-// 1. Единая функция загрузки всей базы данных
+// Единая функция загрузки всей базы данных
 async function loadDatabase() {
     try {
         const response = await fetch('database.json');
         appDatabase = await response.json();
 
+        // Безопасный запуск модулей: каждый работает только на своей странице
         if (cardElement) {
             initFlashcards();
         }
-        if (ticketsListContainer) {
+        if (ticketsListContainer && document.getElementById('ticket-content')) {
             initTickets();
         }
-        // Вот это новое условие:
         if (document.getElementById('quiz-wrapper')) {
             initQuiz();
+        }
+        if (document.getElementById('sections-page-marker')) {
+            initSections();
+        }
+         if (document.getElementById('library-page-marker')) {
+            initLibrary();
         }
     } catch (error) {
         console.error("Ошибка загрузки базы данных:", error);
@@ -80,33 +86,22 @@ function updateCard() {
     if (counterText) counterText.innerText = `${currentCardIndex + 1} / ${cards.length}`;
 }
 
-
 // ==========================================
 // ЛОГИКА МОДУЛЯ «ЭКЗАМЕНАЦИОННЫЕ БИЛЕТЫ»
 // ==========================================
-
-// ПОЛНОСТЬЮ ЗАМЕНИТЕ ФУНКЦИЮ initTickets() В script.js НА ЭТУ:
-
 function initTickets() {
     const tickets = appDatabase.tickets;
-    if (!tickets || tickets.length === 0) {
-        console.log("Билеты в базе данных не найдены!");
-        return;
-    }
+    if (!tickets || tickets.length === 0) return;
 
     const desktopContainer = document.getElementById('tickets-list-desktop');
     const mobileSelect = document.getElementById('tickets-list-mobile');
 
-    // Очищаем оба контейнера перед заполнением
     if (desktopContainer) desktopContainer.innerHTML = '';
     if (mobileSelect) {
         mobileSelect.innerHTML = '<option value="" disabled selected>📋 Выберите билет...</option>';
     }
 
-    // Заполняем ОБА интерфейса параллельно
     tickets.forEach((ticket, index) => {
-        
-        // 1. Создаем кнопку для ПК
         if (desktopContainer) {
             const button = document.createElement('button');
             button.classList.add('ticket-nav-btn');
@@ -120,7 +115,6 @@ function initTickets() {
             desktopContainer.appendChild(button);
         }
 
-        // 2. Создаем строку для мобильного выпадающего списка
         if (mobileSelect) {
             const option = document.createElement('option');
             option.value = index;
@@ -129,24 +123,16 @@ function initTickets() {
         }
     });
 
-    // Навешиваем событие клика на выпадающий список
     if (mobileSelect) {
         mobileSelect.addEventListener('change', (event) => {
-            const selectedIndex = event.target.value;
-            const selectedTicket = tickets[selectedIndex];
-            showTicketContent(selectedTicket);
+            showTicketContent(tickets[event.target.value]);
         });
     }
 }
 
-
-
-
 function showTicketContent(ticket) {
     if (!ticketContentContainer) return;
-    
     const litItems = ticket.literature.map(book => `<li>${book}</li>`).join('');
-
     ticketContentContainer.innerHTML = `
         <h2>${ticket.number}. ${ticket.title}</h2>
         <div class="content-text">${ticket.content}</div>
@@ -157,28 +143,15 @@ function showTicketContent(ticket) {
     `;
 }
 
-// Точка входа: запускается при открытии любой страницы сайта
-loadDatabase();
 // ==========================================
 // ЛОГИКА МОДУЛЯ «ИНТЕРАКТИВНЫЕ ТЕСТЫ»
 // ==========================================
-
-const quizWrapper = document.getElementById('quiz-wrapper');
-const resultWrapper = document.getElementById('result-wrapper');
-const quizProgress = document.getElementById('quiz-progress');
-const quizQuestion = document.getElementById('quiz-question');
-const quizOptionsContainer = document.getElementById('quiz-options');
-const quizNextBtn = document.getElementById('quiz-next-btn');
-const scoreText = document.getElementById('score-text');
-const resultFeedback = document.getElementById('result-feedback');
-
 function initQuiz() {
     const questions = appDatabase.tests;
     if (!questions || questions.length === 0) return;
-    
     showQuestion();
 
-    // Логика перехода к следующему вопросу
+    const quizNextBtn = document.getElementById('quiz-next-btn');
     quizNextBtn.addEventListener('click', () => {
         currentTestIndex++;
         if (currentTestIndex < questions.length) {
@@ -192,63 +165,54 @@ function initQuiz() {
 function showQuestion() {
     const questions = appDatabase.tests;
     const currentQuestion = questions[currentTestIndex];
+    const quizNextBtn = document.getElementById('quiz-next-btn');
+    const quizOptionsContainer = document.getElementById('quiz-options');
+    const quizProgress = document.getElementById('quiz-progress');
+    const quizQuestion = document.getElementById('quiz-question');
 
-    // Скрываем кнопку "Дальше" до тех пор, пока пользователь не выберет ответ
     quizNextBtn.style.display = 'none';
     quizOptionsContainer.innerHTML = '';
-
-    // Обновляем прогресс и текст вопроса
     quizProgress.innerText = `Вопрос ${currentTestIndex + 1} из ${questions.length}`;
     quizQuestion.innerText = currentQuestion.question;
 
-    // Генерируем кнопки с вариантами ответов
     currentQuestion.options.forEach((option, index) => {
         const button = document.createElement('button');
         button.classList.add('option-btn');
         button.innerText = option;
-
-        // Обработка клика по варианту ответа
         button.addEventListener('click', () => {
             handleAnswer(button, index, currentQuestion.correct);
         });
-
         quizOptionsContainer.appendChild(button);
     });
 }
 
 function handleAnswer(selectedButton, selectedIndex, correctIndex) {
+    const quizOptionsContainer = document.getElementById('quiz-options');
     const allButtons = quizOptionsContainer.querySelectorAll('.option-btn');
+    const quizNextBtn = document.getElementById('quiz-next-btn');
 
-    // Если ответ уже выбран — блокируем повторные клики
     if (selectedButton.classList.contains('disabled')) return;
 
-    // Проверяем, правильный ли выбор
     if (selectedIndex === correctIndex) {
         selectedButton.classList.add('correct');
         score++;
     } else {
         selectedButton.classList.add('wrong');
-        // Подсвечиваем пользователю, какой ответ на самом деле был правильным
         allButtons[correctIndex].classList.add('correct');
     }
 
-    // Блокируем все кнопки и показываем кнопку "Дальше"
     allButtons.forEach(btn => btn.classList.add('disabled'));
     quizNextBtn.style.display = 'block';
 }
 
 function showResults() {
     const questions = appDatabase.tests;
-    
-    // Прячем сам тест и показываем экран результатов
-    quizWrapper.style.display = 'none';
-    resultWrapper.style.display = 'block';
+    document.getElementById('quiz-wrapper').style.display = 'none';
+    document.getElementById('result-wrapper').style.display = 'block';
+    document.getElementById('score-text').innerText = `${score} из ${questions.length}`;
 
-    // Выводим баллы
-    scoreText.innerText = `${score} из ${questions.length}`;
-
-    // Психологический фидбэк в зависимости от успешности
     const percentage = (score / questions.length) * 100;
+    const resultFeedback = document.getElementById('result-feedback');
     if (percentage === 100) {
         resultFeedback.innerText = "Великолепный результат! Вы идеально владеете материалом. Госэкзамен вам точно по плечу! 🎯";
     } else if (percentage >= 50) {
@@ -257,3 +221,81 @@ function showResults() {
         resultFeedback.innerText = "Материал усвоен слабо. Не переживайте, для этого мы и создали этот хаб. Прочитайте конспекты билетов и попробуйте пройти тест снова! 💪";
     }
 }
+
+// ==========================================
+// ЛОГИКА МОДУЛЯ «РАЗДЕЛЫ ПСИХОЛОГИИ»
+// ==========================================
+function initSections() {
+    const sections = appDatabase.sections;
+    if (!sections || sections.length === 0) return;
+
+    const desktopContainer = document.getElementById('sections-list-desktop');
+    const mobileSelect = document.getElementById('sections-list-mobile');
+
+    if (desktopContainer) desktopContainer.innerHTML = '';
+    if (mobileSelect) {
+        mobileSelect.innerHTML = '<option value="" disabled selected>📋 Выберите раздел...</option>';
+    }
+
+    sections.forEach((section, index) => {
+        if (desktopContainer) {
+            const button = document.createElement('button');
+            button.classList.add('ticket-nav-btn');
+            button.innerText = section.title;
+            
+            button.addEventListener('click', () => {
+                document.querySelectorAll('#sections-list-desktop .ticket-nav-btn').forEach(btn => btn.classList.remove('active'));
+                button.classList.add('active');
+                showSectionContent(section);
+            });
+            desktopContainer.appendChild(button);
+        }
+
+        if (mobileSelect) {
+            const option = document.createElement('option');
+            option.value = index;
+            option.innerText = section.title;
+            mobileSelect.appendChild(option);
+        }
+    });
+
+    if (mobileSelect) {
+        mobileSelect.addEventListener('change', (event) => {
+            showSectionContent(sections[event.target.value]);
+        });
+    }
+}
+
+function showSectionContent(section) {
+    const contentContainer = document.getElementById('section-content');
+    if (!contentContainer) return;
+    
+    contentContainer.innerHTML = `
+        <h2>${section.title}</h2>
+${section.content}
+`;
+}// Железный запуск всей системы при открытии любой страницы сайтаloadDatabase();
+// ==========================================
+// ЛОГИКА МОДУЛЯ «ЛИТЕРАТУРА»
+// ==========================================
+function initLibrary() {
+    const books = appDatabase.library;
+    const container = document.getElementById('books-container');
+    if (!books || !container) return;
+
+    container.innerHTML = '';
+
+    books.forEach(book => {
+        const bookCard = document.createElement('div');
+        bookCard.classList.add('menu-item'); // Используем стиль плитки из меню
+        
+        bookCard.innerHTML = `
+            <div class="icon">📚</div>
+            <h2>${book.author} — ${book.title}</h2>
+            <p>${book.annotation}</p>
+        `;
+        container.appendChild(bookCard);
+    });
+}
+
+loadDatabase();

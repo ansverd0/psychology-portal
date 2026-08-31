@@ -6,7 +6,7 @@ body {
     padding: 20px;
     display: flex;
     flex-direction: column;
-    align-items: center;
+    align-items: center;    /* ИЗМЕНЕНО: Возвращаем центрирование и автоматическое растяжение контента */
 }
 
 header {
@@ -139,8 +139,6 @@ button:hover {
 /* --- СТИЛИ ДЛЯ ГЛАВНОГО МЕНЮ --- */
 
 /* Сетка, которая красиво расставляет плитки */
-/* НАЙДИТЕ .menu-grid И ЗАМЕНИТЕ ВСЁ, ЧТО НИЖЕ НЕГО, НА ЭТОТ КОД: */
-
 .menu-grid {
     display: flex;
     flex-direction: column; /* На мобильных телефонах плитки встанут строго друг под другом */
@@ -150,6 +148,7 @@ button:hover {
     margin-top: 20px;
     padding: 0 20px;
     box-sizing: border-box; /* Защищает от вылезания элементов за края экрана */
+    align-items: center;    /* ДОБАВЛЕНО: Центрирует карточки, если они выстроились в одну колонку */
 }
 
 /* Сама плитка меню */
@@ -166,6 +165,8 @@ button:hover {
     display: flex;
     flex-direction: column;
     box-sizing: border-box;
+    width: 100%;            /* ДОБАВЛЕНО: Гарантирует правильное растяжение на промежуточных экранах */
+    height: 100%;           /* ДОБАВЛЕНО: растягивает плитку на всю высоту сетки, убирая асинхронность */
 }
 
 /* Эффект при наведении на активную плитку (работает на ПК) */
@@ -232,8 +233,10 @@ button:hover {
 @media (min-width: 768px) {
     .menu-grid {
         display: grid;
-        grid-template-columns: repeat(3, 1fr); /* На ПК выстраиваем ровно 3 плитки в один ряд */
+        /* ИЗМЕНЕНО: Строго 3 колонки. Плитки будут равномерно сужаться и оставаться в один ряд */
+        grid-template-columns: repeat(3, minmax(150px, 1fr)); 
         gap: 25px;
+        grid-auto-rows: 1fr;    /* ДОБАВЛЕНО: заставляет ВСЕ строки сетки быть строго одной высоты */
     }
 }
 
@@ -556,3 +559,11 @@ button:hover {
     display: inline-block;
 }
 
+.menu-item .badge.new {
+    background: #ebf8ff;
+    color: #2b6cb0;
+    border: 1px solid #bee3f8;
+}
+.menu-item.content-module:hover {
+    border-color: #4299e1;
+}

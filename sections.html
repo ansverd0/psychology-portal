@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Разделы психологии</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header>
+        <a href="index.html" class="back-link">⬅ Вернуться в главное меню</a>
+        <h1>Разделы психологии</h1>
+    </header>
+
+    <main class="tickets-layout" id="sections-page-marker">
+        <!-- Боковая панель (список разделов) -->
+        <aside class="tickets-sidebar">
+            <!-- Сюда JS добавит выпадающий список для телефонов -->
+            <select id="sections-list-mobile" class="mobile-only-select"></select>
+            
+            <!-- Сюда JS добавит список кнопок для компьютеров -->
+            <div id="sections-list-desktop" class="desktop-only-list"></div>
+        </aside>
+
+        <!-- Окно просмотра статьи -->
+        <article class="ticket-viewer">
+            <div id="section-content">
+                <div class="empty-state">💡 Выберите интересующий раздел из списка слева, чтобы открыть материал.</div>
+            </div>
+        </article>
+    </main>
+
+    <script src="script.js"></script>
+</body>
+</html>
