@@ -658,9 +658,9 @@ button:hover {
     color: #2b6cb0;
 }
 
-/* Принудительное включение двух колонок для разделов психологии на ПК */
-@media (min-width: 768px) {
-    #sections-page-marker.tickets-layout {
+/* Включаем две колонки для разделов психологии ТОЛЬКО на экранах ПК */
+@media screen and (min-width: 769px) {
+    main#sections-page-marker.tickets-layout {
         display: flex !important;
         flex-direction: row !important;
         align-items: flex-start !important;
