@@ -139,15 +139,17 @@ button:hover {
 /* --- СТИЛИ ДЛЯ ГЛАВНОГО МЕНЮ --- */
 
 /* Сетка, которая красиво расставляет плитки */
+/* НАЙДИТЕ .menu-grid И ЗАМЕНИТЕ ВСЁ, ЧТО НИЖЕ НЕГО, НА ЭТОТ КОД: */
+
 .menu-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-    gap: 25px;
+    display: flex;
+    flex-direction: column; /* На мобильных телефонах плитки встанут строго друг под другом */
+    gap: 20px;
     width: 100%;
     max-width: 1000px;
     margin-top: 20px;
     padding: 0 20px;
-    box-sizing: border-box;
+    box-sizing: border-box; /* Защищает от вылезания элементов за края экрана */
 }
 
 /* Сама плитка меню */
@@ -155,17 +157,18 @@ button:hover {
     background: white;
     border: 2px solid #e2e8f0;
     border-radius: 16px;
-    padding: 30px;
-    text-decoration: none; /* Убираем синее подчеркивание ссылки */
+    padding: 25px;
+    text-decoration: none; 
     color: #2c3e50;
     text-align: left;
     transition: all 0.3s ease;
     position: relative;
     display: flex;
     flex-direction: column;
+    box-sizing: border-box;
 }
 
-/* Эффект при наведении на активную плитку */
+/* Эффект при наведении на активную плитку (работает на ПК) */
 .menu-item:not(.locked):hover {
     transform: translateY(-5px);
     border-color: #3182ce;
@@ -173,14 +176,14 @@ button:hover {
 }
 
 .menu-item .icon {
-    font-size: 40px;
-    margin-bottom: 15px;
+    font-size: 36px;
+    margin-bottom: 10px;
 }
 
 .menu-item h2 {
-    margin: 0 0 10px 0;
+    margin: 0 0 8px 0;
     color: #1a365d;
-    font-size: 20px;
+    font-size: 18px;
 }
 
 .menu-item p {
@@ -223,3 +226,302 @@ button:hover {
 .back-link:hover {
     color: #2b6cb0;
 }
+
+/* 💻 А ТЕПЕРЬ МАГИЯ АДАПТИВНОСТИ: */
+/* Если экран устройства шире 768 пикселей (ноутбуки и ПК) — включаем сетку */
+@media (min-width: 768px) {
+    .menu-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr); /* На ПК выстраиваем ровно 3 плитки в один ряд */
+        gap: 25px;
+    }
+}
+
+/* Корректировка размеров карточки для мобильных устройств в самом низу */
+@media (max-width: 500px) {
+    .flash-card {
+        width: 100%; /* Карточка подстроится под ширину экрана телефона */
+        max-width: 350px;
+        height: 280px;
+    }
+    .controls {
+        width: 100%;
+        max-width: 350px;
+    }
+}
+/* --- СТИЛИ ДЛЯ МОДУЛЯ «ЭКЗАМЕНАЦИОННЫЕ БИЛЕТЫ» --- */
+
+/* Двухколоночный макет */
+.tickets-layout {
+    display: flex;
+    gap: 30px;
+    width: 100%;
+    max-width: 1100px;
+    margin-top: 20px;
+    padding: 0 20px;
+    box-sizing: border-box;
+    align-items: flex-start;
+}
+
+/* Левая колонка: Список билетов */
+.tickets-sidebar {
+    flex: 0 0 280px; /* Фиксированная ширина боковой панели */
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    background: white;
+    padding: 20px;
+    border-radius: 16px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+    box-sizing: border-box;
+}
+
+/* Кнопка конкретного билета в списке */
+.ticket-nav-btn {
+    background: #f7fafc;
+    color: #4a5568;
+    border: 1px solid #e2e8f0;
+    padding: 12px 15px;
+    text-align: left;
+    font-size: 15px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    width: 100%;
+}
+
+.ticket-nav-btn:hover {
+    background: #edf2f7;
+    color: #2b6cb0;
+}
+
+/* Стиль для кнопки выбранного (активного) билета */
+.ticket-nav-btn.active {
+    background: #3182ce;
+    color: white;
+    border-color: #3182ce;
+}
+
+/* Правая колонка: Окно просмотра конспекта */
+.ticket-viewer {
+    flex: 1; /* Занимает всё оставшееся пространство */
+    background: white;
+    padding: 40px;
+    border-radius: 16px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+    text-align: left;
+    box-sizing: border-box;
+    min-height: 400px;
+}
+
+.ticket-viewer h2 {
+    margin: 0 0 20px 0;
+    color: #1a365d;
+    font-size: 24px;
+    border-bottom: 2px solid #edf2f7;
+    padding-bottom: 15px;
+}
+
+.ticket-viewer .content-text {
+    font-size: 16px;
+    line-height: 1.8;
+    color: #2d3748;
+    margin-bottom: 30px;
+}
+
+/* Блок со списком литературы */
+.literature-box {
+    background: #f7fafc;
+    border-left: 4px solid #3182ce;
+    padding: 20px;
+    border-radius: 0 8px 8px 0;
+}
+
+.literature-box h3 {
+    margin: 0 0 10px 0;
+    font-size: 16px;
+    color: #2c3e50;
+}
+
+.literature-box ul {
+    margin: 0;
+    padding-left: 20px;
+    color: #4a5568;
+    font-size: 14px;
+}
+
+.literature-box li {
+    margin-bottom: 5px;
+}
+
+/* Состояние, когда билет еще не выбран */
+.empty-state {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 300px;
+    color: #718096;
+    font-size: 16px;
+    text-align: center;
+}
+
+.mobile-only-select {
+    display: none;
+}
+.desktop-only-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    width: 100%;
+}
+
+/* 📱 Адаптация для мобильных устройств (экраны меньше 768px) */
+@media (max-width: 768px) {
+    .tickets-layout {
+        flex-direction: column; /* Перестраиваем колонки в одну ленту сверху вниз */
+    }
+    
+    .tickets-sidebar {
+        flex: none;
+        width: 100%;
+        padding: 0;
+        background: transparent;
+        box-shadow: none;
+    }
+
+    /* Прячем обычные кнопки на мобилках */
+    .desktop-only-list {
+        display: none;
+    }
+
+    /* Красиво оформляем выпадающий список для телефона */
+    .mobile-only-select {
+        display: block !important;
+        width: 100%;
+        padding: 14px;
+        font-size: 16px;
+        font-family: inherit;
+        color: #2d3748;
+        background-color: white;
+        border: 2px solid #3182ce;
+        border-radius: 12px;
+        cursor: pointer;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        outline: none;
+    }
+}/* --- СТИЛИ ДЛЯ МОДУЛЯ «ИНТЕРАКТИВНЫЕ ТЕСТЫ» --- */
+
+/* Карточка теста */
+.quiz-card {
+    background: white;
+    padding: 35px;
+    border-radius: 16px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+    width: 100%;
+    max-width: 600px; /* Ограничиваем максимальную ширину на ПК */
+    box-sizing: border-box;
+    text-align: left;
+    margin: 20px auto 0 auto; /* Центрируем блок по центру экрана компьютера */
+}
+
+.quiz-header {
+    border-bottom: 2px solid #edf2f7;
+    padding-bottom: 12px;
+    margin-bottom: 20px;
+    display: block; /* Защита от выстраивания в линию */
+}
+
+#quiz-progress {
+    font-size: 14px;
+    font-weight: 600;
+    color: #718096;
+    background: #edf2f7;
+    padding: 4px 10px;
+    border-radius: 12px;
+    display: inline-block;
+}
+
+#quiz-question {
+    color: #1a365d;
+    font-size: 20px;
+    line-height: 1.5;
+    margin: 0 0 25px 0;
+    display: block;
+}
+
+/* Контейнер для вариантов: жестко заставляем их вставать друг под другом */
+.options-container {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 12px;
+    margin-bottom: 25px;
+    width: 100%;
+}
+
+
+/* Кнопка варианта ответа */
+.option-btn {
+    background: white;
+    border: 2px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 16px 20px;
+    text-align: left;
+    font-size: 16px;
+    font-weight: 500;
+    color: #2d3748;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+/* Наведение на вариант (только если еще не ответили) */
+.option-btn:not(.disabled):hover {
+    border-color: #3182ce;
+    background: #f7fafc;
+}
+
+/* Подсветка правильного ответа */
+.option-btn.correct {
+    background: #c6f6d5 !important;
+    border-color: #38a169 !important;
+    color: #22543d !important;
+}
+
+/* Подсветка неправильного ответа */
+.option-btn.wrong {
+    background: #fed7d7 !important;
+    border-color: #e53e3e !important;
+    color: #742a2a !important;
+}
+
+/* Состояние кнопок после выбора ответа (блокировка) */
+.option-btn.disabled {
+    cursor: not-allowed;
+}
+
+.quiz-footer {
+    display: flex;
+    justify-content: flex-end;
+}
+
+/* Стили экрана результатов */
+.result-score {
+    font-size: 22px;
+    font-weight: bold;
+    color: #2b6cb0;
+    margin: 15px 0;
+}
+
+#result-feedback {
+    font-size: 16px;
+    line-height: 1.6;
+    color: #4a5568;
+    margin-bottom: 25px;
+}
+
+#quiz-next-btn {
+    margin-top: 15px;
+    display: inline-block;
+}
+

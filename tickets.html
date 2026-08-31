@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Экзаменационные билеты | Психология</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header>
+        <a href="index.html" class="back-link">⬅️ Вернуться в главное меню</a>
+        <h1>Экзаменационные билеты</h1>
+        <p>Изучение конспектов и литературы к государственному экзамену</p>
+    </header>
+
+    <!-- Основной двухколоночный контейнер -->
+    <div class="tickets-layout">
+        
+        <!-- Левая колонка: Список билетов -->
+       <aside class="tickets-sidebar">
+    <!-- Контейнер для кнопок на ПК (вернули id) -->
+    <div id="tickets-list-desktop" class="desktop-only-list"></div>
+    
+    <!-- Выпадающий список для мобильных (вернули id) -->
+    <select id="tickets-list-mobile" class="mobile-only-select">
+        <option value="" disabled selected>📋 Выберите билет...</option>
+    </select>
+</aside>
+
+        <!-- Правая колонка: Просмотр содержимого -->
+        <main class="ticket-viewer" id="ticket-content">
+            <div class="empty-state">
+                <p>💡 Выберите билет из списка, чтобы открыть конспект и литературу</p>
+            </div>
+        </main>
+
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

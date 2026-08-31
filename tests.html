@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Интерактивные тесты | Психология</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header>
+        <a href="index.html" class="back-link">⬅️ Вернуться в главное меню</a>
+        <h1>Интерактивные тесты</h1>
+        <p>Проверьте свои знания перед государственным экзаменом</p>
+    </header>
+
+    <main>
+        <!-- Контейнер самого теста -->
+        <div id="quiz-wrapper" class="quiz-card">
+            <div class="quiz-header">
+                <span id="quiz-progress">Вопрос 0 из 0</span>
+            </div>
+            
+            <h2 id="quiz-question">Загрузка вопроса...</h2>
+            
+            <!-- Сюда JavaScript будет вставлять варианты ответов -->
+            <div id="quiz-options" class="options-container"></div>
+            
+            <div class="quiz-footer">
+                <button id="quiz-next-btn" style="display: none;">Следующий вопрос ➡️</button>
+            </div>
+        </div>
+
+        <!-- Контейнер для результатов (изначально скрыт) -->
+        <div id="result-wrapper" class="quiz-card" style="display: none;">
+            <h2>Тест завершен! 🎉</h2>
+            <p class="result-score">Ваш результат: <span id="score-text">0 из 0</span></p>
+            <p id="result-feedback"></p>
+            <button onclick="location.reload()">Пройти заново 🔄</button>
+        </div>
+    </main>
+
+    <script src="script.js"></script>
+</body>
+</html>
