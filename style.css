@@ -666,3 +666,77 @@ button:hover {
         align-items: flex-start !important;
     }
 }
+/* Специальное отображение вики-подсказок для мобильных телефонов */
+@media screen and (max-width: 768px) {
+    /* Фиксируем подсказку внизу экрана смартфона */
+    .wiki-term::after {
+        position: fixed !important;
+        bottom: 20px !important;
+        left: 5% !important;
+        right: 5% !important;
+        transform: none !important;
+        width: 90% !important;
+        box-sizing: border-box;
+        box-shadow: 0 -5px 25px rgba(0, 0, 0, 0.2);
+        font-size: 14px;
+        padding: 15px;
+    }
+
+    /* На смартфонах стрелочка под окошком не нужна, полностью её убираем */
+    .wiki-term::before {
+        display: none !important;
+    }
+}
+/* --- СТИЛИ ДЛЯ ДВУХУРОВНЕВОГО МЕНЮ РАЗДЕЛОВ ПСИХОЛОГИИ --- */
+
+/* Главная кнопка отрасли */
+.branch-title-btn {
+    font-weight: 600 !important;
+    background: #edf2f7 !important;
+    color: #1a365d !important;
+    border-left: 4px solid #cbd5e0 !important;
+    margin-bottom: 2px;
+}
+
+/* Состояние, когда отрасль раскрыта */
+.branch-title-btn.branch-active {
+    border-left-color: #3182ce !important;
+    background: #e2e8f0 !important;
+}
+
+/* Контейнер для вложенных статей */
+.submenu-container {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding-left: 15px; /* Сдвигаем вправо, создавая красивую лесенку */
+    margin-bottom: 8px;
+    border-left: 2px dashed #e2e8f0;
+    margin-left: 10px;
+}
+
+/* Кнопка конкретной статьи внутри отрасли */
+.submenu-item-btn {
+    background: transparent;
+    border: none;
+    color: #4a5568;
+    padding: 10px 12px;
+    text-align: left;
+    font-size: 14px;
+    cursor: pointer;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+    width: 100%;
+}
+
+.submenu-item-btn:hover {
+    background: #ebf8ff;
+    color: #2b6cb0;
+}
+
+/* Выбранная активная статья */
+.submenu-item-btn.active {
+    background: #3182ce;
+    color: white;
+    font-weight: 500;
+}
