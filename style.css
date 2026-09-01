@@ -740,3 +740,11 @@ button:hover {
     color: white;
     font-weight: 500;
 }
+/* Выравнивание текстов по ширине для статей, билетов, новостей и литературы */
+.content-text, 
+.ticket-viewer .content-text, 
+#news-timeline ul li,
+.menu-item p {
+    text-align: justify;
+}
+

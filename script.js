@@ -383,9 +383,12 @@ function initLibrary() {
 
     container.innerHTML = '';
 
-    books.forEach(book => {
+    // Сортируем книги по алфавиту на основе фамилии автора
+    const sortedBooks = [...books].sort((a, b) => a.author.localeCompare(b.author, 'ru'));
+
+    sortedBooks.forEach(book => {
         const bookCard = document.createElement('div');
-        bookCard.classList.add('menu-item'); // Используем стиль плитки из меню
+        bookCard.classList.add('menu-item'); 
         
         bookCard.innerHTML = `
             <div class="icon">📚</div>
@@ -395,6 +398,7 @@ function initLibrary() {
         container.appendChild(bookCard);
     });
 }
+
 // ==========================================
 // ЛОГИКА МОДУЛЯ «ЧЕНДЖЛОГ / НОВОСТИ»
 // ==========================================
