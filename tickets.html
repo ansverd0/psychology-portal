@@ -14,28 +14,36 @@
         <h2>Удобные структурированные конспекты с привязкой к авторитетной учебной литературе.</h2>
     </header>
 
-    <!-- Основной двухколоночный контейнер -->
-    <div class="tickets-layout">
-        
-        <!-- Левая колонка: Список билетов -->
-       <aside class="tickets-sidebar">
-    <!-- Контейнер для кнопок на ПК (вернули id) -->
-    <div id="tickets-list-desktop" class="desktop-only-list"></div>
+    <main class="tickets-layout">
     
-    <!-- Выпадающий список для мобильных (вернули id) -->
-    <select id="tickets-list-mobile" class="mobile-only-select">
-        <option value="" disabled selected>📋 Выберите билет...</option>
-    </select>
-</aside>
+    <!-- 🗂 ЛЕВАЯ КОЛОНКА: Навигация (Автоматически подстраивается под ПК и Мобильные) -->
+    <div class="tickets-sidebar">
+        
+        <!-- 1. Мобильная строка поиска по вопросам (скроется на ПК) -->
+        <div class="mobile-search-wrapper" style="position: relative;">
+            <input type="text" id="mobile-tickets-search" placeholder="🔍 Найти экзаменационный вопрос...">
+            <div id="mobile-tickets-search-results" class="search-results-dropdown" style="display: none;"></div>
+        </div>
 
-        <!-- Правая колонка: Просмотр содержимого -->
-        <main class="ticket-viewer" id="ticket-content">
-            <div class="empty-state">
-                <p>💡 Выберите билет из списка, чтобы открыть конспект и литературу</p>
-            </div>
-        </main>
+        <!-- 2. Мобильные плитки-дисциплины (Вариант 2 — скроются на ПК) -->
+        <div id="mobile-tickets-tiles" class="mobile-only-tiles"></div>
 
+        <!-- 3. Мобильный список вопросов выбранного экзамена (скроется на ПК) -->
+        <div id="mobile-questions-list" class="mobile-articles-container" style="display: none;"></div>
+
+        <!-- 4. ПК-версия: Двухуровневый аккордеон папок (скроется на смартфонах) -->
+        <div id="tickets-list-desktop" class="desktop-only-list"></div>
+        
     </div>
+
+    <!-- 📄 ПРАВАЯ КОЛОНКА: Интерактивное окно просмотра конспекта (Общее для ПК и Мобилок) -->
+    <div class="ticket-viewer">
+        <div class="empty-state">
+            <p>📋 Выберите экзаменационную дисциплину слева, чтобы открыть список вопросов и конспекты ответов.</p>
+        </div>
+    </div>
+
+</main>
 
     <script src="script.js"></script>
 </body>

@@ -1,3 +1,6 @@
+/* ==========================================================================
+   1. ОБЩИЕ СТИЛИ СТРАНИЦ И ШРИФТЫ
+   ========================================================================== */
 body {
     font-family: 'Segoe UI', Arial, sans-serif;
     background-color: #f0f4f8;
@@ -6,7 +9,7 @@ body {
     padding: 20px;
     display: flex;
     flex-direction: column;
-    align-items: center;    /* ИЗМЕНЕНО: Возвращаем центрирование и автоматическое растяжение контента */
+    align-items: center;
 }
 
 header {
@@ -19,7 +22,45 @@ header h1 {
     margin-bottom: 5px;
 }
 
-/* Настройки 3D пространства */
+main {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+}
+
+button {
+    background: #3182ce;
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    font-size: 16px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: 0.2s;
+    font-weight: 600;
+}
+
+button:hover {
+    background: #2b6cb0;
+}
+
+.back-link {
+    display: inline-block;
+    color: #3182ce;
+    text-decoration: none;
+    font-weight: 600;
+    margin-bottom: 15px;
+    transition: 0.2s;
+}
+
+.back-link:hover {
+    color: #2b6cb0;
+}
+
+/* ==========================================================================
+   2. МОДУЛЬ «ТРЕНАЖЕР ТЕРМИНОВ» (ФЛЭШ-КАРТОЧКИ)
+   ========================================================================== */
 .card-perspective {
     perspective: 1000px;
     margin-bottom: 30px;
@@ -36,7 +77,6 @@ header h1 {
     position: relative;
 }
 
-/* Класс переворота */
 .flash-card.flipped {
     transform: rotateY(180deg);
 }
@@ -87,38 +127,13 @@ header h1 {
     margin: 0;
 }
 
-/* Кнопки */
 .controls {
     display: flex;
     align-items: center;
-    justify-content: center; /* Центрирует кнопки по горизонтали */
+    justify-content: center;
     gap: 20px;
-    width: 450px; /* Делаем ширину блока кнопок точно такой же, как у карточки */
-    margin: 0 auto; /* Центрирует сам блок на экране */
-}
-
-/* ДОБАВЬТЕ ЭТОТ БЛОК НИЖЕ: */
-main {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 20px; /* Ровный отступ между карточкой и кнопками */
-}
-
-button {
-    background: #3182ce;
-    color: white;
-    border: none;
-    padding: 12px 24px;
-    font-size: 16px;
-    border-radius: 8px;
-    cursor: pointer;
-    transition: 0.2s;
-    font-weight: 600;
-}
-
-button:hover {
-    background: #2b6cb0;
+    width: 450px;
+    margin: 0 auto;
 }
 
 #counter-text {
@@ -129,29 +144,21 @@ button:hover {
     text-align: center;
 }
 
-/* Адаптивность под мобилки */
-@media (max-width: 500px) {
-    .flash-card {
-        width: 90vw;
-        height: 320px;
-    }
-}
-/* --- СТИЛИ ДЛЯ ГЛАВНОГО МЕНЮ --- */
-
-/* Сетка, которая красиво расставляет плитки */
+/* ==========================================================================
+   3. МОДУЛЬ «ГЛАВНОЕ МЕНЮ» (ПЛИТКИ НА ХАБЕ)
+   ========================================================================== */
 .menu-grid {
     display: flex;
-    flex-direction: column; /* На мобильных телефонах плитки встанут строго друг под другом */
+    flex-direction: column;
     gap: 20px;
     width: 100%;
     max-width: 1000px;
     margin-top: 20px;
     padding: 0 20px;
-    box-sizing: border-box; /* Защищает от вылезания элементов за края экрана */
-    align-items: center;    /* ДОБАВЛЕНО: Центрирует карточки, если они выстроились в одну колонку */
+    box-sizing: border-box;
+    align-items: center;
 }
 
-/* Сама плитка меню */
 .menu-item {
     background: white;
     border: 2px solid #e2e8f0;
@@ -165,11 +172,10 @@ button:hover {
     display: flex;
     flex-direction: column;
     box-sizing: border-box;
-    width: 100%;            /* ДОБАВЛЕНО: Гарантирует правильное растяжение на промежуточных экранах */
-    height: 100%;           /* ДОБАВЛЕНО: растягивает плитку на всю высоту сетки, убирая асинхронность */
+    width: 100%;
+    height: 100%;
 }
 
-/* Эффект при наведении на активную плитку (работает на ПК) */
 .menu-item:not(.locked):hover {
     transform: translateY(-5px);
     border-color: #3182ce;
@@ -194,7 +200,6 @@ button:hover {
     line-height: 1.5;
 }
 
-/* Стили для закрытых разделов */
 .menu-item.locked {
     background: #f7fafc;
     border-color: #edf2f7;
@@ -214,48 +219,37 @@ button:hover {
     font-weight: bold;
 }
 
-/* Кнопка "Назад" на странице карточек */
-.back-link {
-    display: inline-block;
-    color: #3182ce;
-    text-decoration: none;
-    font-weight: 600;
-    margin-bottom: 15px;
-    transition: 0.2s;
+.menu-item .badge.new {
+    background: #ebf8ff;
+    color: #2b6cb0;
+    border: 1px solid #bee3f8;
 }
 
-.back-link:hover {
+.menu-item.news-module {
+    background: linear-gradient(135deg, #ffffff 0%, #f7fafc 100%);
+    border-color: #bee3f8;
+}
+
+.menu-item.news-module:hover {
+    border-color: #3182ce;
+    box-shadow: 0 10px 20px rgba(49, 130, 206, 0.15);
+}
+
+.menu-item .update-date {
+    margin-top: auto;
+    padding-top: 15px;
+    font-size: 13px;
+    color: #4a5568;
+    border-top: 1px dashed #e2e8f0;
+}
+
+.menu-item .update-date strong {
     color: #2b6cb0;
 }
 
-/* 💻 А ТЕПЕРЬ МАГИЯ АДАПТИВНОСТИ: */
-/* Если экран устройства шире 768 пикселей (ноутбуки и ПК) — включаем сетку */
-@media (min-width: 768px) {
-    .menu-grid {
-        display: grid;
-        /* ИЗМЕНЕНО: Строго 3 колонки. Плитки будут равномерно сужаться и оставаться в один ряд */
-        grid-template-columns: repeat(3, minmax(150px, 1fr)); 
-        gap: 25px;
-        grid-auto-rows: 1fr;    /* ДОБАВЛЕНО: заставляет ВСЕ строки сетки быть строго одной высоты */
-    }
-}
-
-/* Корректировка размеров карточки для мобильных устройств в самом низу */
-@media (max-width: 500px) {
-    .flash-card {
-        width: 100% !important;
-        min-width: 290px; /* Защита для совсем маленьких экранов */
-        max-width: 100%; /* Убираем жесткий лимит в 350px */
-        height: 320px;
-    }
-    .controls {
-        width: 100% !important;
-        max-width: 100%;
-    }
-}
-/* --- СТИЛИ ДЛЯ МОДУЛЯ «ЭКЗАМЕНАЦИОННЫЕ БИЛЕТЫ» --- */
-
-/* Двухколоночный макет */
+/* ==========================================================================
+   4. ДВУХКОЛОНОЧНЫЙ МАКЕТ (БИЛЕТЫ И РАЗДЕЛЫ НА ПК)
+   ========================================================================== */
 .tickets-layout {
     display: flex;
     gap: 30px;
@@ -267,9 +261,8 @@ button:hover {
     align-items: flex-start;
 }
 
-/* Левая колонка: Список билетов */
 .tickets-sidebar {
-    flex: 0 0 280px; /* Фиксированная ширина боковой панели */
+    flex: 0 0 280px;
     display: flex;
     flex-direction: column;
     gap: 10px;
@@ -280,7 +273,6 @@ button:hover {
     box-sizing: border-box;
 }
 
-/* Кнопка конкретного билета в списке */
 .ticket-nav-btn {
     background: #f7fafc;
     color: #4a5568;
@@ -299,16 +291,61 @@ button:hover {
     color: #2b6cb0;
 }
 
-/* Стиль для кнопки выбранного (активного) билета */
 .ticket-nav-btn.active {
     background: #3182ce;
     color: white;
     border-color: #3182ce;
 }
 
-/* Правая колонка: Окно просмотра конспекта */
-.ticket-viewer {
-    flex: 1; /* Занимает всё оставшееся пространство */
+.branch-title-btn {
+    font-weight: 600 !important;
+    background: #edf2f7 !important;
+    color: #1a365d !important;
+    border-left: 4px solid #cbd5e0 !important;
+    margin-bottom: 2px;
+}
+
+.branch-title-btn.branch-active {
+    border-left-color: #3182ce !important;
+    background: #e2e8f0 !important;
+}
+
+.submenu-container {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding-left: 15px;
+    margin-bottom: 8px;
+    border-left: 2px dashed #e2e8f0;
+    margin-left: 10px;
+}
+
+.submenu-item-btn {
+    background: transparent;
+    border: none;
+    color: #4a5568;
+    padding: 10px 12px;
+    text-align: left;
+    font-size: 14px;
+    cursor: pointer;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+    width: 100%;
+}
+
+.submenu-item-btn:hover {
+    background: #ebf8ff;
+    color: #2b6cb0;
+}
+
+.submenu-item-btn.active {
+    background: #3182ce;
+    color: white;
+    font-weight: 500;
+}
+
+.ticket-viewer, .section-viewer {
+    flex: 1;
     background: white;
     padding: 40px;
     border-radius: 16px;
@@ -318,7 +355,7 @@ button:hover {
     min-height: 400px;
 }
 
-.ticket-viewer h2 {
+.ticket-viewer, .section-viewer h2 {
     margin: 0 0 20px 0;
     color: #1a365d;
     font-size: 24px;
@@ -326,16 +363,14 @@ button:hover {
     padding-bottom: 15px;
 }
 
-.ticket-viewer .content-text {
+.ticket-viewer, .section-viewer .content-text, .content-text, #news-timeline ul li, .menu-item p {
     font-size: 16px;
     line-height: 1.8;
     color: #2d3748;
     margin-bottom: 30px;
-    white-space: pre-line; /* Самое важное! Браузер будет сам переносить строки так же, как они перенесены в Word */
-    text-align: justify;   /* Выравнивание текста по ширине для академического стиля */
+    text-align: justify; /* Академическое выравнивание текстов по ширине */
 }
 
-/* Блок со списком литературы */
 .literature-box {
     background: #f7fafc;
     border-left: 4px solid #3182ce;
@@ -360,7 +395,6 @@ button:hover {
     margin-bottom: 5px;
 }
 
-/* Состояние, когда билет еще не выбран */
 .empty-state {
     display: flex;
     align-items: center;
@@ -371,98 +405,26 @@ button:hover {
     text-align: center;
 }
 
-.mobile-only-select {
-    display: none;
-}
-.desktop-only-list {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    width: 100%;
-}
-
-/* 📱 Адаптация для мобильных устройств (экраны меньше 768px) */
-@media (max-width: 768px) {
-    body {
-        padding: 10px !important; /* Уменьшаем общие отступы сайта на телефонах в два раза */
-    }
-    
-    .tickets-layout {
-        flex-direction: column; 
-        gap: 15px;
-        width: 100% !important;
-        padding: 0 !important; /* Убираем отступы у главного контейнера */
-        margin: 0 !important;
-    }
-
-    .ticket-viewer {
-        width: 100% !important;
-        padding: 20px 15px !important; /* Минимальные отступы только для текста, чтобы не прилипал к краям экрана */
-        border-radius: 12px;
-        box-shadow: none; /* Убираем тень, чтобы сэкономить место */
-    }
-
-    .tickets-sidebar {
-        flex: none;
-        width: 100%;
-        padding: 0;
-        background: transparent;
-        box-shadow: none;
-    }
-
-    /* Прячем обычные кнопки на мобилках */
-    .desktop-only-list {
-        display: none;
-    }
-
-    /* Красиво оформляем выпадающий список для телефона */
-    .mobile-only-select {
-        display: block !important;
-        width: 100%;
-        padding: 14px;
-        font-size: 16px;
-        font-family: inherit;
-        color: #2d3748;
-        background-color: white;
-        border: 2px solid #3182ce;
-        border-radius: 12px;
-        cursor: pointer;
-        box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-        outline: none;
-    }
-
-    /* Выравниваем кнопку теста "Следующий вопрос" строго по центру на мобильных */
-    .quiz-footer {
-        justify-content: center !important;
-        width: 100%;
-    }
-    
-    #quiz-next-btn {
-        width: 100%; /* Делаем кнопку широкой и удобной для нажатия пальцем */
-        max-width: 280px;
-    }
-
-}
-
-/* --- СТИЛИ ДЛЯ МОДУЛЯ «ИНТЕРАКТИВНЫЕ ТЕСТЫ» --- */
-/* Карточка теста */
+/* ==========================================================================
+   5. МОДУЛЬ «ИНТЕРАКТИВНЫЕ ТЕСТЫ»
+   ========================================================================== */
 .quiz-card {
     background: white;
     padding: 35px;
     border-radius: 16px;
     box-shadow: 0 10px 25px rgba(0,0,0,0.05);
     width: 100%;
-    max-width: 600px; /* Ограничиваем максимальную ширину на ПК */
+    max-width: 600px;
     box-sizing: border-box;
     text-align: left;
-    margin: 20px auto 0 auto; /* Центрируем блок по центру экрана компьютера */
+    margin: 20px auto 0 auto;
 }
 
 .quiz-header {
     border-bottom: 2px solid #edf2f7;
     padding-bottom: 12px;
     margin-bottom: 20px;
-    display: block; /* Защита от выстраивания в линию */
+    display: block;
 }
 
 #quiz-progress {
@@ -483,7 +445,6 @@ button:hover {
     display: block;
 }
 
-/* Контейнер для вариантов: жестко заставляем их вставать друг под другом */
 .options-container {
     display: flex !important;
     flex-direction: column !important;
@@ -492,8 +453,6 @@ button:hover {
     width: 100%;
 }
 
-
-/* Кнопка варианта ответа */
 .option-btn {
     background: white;
     border: 2px solid #e2e8f0;
@@ -509,27 +468,23 @@ button:hover {
     box-sizing: border-box;
 }
 
-/* Наведение на вариант (только если еще не ответили) */
 .option-btn:not(.disabled):hover {
     border-color: #3182ce;
     background: #f7fafc;
 }
 
-/* Подсветка правильного ответа */
 .option-btn.correct {
     background: #c6f6d5 !important;
     border-color: #38a169 !important;
     color: #22543d !important;
 }
 
-/* Подсветка неправильного ответа */
 .option-btn.wrong {
     background: #fed7d7 !important;
     border-color: #e53e3e !important;
     color: #742a2a !important;
 }
 
-/* Состояние кнопок после выбора ответа (блокировка) */
 .option-btn.disabled {
     cursor: not-allowed;
 }
@@ -539,7 +494,6 @@ button:hover {
     justify-content: flex-end;
 }
 
-/* Стили экрана результатов */
 .result-score {
     font-size: 22px;
     font-weight: bold;
@@ -554,54 +508,30 @@ button:hover {
     margin-bottom: 25px;
 }
 
-#quiz-next-btn {
-    margin-top: 15px;
-    display: inline-block;
-}
-
-.menu-item .badge.new {
-    background: #ebf8ff;
-    color: #2b6cb0;
-    border: 1px solid #bee3f8;
-}
-.menu-item.content-module:hover {
-    border-color: #4299e1;
-}
-
-/* --- СТИЛИ ДЛЯ ВИКИ-ПОДСКАЗОК В СТАТЬЯХ --- */
-
-/* Сам подсвеченный термин в тексте */
+/* ==========================================================================
+6. ИНТЕРАКТИВНЫЕ ВИКИ-ПОДСКАЗКИ (ОКНА ОПРЕДЕЛЕНИЙ)
+========================================================================== */
 .wiki-term {
     color: #3182ce;
     border-bottom: 1px dashed #3182ce;
-    cursor: help;
-    position: relative;
+    cursor: help;position: relative;
     display: inline-block;
     font-weight: 500;
 }
-
-/* Эффект при наведении на термин */
 .wiki-term:hover {
     color: #2b6cb0;
     background-color: #ebf8ff;
 }
-
-/* Всплывающее окошко с определением (по умолчанию скрыто) */
 .wiki-term::after {
-    content: attr(data-tooltip); /* Берет текст из JS */
+    content: attr(data-tooltip);
     position: absolute;
-    bottom: 130%; /* Появляется строго над словом */
-    left: 50%;
+    bottom: 130%;left: 50%;
     transform: translateX(-50%);
-    background-color: #2d3748; /* Темный академический цвет окошка */
-    color: white;
-    padding: 10px 15px;
-    border-radius: 8px;
-    font-size: 13px;
-    line-height: 1.4;
-    width: 250px; /* Фиксированная аккуратная ширина подсказки */
-    white-space: normal;
-    box-shadow: 0 10px 15px rgba(0, 0, 0, 0.1);
+    background-color: #2d3748;
+    color: white;padding: 10px 15px;
+    border-radius: 8px;font-size: 13px;
+    line-height: 1.4;width: 250px;
+    white-space: normal;box-shadow: 0 10px 15px rgba(0, 0, 0, 0.1);
     opacity: 0;
     pointer-events: none;
     transition: opacity 0.2s ease-in-out;
@@ -609,13 +539,10 @@ button:hover {
     text-align: left;
     font-weight: normal;
 }
-
-/* Маленький аккуратный стрелочка-указатель под окошком */
 .wiki-term::before {
     content: "";
     position: absolute;
-    bottom: 110%;
-    left: 50%;
+    bottom: 110%;left: 50%;
     transform: translateX(-50%);
     border-width: 6px;
     border-style: solid;
@@ -624,169 +551,32 @@ button:hover {
     transition: opacity 0.2s ease-in-out;
     z-index: 999;
 }
-
-/* Показываем окошко и стрелочку при наведении мыши */
-.wiki-term:hover::after,
-.wiki-term:hover::before {
+.wiki-term:hover::after, .wiki-term:hover::before {
     opacity: 1;
 }
-
-/* --- СТИЛИ ДЛЯ БЛОКА "ЧТО НОВОГО?" --- */
-
-/* Особый стиль для плитки новостей */
-.menu-item.news-module {
-    background: linear-gradient(135deg, #ffffff 0%, #f7fafc 100%);
-    border-color: #bee3f8;
-}
-
-/* Эффект при наведении на плитку новостей */
-.menu-item.news-module:hover {
-    border-color: #3182ce;
-    box-shadow: 0 10px 20px rgba(49, 130, 206, 0.15);
-}
-
-/* Оформление строки с датой */
-.menu-item .update-date {
-    margin-top: auto; /* Прижимает дату к самому низу карточки */
-    padding-top: 15px;
-    font-size: 13px;
-    color: #4a5568;
-    border-top: 1px dashed #e2e8f0;
-}
-
-.menu-item .update-date strong {
-    color: #2b6cb0;
-}
-
-/* Включаем две колонки для разделов психологии ТОЛЬКО на экранах ПК */
-@media screen and (min-width: 769px) {
-    main#sections-page-marker.tickets-layout {
-        display: flex !important;
-        flex-direction: row !important;
-        align-items: flex-start !important;
-    }
-}
-/* Специальное отображение вики-подсказок для мобильных телефонов */
-@media screen and (max-width: 768px) {
-    /* Фиксируем подсказку внизу экрана смартфона */
-    .wiki-term::after {
-        position: fixed !important;
-        bottom: 20px !important;
-        left: 5% !important;
-        right: 5% !important;
-        transform: none !important;
-        width: 90% !important;
-        box-sizing: border-box;
-        box-shadow: 0 -5px 25px rgba(0, 0, 0, 0.2);
-        font-size: 14px;
-        padding: 15px;
-    }
-
-    /* На смартфонах стрелочка под окошком не нужна, полностью её убираем */
-    .wiki-term::before {
-        display: none !important;
-    }
-}
-/* --- СТИЛИ ДЛЯ ДВУХУРОВНЕВОГО МЕНЮ РАЗДЕЛОВ ПСИХОЛОГИИ --- */
-
-/* Главная кнопка отрасли */
-.branch-title-btn {
-    font-weight: 600 !important;
-    background: #edf2f7 !important;
-    color: #1a365d !important;
-    border-left: 4px solid #cbd5e0 !important;
-    margin-bottom: 2px;
-}
-
-/* Состояние, когда отрасль раскрыта */
-.branch-title-btn.branch-active {
-    border-left-color: #3182ce !important;
-    background: #e2e8f0 !important;
-}
-
-/* Контейнер для вложенных статей */
-.submenu-container {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-    padding-left: 15px; /* Сдвигаем вправо, создавая красивую лесенку */
-    margin-bottom: 8px;
-    border-left: 2px dashed #e2e8f0;
-    margin-left: 10px;
-}
-
-/* Кнопка конкретной статьи внутри отрасли */
-.submenu-item-btn {
-    background: transparent;
-    border: none;
-    color: #4a5568;
-    padding: 10px 12px;
-    text-align: left;
-    font-size: 14px;
-    cursor: pointer;
-    border-radius: 6px;
-    transition: all 0.2s ease;
-    width: 100%;
-}
-
-.submenu-item-btn:hover {
-    background: #ebf8ff;
-    color: #2b6cb0;
-}
-
-/* Выбранная активная статья */
-.submenu-item-btn.active {
-    background: #3182ce;
-    color: white;
-    font-weight: 500;
-}
-/* Выравнивание текстов по ширине для статей, билетов, новостей и литературы */
-.content-text, 
-.ticket-viewer .content-text, 
-#news-timeline ul li,
-.menu-item p {
-    text-align: justify;
-}
-/* По умолчанию скрываем мобильный поиск на больших экранах ПК */
+/* ==========================================================================
+7. УМНАЯ СТРОКА ПОИСКА С АВТОКОМПЛИТОМ
+========================================================================== */
 .mobile-search-wrapper {
     display: none !important;
     width: 100%;
     margin-bottom: 12px;
     box-sizing: border-box;
 }
-
-/* 📱 Показываем строку поиска ИСКЛЮЧИТЕЛЬНО на экранах мобильных устройств */
-@media screen and (max-width: 768px) {
-    .mobile-search-wrapper {
-        display: block !important;
-    }
-}
-
-
-
-#mobile-search-input {
+#mobile-search-input, #mobile-tickets-search {
     width: 100%;
     padding: 12px 16px;
     font-size: 16px;
-    font-family: inherit;
-    color: #2d3748;
-    background-color: white;
+    font-family: inherit;color: #2d3748;background-color: white;
     border: 2px solid #e2e8f0;
     border-radius: 12px;
     box-sizing: border-box;
     outline: none;
     transition: border-color 0.2s;
 }
-
-#mobile-search-input:focus {
-    border-color: #3182ce; /* Синий акцент при клике */
+#mobile-search-input:focus, #mobile-tickets-search:focus {
+    border-color: #3182ce;
 }
-
-/* Скрываем пустые группы в списке при фильтрации */
-select optgroup.hidden {
-    display: none;
-}
-/* Контейнер для выпадающих подсказок */
 .search-results-dropdown {
     position: absolute;
     width: 100%;
@@ -796,19 +586,14 @@ select optgroup.hidden {
     border: 2px solid #3182ce;
     border-top: none;
     border-radius: 0 0 12px 12px;
-    box-shadow: 0 8px 16px rgba(0,0,0,0.1);
-    z-index: 1000;
+    box-shadow: 0 8px 16px rgba(0,0,0,0.1);z-index: 1000;
     box-sizing: border-box;
-    margin-top: -2px; /* Плотная склейка с инпутом */
+    margin-top: -2px;
 }
-
-/* Скругляем нижние углы инпута только когда открыт список */
-#mobile-search-input.open-dropdown {
+#mobile-search-input.open-dropdown, #mobile-tickets-search.open-dropdown {
     border-radius: 12px 12px 0 0;
     border-color: #3182ce;
 }
-
-/* Кнопка-вариант в списке подсказок */
 .search-suggest-item {
     width: 100%;
     padding: 14px 16px;
@@ -816,23 +601,17 @@ select optgroup.hidden {
     background: transparent;
     border: none;
     border-bottom: 1px solid #edf2f7;
-    font-size: 15px;
-    color: #2d3748;
-    cursor: pointer;
-    display: block;
+    font-size: 15px;color: #2d3748;
+    cursor: pointer;display: block;
     box-sizing: border-box;
 }
-
 .search-suggest-item:last-child {
     border-bottom: none;
 }
-
 .search-suggest-item:hover, .search-suggest-item:active {
     background: #ebf8ff;
     color: #2b6cb0;
 }
-
-/* Небольшая серая подпись отрасли для контекста (например: Возрастная психология) */
 .search-suggest-category {
     font-size: 11px;
     color: #a0aec0;
@@ -841,18 +620,17 @@ select optgroup.hidden {
     text-transform: uppercase;
     letter-spacing: 0.5px;
 }
-
-/* Стили для мобильных плиток разделов */
+/* ==========================================================================
+8. МОБИЛЬНЫЕ КНОПКИ-ПЛИТКИ НАВИГАЦИИ
+========================================================================== */
 .mobile-only-tiles {
     display: none;
     flex-wrap: wrap;
-    gap: 10px;
-    width: 100%;
+    gap: 10px;width: 100%;
     margin-bottom: 15px;
 }
-
 .mobile-tile-btn {
-    flex: 1 1 calc(50% - 5px); /* Расставляет по 2 плитки в ряд */
+    flex: 1 1 calc(50% - 5px);
     background: white;
     border: 2px solid #e2e8f0;
     border-radius: 12px;
@@ -865,14 +643,11 @@ select optgroup.hidden {
     box-sizing: border-box;
     transition: all 0.2s;
 }
-
 .mobile-tile-btn.active {
     background: #3182ce;
     color: white;
     border-color: #3182ce;
 }
-
-/* Контейнер для вывода списка статей на мобилке */
 .mobile-articles-container {
     width: 100%;
     background: white;
@@ -882,10 +657,155 @@ select optgroup.hidden {
     margin-bottom: 15px;
     box-sizing: border-box;
 }
-
-/* Показываем плитки только на смартфонах */
+/* ==========================================================================
+9. АДАПТИВНОСТЬ И МЕДИА-ЗАПРОСЫ (ЭКРАНЫ СМАРТФОНОВ И ПК)
+========================================================================== */
+/* 💻 БОЛЬШИЕ ЭКРАНЫ ПК (ШИРЕ 768px) */
+@media screen and (min-width: 769px) {
+    .menu-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(150px, 1fr));
+        gap: 25px;grid-auto-rows: 1fr;
+    }
+    main.tickets-layout {
+        display: flex !important;
+        flex-direction: row !important;
+        align-items: flex-start !important;
+        gap: 30px !important;
+    }
+    .desktop-only-list {
+        display: flex !important;
+        flex-direction: column;
+        gap: 10px;width: 100%;
+    }
+}/* 📱 СМАРТФОНЫ И ПЛАНШЕТЫ (МЕНЬШЕ 768px) */
 @media screen and (max-width: 768px) {
+    body {
+        padding: 10px !important;
+    }
+    .tickets-layout {
+        flex-direction: column;
+        gap: 15px;width: 100% !important;
+        padding: 0 !important;
+        margin: 0 !important;
+    }
+    .ticket-viewer, .section-viewer {
+        width: 100% !important;
+        padding: 20px 15px !important;
+        border-radius: 12px;
+        box-shadow: none;
+    }
+    .tickets-sidebar {
+        flex: none;
+        width: 100%;
+        padding: 0;
+        background: transparent;
+        box-shadow: none;
+    }
+    .mobile-search-wrapper {
+        display: block !important;
+    }
     .mobile-only-tiles {
         display: flex !important;
     }
+    .desktop-only-list {
+        display: none !important;
+    }
+    .quiz-footer {
+        justify-content: center !important;
+        width: 100%;
+    }#quiz-next-btn {
+        width: 100%;
+        max-width: 280px;
+    }
+    .wiki-term::after {
+        position: fixed !important;
+        bottom: 20px !important;
+        left: 5% !important;
+        right: 5% !important;
+        transform: none !important;
+        width: 90% !important;
+        box-sizing: border-box;
+        box-shadow: 0 -5px 25px rgba(0, 0, 0, 0.2);
+        font-size: 14px;padding: 15px;
+    }
+    .wiki-term::before {
+        display: none !important;
+    }
+}/* 📱 СОВСЕМ МАЛЕНЬКИЕ ЭКРАНЫ (ДО 500px) */
+@media (max-width: 500px) {
+    .flash-card {
+        width: 100% !important;
+        min-width: 290px;
+        max-width: 100%;
+        height: 320px;
+    }
+    .controls {
+        width: 100% !important;
+        max-width: 100%;
+    }
 }
+/* Стили для шкалы прогресса на экране результатов теста */
+.result-progress-container {
+    width: 100%;
+    background-color: #e2e8f0;
+    border-radius: 12px;
+    height: 24px; /* Немного увеличили высоту для читаемости текста */
+    margin: 15px 0 25px 0;
+    overflow: hidden;
+    position: relative;
+}
+
+.result-progress-bar {
+    height: 100%;
+    width: 0%; 
+    transition: width 0.6s ease-in-out;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center; /* Центрируем процент внутри закрашенной области */
+}
+
+/* Текст процентов внутри шкалы */
+.progress-bar-text {
+    color: white;
+    font-size: 13px;
+    font-weight: bold;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.2); /* Защита видимости текста на желтом фоне */
+}
+
+/* Кнопка повторения темы при ошибке */
+.review-theme-btn {
+    display: block; /* Изменили на block, чтобы кнопка занимала всю ширину */
+    margin-top: 15px; /* Увеличили верхний отступ от вариантов */
+    margin-bottom: 5px; /* Сделали безопасный нижний отступ от панели управления */
+    background-color: #ebf8ff;
+    color: #2b6cb0;
+    border: 1px solid #bee3f8;
+    padding: 12px 16px;
+    font-size: 14px;
+    border-radius: 10px;
+    text-decoration: none;
+    font-weight: 600;
+    text-align: center;
+    box-sizing: border-box;
+    transition: 0.2s;
+}
+
+.review-theme-btn:hover {
+    background-color: #e2e8f0;
+    color: #2c5282;
+}
+
+/* ==========================================================================
+   КОСМЕТИКА: СТИЛИ ДЛЯ ЗАГОЛОВКОВ ВНУТРИ ТЕКСТА БИЛЕТОВ
+   ========================================================================== */
+.ticket-viewer h3, .section-viewer h3 {
+    font-size: 18px;
+    color: #1a365d;
+    margin-top: 20px;
+    margin-bottom: 10px;
+}
+
+
+
