@@ -364,7 +364,66 @@ function initSections() {
             }
         });
     }
+    // Логика плиток-разделов для мобильной версии (Вариант 2)
+    const tilesContainer = document.getElementById('mobile-sections-tiles');
+    const mobileArticlesList = document.getElementById('mobile-articles-list');
 
+    if (tilesContainer && mobileArticlesList) {
+        tilesContainer.innerHTML = ''; // Очищаем контейнер
+
+        sections.forEach((section) => {
+            // Создаем плитку для каждой отрасли (Общая, Возрастная и т.д.)
+            const tile = document.createElement('button');
+            tile.classList.add('mobile-tile-btn');
+            
+            // Подбираем иконку в зависимости от ID раздела
+            let icon = "📁";
+            if (section.id === "general-psych") icon = "🧠";
+            if (section.id === "age-psych") icon = "👶";
+            if (section.id === "ped-psych") icon = "🏫";
+            if (section.id === "psy-diag") icon = "📊";
+
+            tile.innerHTML = `${icon}<br>${section.title}`;
+
+            // При клике на плитку — показываем список её статей
+            tile.addEventListener('click', () => {
+                // Снимаем активный класс со всех плиток и вешаем на текущую
+                document.querySelectorAll('.mobile-tile-btn').forEach(b => b.classList.remove('active'));
+                tile.classList.add('active');
+
+                // Очищаем и заполняем список статей
+                mobileArticlesList.innerHTML = `<h4 style="margin: 5px 0 10px 5px; color: #718096; font-size: 13px;">Статьи раздела:</h4>`;
+                
+                section.articles.forEach(article => {
+                    const articleBtn = document.createElement('button');
+                    articleBtn.classList.add('ticket-nav-btn');
+                    articleBtn.style.cssText = "margin-bottom: 5px; padding: 10px 12px; font-size: 14px;";
+                    articleBtn.innerText = article.title;
+
+                    // Клик по статье открывает её контент в окне просмотра
+                    articleBtn.addEventListener('click', () => {
+                        showSectionContent(article);
+                        // Плавно скроллим экран вниз к тексту статьи, чтобы студент сразу видел контент
+                        document.querySelector('.ticket-viewer').scrollIntoView({ behavior: 'smooth' });
+                    });
+
+                    mobileArticlesList.appendChild(articleBtn);
+                });
+
+                mobileArticlesList.style.display = 'block';
+            });
+
+            tilesContainer.appendChild(tile);
+        });
+    }
+        // Прячем мобильный список статей при переходе на ПК-экран (решает баг с зависанием надписи)
+    window.addEventListener('resize', () => {
+        if (window.innerWidth > 768 && mobileArticlesList) {
+            mobileArticlesList.style.display = 'none';
+            mobileArticlesList.innerHTML = '';
+            document.querySelectorAll('.mobile-tile-btn').forEach(b => b.classList.remove('active'));
+        }
+    });
 }
 
 
@@ -405,8 +464,9 @@ const psychologyGlossary = {
 
 
 function showSectionContent(section) {
-    const contentContainer = document.getElementById('section-content');
-    if (!contentContainer) return;
+    // Находим окно просмотра статьи по его классу (как в билетах)
+    const contentContainer = document.querySelector('.ticket-viewer');
+    if (!contentContainer || !section) return;
     
     let processedContent = section.content;
 
@@ -420,11 +480,13 @@ function showSectionContent(section) {
         });
     });
     
+    // Выводим заголовок статьи и её обработанное содержимое с подсказками
     contentContainer.innerHTML = `
         <h2>${section.title}</h2>
         <div class="content-text">${processedContent}</div>
     `;
 }
+
 
 
 // ==========================================

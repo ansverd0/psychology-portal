@@ -842,3 +842,50 @@ select optgroup.hidden {
     letter-spacing: 0.5px;
 }
 
+/* Стили для мобильных плиток разделов */
+.mobile-only-tiles {
+    display: none;
+    flex-wrap: wrap;
+    gap: 10px;
+    width: 100%;
+    margin-bottom: 15px;
+}
+
+.mobile-tile-btn {
+    flex: 1 1 calc(50% - 5px); /* Расставляет по 2 плитки в ряд */
+    background: white;
+    border: 2px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 12px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #1a365d;
+    cursor: pointer;
+    text-align: center;
+    box-sizing: border-box;
+    transition: all 0.2s;
+}
+
+.mobile-tile-btn.active {
+    background: #3182ce;
+    color: white;
+    border-color: #3182ce;
+}
+
+/* Контейнер для вывода списка статей на мобилке */
+.mobile-articles-container {
+    width: 100%;
+    background: white;
+    border-radius: 12px;
+    padding: 10px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.02);
+    margin-bottom: 15px;
+    box-sizing: border-box;
+}
+
+/* Показываем плитки только на смартфонах */
+@media screen and (max-width: 768px) {
+    .mobile-only-tiles {
+        display: flex !important;
+    }
+}

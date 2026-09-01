@@ -15,19 +15,26 @@
 
     <main id="sections-page-marker" class="tickets-layout">
     
-    <!-- Левая колонка для ПК и мобильного поиска -->
-    <div class="tickets-sidebar">
-        
-        <!-- Мобильный поиск (автоматически скроется на ПК) -->
-        <div class="mobile-search-wrapper" style="position: relative;">
-            <input type="text" id="mobile-search-input" placeholder="🔍 Поиск темы по названию...">
-            <div id="mobile-search-results" class="search-results-dropdown" style="display: none;"></div>
-        </div>
-
-        <!-- Контейнер, куда JavaScript вставляет папки отраслей на ПК -->
-        <div id="sections-list-desktop" class="desktop-only-list"></div>
-        
+    <!-- Левая колонка для ПК и мобильной навигации -->
+<div class="tickets-sidebar">
+    
+    <!-- Мобильный поиск -->
+    <div class="mobile-search-wrapper" style="position: relative;">
+        <input type="text" id="mobile-search-input" placeholder="🔍 Поиск темы по названию...">
+        <div id="mobile-search-results" class="search-results-dropdown" style="display: none;"></div>
     </div>
+
+    <!-- 📱 Контейнер для мобильных плиток-разделов (карусель/сетка) -->
+    <div id="mobile-sections-tiles" class="mobile-only-tiles"></div>
+
+    <!-- Контейнер для вложенного списка статей (общий для поиска и плиток на мобилке) -->
+    <div id="mobile-articles-list" class="mobile-articles-container" style="display: none;"></div>
+
+    <!-- Контейнер, куда JavaScript вставляет папки отраслей на ПК -->
+    <div id="sections-list-desktop" class="desktop-only-list"></div>
+    
+</div>
+
 
     <!-- Правая колонка: Окно просмотра статьи -->
     <div class="ticket-viewer">
