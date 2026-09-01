@@ -747,4 +747,98 @@ button:hover {
 .menu-item p {
     text-align: justify;
 }
+/* По умолчанию скрываем мобильный поиск на больших экранах ПК */
+.mobile-search-wrapper {
+    display: none !important;
+    width: 100%;
+    margin-bottom: 12px;
+    box-sizing: border-box;
+}
+
+/* 📱 Показываем строку поиска ИСКЛЮЧИТЕЛЬНО на экранах мобильных устройств */
+@media screen and (max-width: 768px) {
+    .mobile-search-wrapper {
+        display: block !important;
+    }
+}
+
+
+
+#mobile-search-input {
+    width: 100%;
+    padding: 12px 16px;
+    font-size: 16px;
+    font-family: inherit;
+    color: #2d3748;
+    background-color: white;
+    border: 2px solid #e2e8f0;
+    border-radius: 12px;
+    box-sizing: border-box;
+    outline: none;
+    transition: border-color 0.2s;
+}
+
+#mobile-search-input:focus {
+    border-color: #3182ce; /* Синий акцент при клике */
+}
+
+/* Скрываем пустые группы в списке при фильтрации */
+select optgroup.hidden {
+    display: none;
+}
+/* Контейнер для выпадающих подсказок */
+.search-results-dropdown {
+    position: absolute;
+    width: 100%;
+    max-height: 250px;
+    overflow-y: auto;
+    background: white;
+    border: 2px solid #3182ce;
+    border-top: none;
+    border-radius: 0 0 12px 12px;
+    box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+    z-index: 1000;
+    box-sizing: border-box;
+    margin-top: -2px; /* Плотная склейка с инпутом */
+}
+
+/* Скругляем нижние углы инпута только когда открыт список */
+#mobile-search-input.open-dropdown {
+    border-radius: 12px 12px 0 0;
+    border-color: #3182ce;
+}
+
+/* Кнопка-вариант в списке подсказок */
+.search-suggest-item {
+    width: 100%;
+    padding: 14px 16px;
+    text-align: left;
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid #edf2f7;
+    font-size: 15px;
+    color: #2d3748;
+    cursor: pointer;
+    display: block;
+    box-sizing: border-box;
+}
+
+.search-suggest-item:last-child {
+    border-bottom: none;
+}
+
+.search-suggest-item:hover, .search-suggest-item:active {
+    background: #ebf8ff;
+    color: #2b6cb0;
+}
+
+/* Небольшая серая подпись отрасли для контекста (например: Возрастная психология) */
+.search-suggest-category {
+    font-size: 11px;
+    color: #a0aec0;
+    display: block;
+    margin-bottom: 2px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
 

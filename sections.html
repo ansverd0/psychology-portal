@@ -10,25 +10,32 @@
     <header>
         <a href="index.html" class="back-link">⬅ Вернуться в главное меню</a>
         <h1>Разделы психологии</h1>
+        <h2>Интерактивная база знаний по отраслям психологии. Нажимайте на папки отраслей слева, чтобы открыть список доступных статей. Ключевые термины подсвечены синим цветом — наведите на них для вызова подсказки.</h2>
     </header>
 
-    <main class="tickets-layout" id="sections-page-marker">
-        <!-- Левая колонка: Список разделов -->
-        <aside class="tickets-sidebar">
-            <!-- Выпадающий список для мобильных телефонов -->
-            <select id="sections-list-mobile" class="mobile-only-select"></select>
-            
-            <!-- Список кнопок для больших экранов ПК -->
-            <div id="sections-list-desktop" class="desktop-only-list"></div>
-        </aside>
+    <main id="sections-page-marker" class="tickets-layout">
+    
+    <!-- Левая колонка для ПК и мобильного поиска -->
+    <div class="tickets-sidebar">
+        
+        <!-- Мобильный поиск (автоматически скроется на ПК) -->
+        <div class="mobile-search-wrapper" style="position: relative;">
+            <input type="text" id="mobile-search-input" placeholder="🔍 Поиск темы по названию...">
+            <div id="mobile-search-results" class="search-results-dropdown" style="display: none;"></div>
+        </div>
 
-        <!-- Правая колонка: Окно просмотра статьи -->
-        <article class="ticket-viewer">
-            <div id="section-content">
-                <div class="empty-state">💡 Выберите интересующий раздел из списка слева, чтобы открыть материал.</div>
-            </div>
-        </article>
-    </main>
+        <!-- Контейнер, куда JavaScript вставляет папки отраслей на ПК -->
+        <div id="sections-list-desktop" class="desktop-only-list"></div>
+        
+    </div>
+
+    <!-- Правая колонка: Окно просмотра статьи -->
+    <div class="ticket-viewer">
+        <!-- Сюда подгружается контент статьи -->
+    </div>
+
+</main>
+
 
     <script src="script.js"></script>
 </body>

@@ -50,6 +50,17 @@ async function loadDatabase() {
 // ЛОГИКА МОДУЛЯ «ТРЕНАЖЕР ТЕРМИНОВ»
 // ==========================================
 function initFlashcards() {
+    const cards = appDatabase.flashcards;
+    if (!cards || cards.length === 0) return;
+
+    // Алгоритм Фишера — Йетса для случайного перемешивания карточек перед стартом
+    for (let i = cards.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [cards[i], cards[j]] = [cards[j], cards[i]];
+    }
+
+    // Сбрасываем индекс на первую карточку из уже перемешанного массива
+    currentCardIndex = 0; 
     updateCard();
 
     cardElement.addEventListener('click', () => {
@@ -57,7 +68,6 @@ function initFlashcards() {
     });
 
     nextBtn.addEventListener('click', () => {
-        const cards = appDatabase.flashcards;
         if (currentCardIndex < cards.length - 1) {
             currentCardIndex++;
         } else {
@@ -67,7 +77,6 @@ function initFlashcards() {
     });
 
     prevBtn.addEventListener('click', () => {
-        const cards = appDatabase.flashcards;
         if (currentCardIndex > 0) {
             currentCardIndex--;
         } else {
@@ -76,6 +85,7 @@ function initFlashcards() {
         updateCard();
     });
 }
+
 
 function updateCard() {
     const cards = appDatabase.flashcards;
@@ -290,30 +300,71 @@ function initSections() {
             desktopContainer.appendChild(branchBtn);
             desktopContainer.appendChild(submenuContainer);
         }
-
-        // --- ДЛЯ МОБИЛЬНЫХ (ВЫПАДАЮЩИЙ СПИСОК С ГРУППИРОВКОЙ) ---
-        if (mobileSelect) {
-            // Создаем визуальную группу в выпадающем списке
-            const optgroup = document.createElement('optgroup');
-            optgroup.label = section.title;
-
-            section.articles.forEach(article => {
-                const option = document.createElement('option');
-                // Сохраняем ссылку на саму статью в формате JSON строки, чтобы потом легко прочитать
-                option.value = JSON.stringify(article);
-                option.innerText = article.title;
-                optgroup.appendChild(option);
-            });
-            mobileSelect.appendChild(optgroup);
-        }
     });
+    // Логика живых подсказок (автокомплита) для мобильной версии
+    const searchInput = document.getElementById('mobile-search-input');
+    const resultsContainer = document.getElementById('mobile-search-results');
 
-    if (mobileSelect) {
-        mobileSelect.addEventListener('change', (event) => {
-            const articleData = JSON.parse(event.target.value);
-            showSectionContent(articleData);
+    if (searchInput && resultsContainer) {
+        searchInput.addEventListener('input', (e) => {
+            const searchText = e.target.value.toLowerCase().trim();
+            resultsContainer.innerHTML = ''; // Очищаем старые подсказки
+
+            if (searchText === '') {
+                resultsContainer.style.display = 'none';
+                searchInput.classList.remove('open-dropdown');
+                return;
+            }
+
+            let matchesFound = false;
+
+            // Пробегаемся по всем отраслям и статьям в базе данных
+            sections.forEach(section => {
+                section.articles.forEach(article => {
+                    if (article.title.toLowerCase().includes(searchText)) {
+                        matchesFound = true;
+
+                        // Создаем интерактивную кнопку для подсказки
+                        const button = document.createElement('button');
+                        button.classList.add('search-suggest-item');
+                        button.innerHTML = `
+                            <span class="search-suggest-category">${section.title}</span>
+                            <strong>${article.title}</strong>
+                        `;
+
+                        // При клике на подсказку — показываем статью и закрываем список
+                        button.addEventListener('click', () => {
+                            showSectionContent(article);
+                            searchInput.value = article.title; // Подставляем имя в инпут
+                            resultsContainer.style.display = 'none';
+                            searchInput.classList.remove('open-dropdown');
+                        });
+
+                        resultsContainer.appendChild(button);
+                    }
+                });
+            });
+
+            // Показываем или скрываем блок в зависимости от результатов
+            if (matchesFound) {
+                resultsContainer.style.display = 'block';
+                searchInput.classList.add('open-dropdown');
+            } else {
+                resultsContainer.innerHTML = '<div style="padding: 15px; color: #718096; text-align:center; font-size:14px;">Ничего не найдено 😕</div>';
+                resultsContainer.style.display = 'block';
+                searchInput.classList.add('open-dropdown');
+            }
+        });
+
+        // Закрытие списка при клике мимо него
+        document.addEventListener('click', (e) => {
+            if (!searchInput.contains(e.target) && !resultsContainer.contains(e.target)) {
+                resultsContainer.style.display = 'none';
+                searchInput.classList.remove('open-dropdown');
+            }
         });
     }
+
 }
 
 
@@ -346,7 +397,10 @@ const psychologyGlossary = {
     "аутосоциометрию": "Процедура оценки социально-рефлексивных навыков: изучение представлений человека о том, как к нему относятся члены его группы.",
     "референтометрию": "Диагностическая процедура, направленная на выявление круга референтных лиц, обладающих наивысшей ценностной значимостью для членов группы.",
     "интернальный": "Внутренний локус контроля: склонность личности брать ответственность за все события своей жизни на себя, объясняя их своими усилиями.",
-    "экстернальный": "Внешний локус контроля: склонность личности объяснять все свои успехи и неудачи внешними факторами (судьбой, везением, действиями других)."
+    "экстернальный": "Внешний локус контроля: склонность личности объяснять все свои успехи и неудачи внешними факторами (судьбой, везением, действиями других).",
+    "психики": "Психика — системное свойство высокоорганизованной материи, заключающееся в активном отражении субъектом объективного мира и регуляции на этой основе своего поведения.",
+    "сознания": "Сознание — высшая, свойственная только человеку форма обобщенного отражения объективных устойчивых свойств и закономерностей окружающего мира.",
+    "деятельности": "Деятельность — динамическая, саморазвивающаяся система взаимодействий субъекта с миром, в процессе которых происходят и воплощаются в объекте психические процессы.",
 };
 
 
