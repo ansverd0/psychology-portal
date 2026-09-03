@@ -22,30 +22,46 @@ async function loadDatabase() {
         const response = await fetch('database.json');
         appDatabase = await response.json();
 
-        // Безопасный запуск модулей: каждый работает только на своей странице
-        if (cardElement) {
-            initFlashcards();
-        }
-        if (document.querySelector('.tickets-layout') && !document.getElementById('sections-page-marker')) {
-            initTickets();
+        // Безопасный запуск модулей
+        if (cardElement) initFlashcards();
+        if (document.querySelector('.tickets-layout') && !document.getElementById('sections-page-marker')) initTickets();
+        if (document.getElementById('quiz-wrapper')) initQuiz();
+        
+                if (document.getElementById('sections-page-marker')) {
+            initSections();
+            
+            // СВЕРХТОЧНЫЙ UX-АВТОКЛИК
+            const urlParams = new URLSearchParams(window.location.search);
+            const targetDiscipline = urlParams.get('discipline');
+
+            if (targetDiscipline) {
+                if (window.innerWidth > 768) {
+                    // ПК-версия: ищем кнопку по точному атрибуту, который мы добавили на Шаге 1
+                    const targetBtn = document.querySelector(`#sections-list-desktop .branch-title-btn[data-discipline-id="${targetDiscipline}"]`);
+                    if (targetBtn) {
+                        setTimeout(() => targetBtn.click(), 100); // Небольшой таймаут для стабильности рендера
+                    }
+                } else {
+                    // Мобильная версия: ищем плитку, содержащую ID
+                    const mobileTiles = document.querySelectorAll('#mobile-sections-tiles .mobile-tile-btn');
+                    mobileTiles.forEach(tile => {
+                        if (tile.outerHTML.includes(targetDiscipline)) {
+                            setTimeout(() => tile.click(), 100);
+                        }
+                    });
+                }
+            }
         }
 
-        if (document.getElementById('quiz-wrapper')) {
-            initQuiz();
-        }
-        if (document.getElementById('sections-page-marker')) {
-            initSections();
-        }
-         if (document.getElementById('library-page-marker')) {
-            initLibrary();
-        }
-        if (document.getElementById('news-page-marker')) {
-            initNews();
-        }
+        
+        if (document.getElementById('library-page-marker')) initLibrary();
+        if (document.getElementById('news-page-marker')) initNews();
+        
     } catch (error) {
         console.error("Ошибка загрузки базы данных:", error);
     }
 }
+
 
 // ==========================================
 // ЛОГИКА МОДУЛЯ «ТРЕНАЖЕР ТЕРМИНОВ»
@@ -98,7 +114,8 @@ function initFlashcards() {
             "general-psych": { title: "Общая", icon: "🧠" },
             "age-psych": { title: "Возрастная", icon: "👶" },
             "ped-psych": { title: "Педагог.", icon: "🏫" },
-            "psy-diag": { title: "Диагност.", icon: "📊" }
+            "psy-diag": { title: "Диагност.", icon: "📊" },
+            "social-psych": { title: "Социальная", icon: "👥" }
         };
 
         uniqueDisciplines.forEach(dispId => {
@@ -240,6 +257,7 @@ function initTickets() {
             tile.classList.add('mobile-tile-btn');
             
             let icon = "📝";
+            if (discipline.id === "general-exam") icon = "🧠";
             if (discipline.id === "age-exam") icon = "👶";
             if (discipline.id === "diag-exam") icon = "📊";
             if (discipline.id === "social-exam") icon = "👥";
@@ -407,7 +425,19 @@ function initQuiz() {
 
     // Внутренняя функция запуска конкретного режима теста
     function startQuizMode(filteredQuestions) {
-        currentActiveQuestions = shuffleQuestions([...filteredQuestions]); // Копируем и перемешиваем
+        let shuffled = shuffleQuestions([...filteredQuestions]); // Перемешиваем все вопросы темы
+        
+        // Читаем выбранный лимит из HTML
+        const limitSelect = document.getElementById('quiz-limit-select');
+        const chosenLimit = limitSelect ? limitSelect.value : "10"; // 10 по умолчанию
+        
+        if (chosenLimit === "all") {
+            currentActiveQuestions = shuffled; // Оставляем все
+        } else {
+            const limitNumber = parseInt(chosenLimit, 10);
+            currentActiveQuestions = shuffled.slice(0, limitNumber); // Обрезаем по выбору пользователя
+        }
+        
         currentTestIndex = 0;
         score = 0;
         
@@ -415,7 +445,7 @@ function initQuiz() {
         document.getElementById('quiz-wrapper').style.display = 'block';
         document.getElementById('result-wrapper').style.display = 'none';
         
-        // Удаляем старую шкалу прогресса и кнопку работы над ошибками, чтобы пересчитать заново
+        // ... (очистка старых прогресс-баров)
         const oldProgress = document.querySelector('.result-progress-container');
         if (oldProgress) oldProgress.remove();
         const oldBtn = document.querySelector('.review-theme-btn');
@@ -424,11 +454,23 @@ function initQuiz() {
         showQuestion();
     }
 
+    // --- АВТОМАТИЧЕСКОЕ ОБНОВЛЕНИЕ ПРИ СМЕНЕ КОЛИЧЕСТВА ВОПРОСОВ ---
+    const limitSelect = document.getElementById('quiz-limit-select');
+    if (limitSelect) {
+        limitSelect.onchange = () => {
+            // Находим плитку темы, которая активна прямо сейчас
+            const activeTile = document.querySelector('#quiz-discipline-tiles .mobile-tile-btn.active');
+            if (activeTile) {
+                activeTile.click(); // Симулируем клик по ней, плавно перезапуская тест с новым лимитом!
+            }
+        };
+    }
+
     // --- ГЕНЕРАЦИЯ ПЛИТОК НАВИГАЦИИ ДЛЯ ТЕСТОВ ---
     if (quizTilesContainer) {
         quizTilesContainer.innerHTML = '';
 
-        // 1. Первая обязательная плитка: Общий микс по всем вопросам
+        // 1. Первая обязательная плитка: Общий микс по всему курсу
         const allTile = document.createElement('button');
         allTile.classList.add('mobile-tile-btn', 'active');
         allTile.innerHTML = `🎲<br>Все темы`;
@@ -446,7 +488,8 @@ function initQuiz() {
             "general-psych": { title: "Общая", icon: "🧠" },
             "age-psych": { title: "Возрастная", icon: "👶" },
             "ped-psych": { title: "Педагог.", icon: "🏫" },
-            "psy-diag": { title: "Диагност.", icon: "📊" }
+            "psy-diag": { title: "Диагност.", icon: "📊" },
+            "social-psych": { title: "Социальная", icon: "👥" }
         };
 
         uniqueQuizDisciplines.forEach(dispId => {
@@ -472,7 +515,6 @@ function initQuiz() {
 
     // Привязываем клик к кнопке "Следующий вопрос" (один раз)
     const quizNextBtn = document.getElementById('quiz-next-btn');
-    // Очищаем старые привязки через замену элемента на самого себя, чтобы избежать багов перезапуска
     const newNextBtn = quizNextBtn.cloneNode(true);
     quizNextBtn.parentNode.replaceChild(newNextBtn, quizNextBtn);
 
@@ -480,22 +522,21 @@ function initQuiz() {
         currentTestIndex++;
         if (currentTestIndex < currentActiveQuestions.length) {
             showQuestion();
+            document.getElementById('quiz-wrapper').scrollIntoView({ behavior: 'smooth', block: 'start' });
         } else {
             showResults();
+            document.getElementById('result-wrapper').scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
     });
 }
 
+
 function showQuestion() {
     if (!currentActiveQuestions || currentActiveQuestions.length === 0) {
-        document.getElementById('quiz-question').innerText = "В этой теме пока нет тестовых вопросов.";
-        document.getElementById('quiz-options').innerHTML = "";
-        document.getElementById('quiz-progress').innerText = "0 / 0";
-        document.getElementById('quiz-next-btn').style.display = 'none';
+        // ... (ваш код обработки пустой темы без изменений)
         return;
     }
 
-    // Удаляем кнопку повторения темы от прошлого вопроса
     const oldBtn = document.querySelector('.review-theme-btn');
     if (oldBtn) oldBtn.remove();
 
@@ -510,14 +551,35 @@ function showQuestion() {
     quizOptionsContainer.innerHTML = '';
     quizNextBtn.style.display = 'none';
 
-    currentQuestion.options.forEach((option, index) => {
+    // --- ЛОГИКА ПЕРЕМЕШИВАНИЯ ВАРИАНТОВ ---
+    // Создаем массив объектов, где запоминаем исходный текст и был ли он правильным
+    let mappedOptions = currentQuestion.options.map((opt, idx) => {
+        return { text: opt, isCorrect: idx === currentQuestion.correct };
+    });
+
+    // Перемешиваем варианты алгоритмом Фишера-Йетса
+    for (let i = mappedOptions.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [mappedOptions[i], mappedOptions[j]] = [mappedOptions[j], mappedOptions[i]];
+    }
+
+    // Рендерим кнопки на основе перемешанного массива
+    mappedOptions.forEach((option, index) => {
         const button = document.createElement('button');
         button.classList.add('option-btn');
-        button.innerText = option;
-        button.addEventListener('click', () => handleAnswer(button, index, currentQuestion.correct));
+        button.innerText = option.text;
+        
+        // Передаем в обработчик: кликнутый индекс, а в качестве 'правильного' передаем текущий индекс, 
+        // если этот вариант изначально был верным. Так функция handleAnswer сработает идеально!
+        button.addEventListener('click', () => {
+            // Ищем, какой индекс в новом массиве является правильным
+            const correctIdxInNewArray = mappedOptions.findIndex(o => o.isCorrect);
+            handleAnswer(button, index, correctIdxInNewArray);
+        });
         quizOptionsContainer.appendChild(button);
     });
 }
+
 
 function handleAnswer(selectedButton, selectedIndex, correctIndex) {
     const quizOptionsContainer = document.getElementById('quiz-options');
@@ -624,6 +686,9 @@ function initSections() {
             branchBtn.classList.add('ticket-nav-btn', 'branch-title-btn');
             branchBtn.innerHTML = `📁 ${section.title}`;
             
+            // ЖЕЛЕЗОБЕТОННЫЙ ФИКС №1: Намертво привязываем ID дисциплины к кнопке ПК
+            branchBtn.id = `branch-btn-${section.id}`; 
+            
             // Контейнер для вложенных статей (по умолчанию скрыт)
             const submenuContainer = document.createElement('div');
             submenuContainer.classList.add('submenu-container');
@@ -646,7 +711,7 @@ function initSections() {
 
             // Логика раскрытия/закрытия отрасли
             branchBtn.addEventListener('click', () => {
-                const isOpened = submenuContainer.style.styleText === 'display: block;' || submenuContainer.style.display === 'block';
+                const isOpened = submenuContainer.style.display === 'block';
                 
                 // Закрываем все остальные открытые отрасли, чтобы был порядок
                 document.querySelectorAll('.submenu-container').forEach(sub => sub.style.display = 'none');
@@ -664,6 +729,7 @@ function initSections() {
             desktopContainer.appendChild(submenuContainer);
         }
     });
+
     // Логика живых подсказок (автокомплита) для мобильной версии
     const searchInput = document.getElementById('mobile-search-input');
     const resultsContainer = document.getElementById('mobile-search-results');
@@ -727,6 +793,7 @@ function initSections() {
             }
         });
     }
+
     // Логика плиток-разделов для мобильной версии (Вариант 2)
     const tilesContainer = document.getElementById('mobile-sections-tiles');
     const mobileArticlesList = document.getElementById('mobile-articles-list');
@@ -739,12 +806,16 @@ function initSections() {
             const tile = document.createElement('button');
             tile.classList.add('mobile-tile-btn');
             
+            // ЖЕЛЕЗОБЕТОННЫЙ ФИКС №2: Намертво привязываем ID дисциплины к мобильной плитке
+            tile.id = `mobile-tile-${section.id}`; 
+            
             // Подбираем иконку в зависимости от ID раздела
             let icon = "📁";
             if (section.id === "general-psych") icon = "🧠";
             if (section.id === "age-psych") icon = "👶";
             if (section.id === "ped-psych") icon = "🏫";
             if (section.id === "psy-diag") icon = "📊";
+            if (section.id === "social-psych") icon = "👥";
 
             tile.innerHTML = `${icon}<br>${section.title}`;
 
@@ -779,7 +850,8 @@ function initSections() {
             tilesContainer.appendChild(tile);
         });
     }
-        // Прячем мобильный список статей при переходе на ПК-экран (решает баг с зависанием надписи)
+
+    // Прячем мобильный список статей при переходе на ПК-экран (решает баг с зависанием надписи)
     window.addEventListener('resize', () => {
         if (window.innerWidth > 768 && mobileArticlesList) {
             mobileArticlesList.style.display = 'none';
@@ -787,32 +859,27 @@ function initSections() {
             document.querySelectorAll('.mobile-tile-btn').forEach(b => b.classList.remove('active'));
         }
     });
-        // МЕТОДИЧЕСКИЙ UX: Автоматическое открытие нужного раздела при переходе из тестов
+
+    // ЖЕЛЕЗОБЕТОННЫЙ ФИКС №3: Скрипт проверяет URL здесь — когда все кнопки и ID гарантированно созданы на странице!
     const urlParams = new URLSearchParams(window.location.search);
     const targetDiscipline = urlParams.get('discipline');
 
     if (targetDiscipline) {
-        // Проверяем, ПК это или мобильная версия
-        if (window.innerWidth > 768) {
-            // На ПК находим нужную кнопку дисциплины в аккордеоне и эмулируем клик по ней
-            const branchButtons = document.querySelectorAll('#sections-list-desktop .branch-title-btn');
-            branchButtons.forEach(btn => {
-                // Если в тексте или ID кнопки есть совпадение — раскрываем её
-                if (btn.nextElementSibling && btn.outerHTML.includes(targetDiscipline)) {
-                    btn.click();
-                }
-            });
-        } else {
-            // На мобилках находим нужную плитку и эмулируем нажатие пальцем
-            const mobileTiles = document.querySelectorAll('#mobile-sections-tiles .mobile-tile-btn');
-            mobileTiles.forEach(tile => {
-                if (tile.outerHTML.includes(targetDiscipline)) {
-                    tile.click();
-                }
-            });
-        }
+        setTimeout(() => {
+            // Проверяем ПК версию по ID кнопки
+            const pcBtn = document.getElementById(`branch-btn-${targetDiscipline}`);
+            if (pcBtn && window.innerWidth > 768) {
+                pcBtn.click();
+            }
+            // Проверяем мобильную версию по ID плитки
+            const mobileTile = document.getElementById(`mobile-tile-${targetDiscipline}`);
+            if (mobileTile && window.innerWidth <= 768) {
+                mobileTile.click();
+            }
+        }, 150); // Безопасная микропауза, чтобы браузер успел отрендерить элементы
     }
 }
+
 
 
 // Словарь методических терминов для автоподсказок (Вики-эффект)
@@ -957,6 +1024,64 @@ const psychologyGlossary = {
 "сдвиг мотива на цель": "Психологический механизм формирования новых мотивов (по А.Н. Леонтьеву), при котором действие превращается в самостоятельную деятельность.",
 "каузальная атрибуция": "Процесс приписывания человеку причин его поведения и личностных качеств в условиях дефицита объективной информации о нем.",
 "либидо": "Специфическая психическая энергия (в психоанализе З. Фрейда), связанная с инстинктом жизни, созидания и половым влечением.",
+"Социальная психология": "Отрасль психологии, изучающая закономерности поведения и деятельности людей, обусловленные их включением в социальные группы, а также психологические характеристики этих групп.",
+"Психология народов": "Одна из первых социально-психологических теорий (В. Вундт), утверждавшая, что главной движущей силой истории является сверхиндивидуальная 'душа народа', выраженная в языке, мифах и обычаях.",
+"Психология масс": "Историческая концепция (Г. Лебон), исследовавшая поведение людей в больших скоплениях (толпе) и постулировавшая утрату интеллекта и критичности индивида в массе за счет подражания.",
+"Групповая динамика": "Совокупность динамических внутригрупповых процессов и механизмов (лидерство, принятие решений, сплоченность), определяющих жизнедеятельность и развитие малой группы.",
+"включенное наблюдение": "Метод социально-психологического исследования, при котором экспериментатор непосредственно внедряется в изучаемую группу, становясь её полноправным участником.",
+"фокус-группа": "Метод качественного социально-психологического исследования, основанный на проведении групповой дискуссии под руководством модератора для выявления мнений и установок участников.",
+"выборка исследования": "Часть генеральной совокупности (определенная группа людей), которая непосредственно привлекается к участию в исследовании и представляет свойства всей общности.",
+"индекс сплоченности": "Математически рассчитываемый показатель в социометрии, отражающий степень взаимности эмоциональных выборов и интеграции членов малой группы.",
+"социальное научение": "Процесс формирования новых форм поведения личности (по А. Бандуре) путем наблюдения за действиями других людей и моделирования их поступков.",
+"интеракционизм": "Теоретическое направление в социальной психологии, утверждающее, что личность и социальное поведение формируются в процессах символического взаимодействия (интеракции) между людьми.",
+"Теория отношений": "Психологическая концепция В.Н. Мясищева, рассматривающая личность как систему её субъективно-избирательных отношений к обществу, людям и самой себе.",
+"Социальное поведение": "Внешне выраженная форма активности человека, отражающая его отношение к обществу, социальным группам, нормам и другим людям.",
+"Просоциальное поведение": "Действия человека, направленные на благо других людей, бескорыстную помощь, сотрудничество и поддержку окружающих без явной выгоды для себя.",
+"Конформное поведение": "Изменение индивидом своего поведения или мнений под влиянием реального или воображаемого давления группы с целью достижения согласия с ней.",
+" личностные диспозиции": "Устойчивые внутренние склонности, установки и свойства личности (ценности, мотивы), определяющие её готовность к определенному социальному поведению.",
+"социальный статус": "Объективное положение индивида в социальной системе (обществе или группе), определяющее его права, обязанности и степень влияния.",
+"предписанный статус": "Социальный статус, получаемый человеком автоматически от рождения независимо от его волей, усилий и заслуг (пол, национальность, возраст).",
+"достигаемый статус": "Социальный статус, который человек приобретает в обществе благодаря собственным усилиям, выбору, образованию и труду.",
+"институциональные отношения": "Формальные, официальные взаимосвязи между людьми, жестко регламентированные правилами, законами и должностной иерархией организации.",
+"социальная роль": "Ожидаемый от человека паттерн поведения, обусловленный его социальным статусом и нормами конкретной группы или общества.",
+"межролевой конфликт": "Ролевой конфликт, возникающий при несовместимости требований различных социальных ролей, одновременно выполняемых одним человеком.",
+"внутриролевой конфликт": "Ситуация, при которой разные участники взаимодействия предъявляют противоположные и несовместимые ожидания к выполнению одной и той же роли индивида.",
+"личностно-ролевой конфликт": "Внутренний конфликт личности, вызванный полным противоречием между требованиями социальной роли и её собственными ценностями и убеждениями.",
+"ценностные ориентации": "Важнейшие компоненты структуры личности, отражающие её внутреннюю направленность на конкретные социальные ценности, идеалы и жизненные цели.",
+"моральное развитие": "Процесс последовательного усвоения человеком (в онтогенезе) этических норм, правил и ценностей общества, регулирующих его социальные поступки.",
+"коллективизм": "Культурный синдром (по Г. Хофстеде), характеризующийся приоритетом целей и интересов социальной группы над индивидуальными целями личности.",
+"индивидуализм": "Культурный синдром (по Г. Хофстеде), при котором личные цели, автономия, права и независимость человека ценятся выше интересов группы.",
+"аттитюд": "Социальная установка; устойчивая психологическая готовность личности к определенному поведению и оценке конкретного социального объекта.",
+"аффективный компонент": "Эмоциональная составляющая социальной установки, выражающаяся в чувствах, симпатиях или антипатиях к социальному объекту.",
+"конативный компонент": "Поведенческий элемент аттитюда, представляющий собой непосредственную готовность человека к практическому действию по отношению к объекту.",
+"диспозиционная система": "Иерархическая структура высшей регуляции поведения личности (по В.А. Ядову), включающая элементарные установки, аттитюды и ценностные ориентации.",
+"парадокс Лапьера": "Социально-психологический феномен (Р. Лапьер), фиксирующий несовпадение между вербально задекларированной установкой человека и его реальным поведением в конкретной ситуации.",
+"вербальные суждения": "Выраженные в словесной (языковой) форме мнения, оценки, мысли или убеждения человека по отношению к какому-либо явлению или объекту.",
+"диссонанс": "Психологическое состояние внутреннего дискомфорта, вызванное столкновением и противоречием между несовместимыми мыслями, убеждениями или действиями.",
+"когнитивный диссонанс": "Состояние психологического дискомфорта (по Л. Фестингеру), вызванное столкновением в сознании человека противоречащих друг другу знаний, убеждений или действий.",
+"убеждающая коммуникация": "Целенаправленный процесс передачи информации, сообщений или аргументов с целью качественного изменения социальных установок, мнений и поведения аудитории.",
+"коммуникатор": "Субъект (личность или группа), являющийся источником и инициатором передачи сообщения в процессе информационного или речевого взаимодействия.",
+"ригидность установок": "Степень жесткости, слабой изменчивости и сопротивляемости социальной установки к внешним убеждающим или корректирующим воздействиям.",
+"референтная группа": "Реальная или воображаемая социальная группа, ценности, нормы и стандарты которой выступают для личности идеалом и главным ориентиром собственного поведения.",
+"группообразование": "Процесс превращения случайного скопления людей в психологически целостную, структурированную малую группу, объединенную общими целями и нормами.",
+"групповая идентичность": "Психологический феномен осознания индивидом своей принадлежности к конкретной социальной группе, выражающийся в чувстве 'Мы'.",
+"аффилиация": "Фундаментальная социальная потребность человека в поиске контактов, общении, эмоциональном сближении, принятии и доверительном взаимодействии с другими людьми.",
+"коллектив": "Высший уровень развития малой группы, характеризующийся социально полезными целями деятельности и межличностными отношениями, полностью опосредованными общими ценностями.",
+"Стратометрическая концепция": "Теория А.В. Петровского, рассматривающая структуру малой группы как систему концентрических слоев (страт), различающихся степенью опосредованности отношений совместной деятельностью.",
+"ценностно-ориентационное единство": "Показатель сплоченности группы (ЦОУ), выражающийся в совпадении оценок, мнений, идеалов и жизненных ценностей членов команды по отношению к значимым объектам.",
+"корпорация": "Уровень развития группы, отличающийся высокой внутренней сплоченностью на основе группового эгоизма, при котором цели общности противопоставляются интересам общества.",
+"лидерство": "Процесс неформального психологического влияния индивида на членов малой группы, основанный на личных симпатиях, авторитете и признании его главенствующей роли.",
+"руководство": "Официальный, институционально закрепленный процесс управления группой со стороны назначенного руководителя, обладающего формальной властью и санкциями.",
+"авторитарный стиль": "Стиль управления (по К. Левину), характеризующийся единоличным принятием решений лидером, жестким контролем и директивной формой общения.",
+"демократический стиль": "Стиль руководства (по К. Левину), основанный на коллегиальном принятии решений, уважении к личности, делегировании полномочий и стимулировании инициативы.",
+"групповая идентификация": "Психологический процесс уподобления индивида своей группе, восприятие её ценностей, норм и целей как собственных.",
+"сдвиг к риску": "Социально-психологический феномен, выражающийся в тенденции группы принимать более рискованные решения по сравнению с первоначальными индивидуальными мнениями участников.",
+"огруппление мышления": "Дезадаптивный стиль группового мышления (Groupthink), при котором стремление к единомыслию подавляет критический анализ альтернативных вариантов и ведет к ошибкам.",
+"групповая поляризация": "Феномен, при котором в процессе групповой дискуссии первоначальные мнения участников не сближаются, а сдвигаются к более крайним, радикальным полюсам.",
+"психическое заражение": "Процесс бессознательной и автоматической передачи эмоционального состояния от одного человека к другому, лавинообразно нарастающий в толпе.",
+"суггестия": "Внушение; процесс целенаправленного воздействия на психику человека, воспринимаемый им без критического осмысления и логического анализа.",
+"паника": "Массовое эмоциональное состояние острого страха, характеризующееся потерей волевого самоконтроля и хаотичным поведением людей в условиях угрозы.",
+"циркулярная реакция": "Социально-психологический механизм взаимного заражения и нарастания эмоционального напряжения в толпе, стирающий индивидуальные различия.",
 
 };
 

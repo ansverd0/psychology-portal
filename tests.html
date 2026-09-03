@@ -21,6 +21,20 @@
     </header>
 
     <main>
+        <div class="quiz-limit-wrapper">
+    <label for="quiz-limit-select">Количество вопросов в тесте:</label>
+    <div class="custom-select-container">
+        <select id="quiz-limit-select">
+            <option value="5">5 вопросов</option>
+            <option value="10" selected>10 вопросов</option>
+            <option value="20">20 вопросов</option>
+            <option value="30">30 вопросов</option>
+            <option value="all">Все доступные</option>
+        </select>
+    </div>
+</div>
+
+
         <!-- Плитки выбора дисциплин для тестов -->
         <div id="quiz-discipline-tiles" class="mobile-only-tiles" style="display: flex !important; max-width: 600px; margin: 0 auto 20px auto;"></div>
         <!-- Контейнер самого теста -->
@@ -49,5 +63,8 @@
     </main>
 
     <script src="script.js"></script>
+    <!-- Невидимый блок-буфер, который удерживает нижнюю границу страницы -->
+<div class="page-bottom-buffer"></div>
+
 </body>
 </html>

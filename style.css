@@ -374,15 +374,18 @@ button:hover {
 .literature-box {
     background: #f7fafc;
     border-left: 4px solid #3182ce;
-    padding: 20px;
+    padding: 15px 20px; /* Уменьшили верхний и нижний padding с 20 до 15 */
     border-radius: 0 8px 8px 0;
+    margin-top: 25px;
 }
 
+/* Добавьте это правило ниже, чтобы убрать дефолтный маргин заголовка */
 .literature-box h3 {
-    margin: 0 0 10px 0;
+    margin: 0 0 10px 0 !important; /* Строго обнуляем верхний отступ */
     font-size: 16px;
     color: #2c3e50;
 }
+
 
 .literature-box ul {
     margin: 0;
@@ -418,6 +421,7 @@ button:hover {
     box-sizing: border-box;
     text-align: left;
     margin: 20px auto 0 auto;
+    min-height: 450px;
 }
 
 .quiz-header {
@@ -630,7 +634,8 @@ button:hover {
     margin-bottom: 15px;
 }
 .mobile-tile-btn {
-    flex: 1 1 calc(50% - 5px);
+   flex: 1 1 calc(33.33% - 10px); /* Кнопки будут красиво вставать по 3 в ряд на смартфонах */
+    min-width: 100px;
     background: white;
     border: 2px solid #e2e8f0;
     border-radius: 12px;
@@ -806,6 +811,127 @@ button:hover {
     margin-top: 20px;
     margin-bottom: 10px;
 }
+.page-bottom-buffer {
+    height: 200px; /* Фиксированное пространство снизу страницы */
+    width: 100%;
+    visibility: hidden; /* Делаем элемент абсолютно невидимым, но он сохраняет своё место на экране */
+    pointer-events: none; /* Чтобы он не мешал кликам */
+}
+/* Общий контейнер для лимита тестов */
+.quiz-limit-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 25px;
+    background: white;
+    padding: 12px 20px;
+    border-radius: 12px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.02);
+    border: 2px solid #e2e8f0;
+    width: fit-content;
+}
+
+.quiz-limit-wrapper label {
+    font-weight: 600;
+    color: #4a5568;
+    font-size: 15px;
+}
+
+/* Кастомный контейнер селекта */
+.custom-select-container {
+    position: relative;
+    display: inline-block;
+}
+
+.custom-select-container select {
+    appearance: none; /* Отключаем дефолтную стрелку браузера */
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    
+    background-color: #f7fafc;
+    border: 2px solid #cbd5e0;
+    border-radius: 8px;
+    padding: 8px 36px 8px 12px; /* Место справа под стрелочку */
+    font-size: 14px;
+    font-weight: 600;
+    color: #2d3748;
+    cursor: pointer;
+    outline: none;
+    transition: all 0.2s ease;
+}
+
+/* Эффекты при наведении и фокусе */
+.custom-select-container select:hover {
+    border-color: #3182ce;
+    background-color: white;
+}
+
+.custom-select-container select:focus {
+    border-color: #3182ce;
+    box-shadow: 0 0 0 3px rgba(49, 130, 206, 0.15);
+    background-color: white;
+}
+
+/* Создаем красивую стрелочку через псевдоэлемент */
+.custom-select-container::after {
+    content: "▼";
+    font-size: 10px;
+    color: #718096;
+    position: absolute;
+    right: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    pointer-events: none; /* Стрелка не мешает клику по селекту */
+    transition: color 0.2s;
+}
+
+.custom-select-container:hover::after {
+    color: #3182ce;
+}
+/* ==========================================================================
+   ФИКС ПОИСКА И ПЛИТОК ДЛЯ ПК ЭКРАНОВ
+   ========================================================================== */
+
+/* 1. Намертво включаем отображение строки поиска и на ПК, и на мобилках */
+.mobile-search-wrapper {
+    display: block !important; 
+    width: 100%;
+    margin-bottom: 15px; /* Мягкий отступ, который опустит папки ПК вниз */
+}
+
+/* 2. Делаем так, чтобы выпадающие результаты поиска на ПК 'парили' ПОВЕРХ папок, а не раздвигали сайдбар */
+.tickets-sidebar {
+    position: relative; /* Включаем контекст позиционирования для сайдбара */
+}
+
+.search-results-dropdown {
+    position: absolute !important;
+    top: 100%;
+    left: 0;
+    width: 100%;
+    z-index: 1010; /* Поднимает результаты над кнопками папок */
+    box-shadow: 0 10px 25px rgba(0,0,0,0.1) !important;
+}
+
+/* Красиво центрируем плитки навигации (Все темы, Общая, Социальная) ТОЛЬКО на мобильных экранах */
+@media screen and (max-width: 768px) {
+    #cards-discipline-tiles, #quiz-discipline-tiles, #mobile-tickets-tiles, #mobile-sections-tiles {
+        display: flex !important;
+        flex-wrap: wrap;
+        gap: 10px;
+        width: 100%;
+        justify-content: center;
+        margin-bottom: 20px;
+    }
+}
+
+/* Намертво скрываем эти же плитки на ПК (экранах шире 768px) */
+@media screen and (min-width: 769px) {
+    #mobile-tickets-tiles, #mobile-sections-tiles {
+        display: none !important;
+    }
+}
+
 
 
 
