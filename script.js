@@ -16,23 +16,6 @@ const nextBtn = document.getElementById('next-btn');
 const ticketsListContainer = document.querySelector('.tickets-sidebar');
 const ticketContentContainer = document.getElementById('ticket-content');
 
-// Исправленное динамическое подключение Яндекс Метрики с защитой от CORB
-(function(m,e,t,r,i,k,a){m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
-m[i].l=1*new Date();
-for (var j = 0; j < e.scripts.length; j++) {if (e.scripts[j].src === r) { return; }}
-k=e.createElement(t),a=e.getElementsByTagName(t),k.async=1,k.src=r,a.parentNode.insertBefore(k,a)})
-(window, document, "script", "https://jsdelivr.net", "ym");
-
-// ИНИЦИАЛИЗАЦИЯ ВАШЕГО СЧЕТЧИКА (Впишите сюда ваш реальный номер счетчика вместо 12345678)
-ym(112398882, "init", {
-     clickmap:true,
-     trackLinks:true,
-     accurateTrackBounce:true,
-     webvisor:true
-});
-
-
-
 // Инициализация Supabase (Исправленный синтаксис без циклической ошибки)
 const SUPABASE_URL = "https://lrjszannmammzzqotaro.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_bwLDUQMS1RVwHF2wHE62hg_sODGX5vi";
