@@ -16,33 +16,139 @@ const nextBtn = document.getElementById('next-btn');
 const ticketsListContainer = document.querySelector('.tickets-sidebar');
 const ticketContentContainer = document.getElementById('ticket-content');
 
-// Единая функция загрузки всей базы данных
+// Автоматическое динамическое подключение Яндекс Метрики для научно-исследовательской работы
+(function(m,e,t,r,i,k,a){m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
+m[i].l=1*new Date();
+for (var j = 0; j < e.scripts.length; j++) {if (e.scripts[j].src === r) { return; }}
+k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)})
+(window, document, "script", "https://yandex.ru", "ym");
+
+// ИНИЦИАЛИЗАЦИЯ ВАШЕГО СЧЕТЧИКА (Замените ХХХХХХХХ на реальный номер счетчика из панели Метрики!)
+ym(112398882, "init", {
+     clickmap:true,
+     trackLinks:true,
+     accurateTrackBounce:true,
+     webvisor:true // Вебвизор включен для записи сессий фокус-группы
+});
+
+
+// Инициализация Supabase (Исправленный синтаксис без циклической ошибки)
+const SUPABASE_URL = "https://lrjszannmammzzqotaro.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_bwLDUQMS1RVwHF2wHE62hg_sODGX5vi";
+
+// Используем глобальное пространство имен библиотеки 'supabase'
+const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+
+
+// Единая функция загрузки всей базы данных из Supabase
 async function loadDatabase() {
     try {
-        const response = await fetch('database.json');
-        appDatabase = await response.json();
+        console.log("📡 Подключение к Supabase и сборка базы данных...");
+        
+        // Создаем пустую структуру под ваш старый формат appDatabase
+        appDatabase = {
+            flashcards: [],
+            tickets: [],
+            tests: [],
+            sections: [],
+            library: [],
+            news: []
+        };
 
-        // Безопасный запуск модулей
+        // 1. Асинхронно выкачиваем флэш-карточки
+        const { data: cards } = await supabaseClient.from('flashcards').select('term, definition, discipline_id');
+        if (cards) {
+            appDatabase.flashcards = cards.map(c => ({
+                term: c.term,
+                definition: c.definition,
+                discipline: c.discipline_id // Возвращаем старое имя переменной
+            }));
+        }
+
+        // 2. Выкачиваем тесты
+        const { data: qz } = await supabaseClient.from('tests').select('question, options, correct_index, link_url, discipline_id');
+        if (qz) {
+            appDatabase.tests = qz.map(t => ({
+                question: t.question,
+                options: t.options,
+                correct: t.correct_index,
+                link: t.link_url,
+                discipline: t.discipline_id
+            }));
+        }
+
+        // 3. Выкачиваем экзаменационные билеты
+        const { data: tk } = await supabaseClient.from('tickets').select('number, title, recommend_time, plan, content, discipline_id');
+        if (tk) {
+            // Группируем плоские строки по дисциплинам, как ожидает ваш шаблонизатор аккордеонов
+            const groups = {};
+            tk.forEach(t => {
+                if (!groups[t.discipline_id]) {
+                    let titleName = "Раздел";
+                    if (t.discipline_id === "general-exam") titleName = "Общая психология";
+                    if (t.discipline_id === "social-exam") titleName = "Социальная психология";
+                    if (t.discipline_id === "developmental-exam") titleName = "Возрастная психология";
+                    
+                    groups[t.discipline_id] = { id: t.discipline_id, title: titleName, questions: [] };
+                }
+                groups[t.discipline_id].questions.push({
+                    number: t.number,
+                    title: t.title,
+                    time: t.recommend_time,
+                    plan: t.plan,
+                    content: t.content,
+                    literature: [] // Литературу подтянем из локального глоссария или связей
+                });
+            });
+            appDatabase.tickets = Object.values(groups);
+        }
+
+        // 4. Выкачиваем статьи лонгридов (Разделы психологии)
+        const { data: art } = await supabaseClient.from('articles').select('title, content, discipline_id');
+        if (art) {
+            const secGroups = {};
+            art.forEach(a => {
+                if (!secGroups[a.discipline_id]) {
+                    let titleName = "Раздел";
+                    if (a.discipline_id === "general-psych") titleName = "Общая психология";
+                    if (a.discipline_id === "social-psych") titleName = "Социальная психология";
+                    if (a.discipline_id === "developmental-psych") titleName = "Возрастная психология";
+                    
+                    secGroups[a.discipline_id] = { id: a.discipline_id, title: titleName, articles: [] };
+                }
+                secGroups[a.discipline_id].articles.push({
+                    title: a.title,
+                    content: a.content
+                });
+            });
+            appDatabase.sections = Object.values(secGroups);
+        }
+
+        // 5. Выкачиваем библиотеку первоисточников
+        const { data: lib } = await supabaseClient.from('library').select('id, title, author, annotation');
+        if (lib) appDatabase.library = lib;
+
+        console.log("✅ База данных Supabase успешно скомпилирована под движок сайта!");
+
+        // --- ВАШ СТАРЫЙ БЕЗОПАСНЫЙ ЗАПУСК МОДУЛЕЙ (БЕЗ ИЗМЕНЕНИЙ) ---
         if (cardElement) initFlashcards();
         if (document.querySelector('.tickets-layout') && !document.getElementById('sections-page-marker')) initTickets();
         if (document.getElementById('quiz-wrapper')) initQuiz();
         
-                if (document.getElementById('sections-page-marker')) {
+        if (document.getElementById('sections-page-marker')) {
             initSections();
             
-            // СВЕРХТОЧНЫЙ UX-АВТОКЛИК
             const urlParams = new URLSearchParams(window.location.search);
             const targetDiscipline = urlParams.get('discipline');
 
             if (targetDiscipline) {
                 if (window.innerWidth > 768) {
-                    // ПК-версия: ищем кнопку по точному атрибуту, который мы добавили на Шаге 1
                     const targetBtn = document.querySelector(`#sections-list-desktop .branch-title-btn[data-discipline-id="${targetDiscipline}"]`);
                     if (targetBtn) {
-                        setTimeout(() => targetBtn.click(), 100); // Небольшой таймаут для стабильности рендера
+                        setTimeout(() => targetBtn.click(), 100);
                     }
                 } else {
-                    // Мобильная версия: ищем плитку, содержащую ID
                     const mobileTiles = document.querySelectorAll('#mobile-sections-tiles .mobile-tile-btn');
                     mobileTiles.forEach(tile => {
                         if (tile.outerHTML.includes(targetDiscipline)) {
@@ -53,14 +159,14 @@ async function loadDatabase() {
             }
         }
 
-        
         if (document.getElementById('library-page-marker')) initLibrary();
         if (document.getElementById('news-page-marker')) initNews();
         
     } catch (error) {
-        console.error("Ошибка загрузки базы данных:", error);
+        console.error("❌ Ошибка сборки базы данных из Supabase:", error);
     }
 }
+
 
 
 // ==========================================
