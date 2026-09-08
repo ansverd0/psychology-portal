@@ -62,52 +62,57 @@ async function loadDatabase() {
             }));
         }
 
-        // 3. Выкачиваем экзаменационные билеты
+               // 3. Выкачиваем экзаменационные билеты (Исправлено под новые ID)
         const { data: tk } = await supabaseClient.from('tickets').select('number, title, recommend_time, plan, content, discipline_id');
         if (tk) {
-            // Группируем плоские строки по дисциплинам, как ожидает ваш шаблонизатор аккордеонов
             const groups = {};
             tk.forEach(t => {
-                if (!groups[t.discipline_id]) {
-                    let titleName = "Раздел";
-                    if (t.discipline_id === "general-exam") titleName = "Общая психология";
-                    if (t.discipline_id === "social-exam") titleName = "Социальная психология";
-                    if (t.discipline_id === "developmental-exam") titleName = "Возрастная психология";
-                    
-                    groups[t.discipline_id] = { id: t.discipline_id, title: titleName, questions: [] };
+                // Приводим любые вариации ID к единому стандарту вашего шаблонизатора
+                let cleanId = t.discipline_id;
+                let titleName = "Раздел экзамена";
+                
+                if (cleanId.includes("general")) { cleanId = "general-exam"; titleName = "Общая психология"; }
+                if (cleanId.includes("social")) { cleanId = "social-exam"; titleName = "Социальная психология"; }
+                if (cleanId.includes("developmental") || cleanId.includes("age")) { cleanId = "developmental-exam"; titleName = "Возрастная психология"; }
+                
+                if (!groups[cleanId]) {
+                    groups[cleanId] = { id: cleanId, title: titleName, questions: [] };
                 }
-                groups[t.discipline_id].questions.push({
+                groups[cleanId].questions.push({
                     number: t.number,
                     title: t.title,
                     time: t.recommend_time,
                     plan: t.plan,
                     content: t.content,
-                    literature: [] // Литературу подтянем из локального глоссария или связей
+                    literature: [] 
                 });
             });
             appDatabase.tickets = Object.values(groups);
         }
 
-        // 4. Выкачиваем статьи лонгридов (Разделы психологии)
+        // 4. Выкачиваем статьи лонгридов (Исправлено группирование)
         const { data: art } = await supabaseClient.from('articles').select('title, content, discipline_id');
         if (art) {
             const secGroups = {};
             art.forEach(a => {
-                if (!secGroups[a.discipline_id]) {
-                    let titleName = "Раздел";
-                    if (a.discipline_id === "general-psych") titleName = "Общая психология";
-                    if (a.discipline_id === "social-psych") titleName = "Социальная психология";
-                    if (a.discipline_id === "developmental-psych") titleName = "Возрастная психология";
-                    
-                    secGroups[a.discipline_id] = { id: a.discipline_id, title: titleName, articles: [] };
+                let cleanId = a.discipline_id;
+                let titleName = "Раздел";
+                
+                if (cleanId.includes("general")) { cleanId = "general-psych"; titleName = "Общая психология"; }
+                if (cleanId.includes("social")) { cleanId = "social-psych"; titleName = "Социальная психология"; }
+                if (cleanId.includes("developmental") || cleanId.includes("age")) { cleanId = "developmental-psych"; titleName = "Возрастная психология"; }
+                
+                if (!secGroups[cleanId]) {
+                    secGroups[cleanId] = { id: cleanId, title: titleName, articles: [] };
                 }
-                secGroups[a.discipline_id].articles.push({
+                secGroups[cleanId].articles.push({
                     title: a.title,
                     content: a.content
                 });
             });
             appDatabase.sections = Object.values(secGroups);
         }
+
 
         // 5. Выкачиваем библиотеку первоисточников
         const { data: lib } = await supabaseClient.from('library').select('id, title, author, annotation');
