@@ -39,7 +39,6 @@ async function loadDatabase() {
     try {
         console.log("📡 Подключение к Supabase и сборка базы данных...");
         
-        // Создаем пустую структуру под ваш старый формат appDatabase
         appDatabase = {
             flashcards: [],
             tickets: [],
@@ -71,19 +70,20 @@ async function loadDatabase() {
             }));
         }
 
-        // 3. Выкачиваем билеты (ИСПРАВЛЕНО: Добавлена сортировка .order по номерам билетов)
-        const { data: tk } = await supabaseClient
-            .from('tickets')
-            .select('number, title, recommend_time, plan, content, discipline_id')
-            .order('number', { ascending: true }); // Билеты выстроятся строго: 1, 2, 3...
-            
+        // 3. Выкачиваем билеты (Математическая сортировка на фронтенде)
+        const { data: tk } = await supabaseClient.from('tickets').select('number, title, recommend_time, plan, content, discipline_id');
         if (tk) {
             const groups = {};
+            const disciplineTitles = {
+                "general-exam": "Общая психология",
+                "social-exam": "Социальная психология",
+                "developmental-exam": "Возрастная психология"
+            };
+            
             tk.forEach(t => {
                 let cleanId = t.discipline_id;
                 let titleName = "Раздел экзамена";
                 
-                // Железнобетонная синхронизация старых и новых идентификаторов
                 if (cleanId === "general-psych" || cleanId === "general-exam") { cleanId = "general-exam"; titleName = "Общая психология"; }
                 if (cleanId === "social-psych" || cleanId === "social-exam") { cleanId = "social-exam"; titleName = "Социальная психология"; }
                 if (cleanId === "developmental-psych" || cleanId === "developmental-exam") { cleanId = "developmental-exam"; titleName = "Возрастная психология"; }
@@ -100,18 +100,25 @@ async function loadDatabase() {
                     literature: [] 
                 });
             });
-            appDatabase.tickets = Object.values(groups);
+
+            // Сортируем билеты ВНУТРИ каждой папки СТРОГО как числа (1, 2, 3... 10, 11)
+            Object.keys(groups).forEach(key => {
+                groups[key].questions.sort((a, b) => parseInt(a.number, 10) - parseInt(b.number, 10));
+            });
+
+            // Задаем строгий порядок отображения самих папок дисциплин на экране
+            const folderOrder = ["general-exam", "social-exam", "developmental-exam"];
+            appDatabase.tickets = folderOrder
+                .filter(id => groups[id])
+                .map(id => groups[id]);
         }
 
-        // 4. Выкачиваем статьи лонгридов (ИСПРАВЛЕНО: Добавлена сортировка по алфавиту)
+        // 4. Выкачиваем статьи лонгридов (Математическая сортировка пронумерованных статей)
         const { data: art } = await supabaseClient.from('articles').select('title, content, discipline_id');
         if (art) {
             const secGroups = {};
             
-            // Сортируем статьи по алфавиту (localeCompare отлично работает с русским языком)
-            const sortedArticles = [...art].sort((a, b) => a.title.localeCompare(b.title, 'ru'));
-
-            sortedArticles.forEach(a => {
+            art.forEach(a => {
                 let cleanId = a.discipline_id;
                 let titleName = "Раздел";
                 
@@ -127,21 +134,37 @@ async function loadDatabase() {
                     content: a.content
                 });
             });
-            appDatabase.sections = Object.values(secGroups);
+
+            // Сортируем статьи внутри папок по числу в начале заголовка (например, "1. Предмет..." или "10. Общая...")
+            Object.keys(secGroups).forEach(key => {
+                secGroups[key].articles.sort((a, b) => {
+                    const numA = parseInt(a.title, 10) || 0;
+                    const numB = parseInt(b.title, 10) || 0;
+                    return numA - numB;
+                });
+            });
+
+            // Задаем строгий порядок отображения самих папок лекций на экране
+            const sectionFolderOrder = ["general-psych", "social-psych", "developmental-psych"];
+            appDatabase.sections = sectionFolderOrder
+                .filter(id => secGroups[id])
+                .map(id => secGroups[id]);
         }
 
         // 5. Выкачиваем библиотеку первоисточников
         const { data: lib } = await supabaseClient.from('library').select('id, title, author, annotation');
         if (lib) appDatabase.library = lib;
 
-        // 6. Выкачиваем ченджлог новостей (Строго в обратном порядке: от свежих к старым)
-        const { data: nw } = await supabaseClient.from('news').select('date, title, changes').order('id', { ascending: false });
+        // 6. Выкачиваем новости (Принудительная числовая сортировка от новых к старым)
+        const { data: nw } = await supabaseClient.from('news').select('id, date, title, changes');
         if (nw) {
-            appDatabase.news = nw.map(item => ({
-                date: item.date,
-                title: item.title,
-                changes: item.changes
-            }));
+            appDatabase.news = [...nw]
+                .sort((a, b) => parseInt(b.id, 10) - parseInt(a.id, 10)) // Самый большой ID (новый) будет сверху
+                .map(item => ({
+                    date: item.date,
+                    title: item.title,
+                    changes: item.changes
+                }));
         }
 
         console.log("✅ База данных Supabase успешно скомпилирована под движок сайта!");
