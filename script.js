@@ -16,43 +16,62 @@ const nextBtn = document.getElementById('next-btn');
 const ticketsListContainer = document.querySelector('.tickets-sidebar');
 const ticketContentContainer = document.getElementById('ticket-content');
 
-// Инициализация Supabase (Исправленный синтаксис без циклической ошибки)
-const SUPABASE_URL = "https://lrjszannmammzzqotaro.supabase.co";
+// ==========================================
+// БЛОК 1: ИНИЦИАЛИЗАЦИЯ И ДЕФЕНСИВНАЯ НАСТРОЙКА SUPABASE
+// ==========================================
+const SUPABASE_URL = "https://supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_bwLDUQMS1RVwHF2wHE62hg_sODGX5vi";
 
-// Используем глобальное пространство имен библиотеки 'supabase'
-const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+// Принудительно отключаем QUIC (HTTP/3), заставляя работать через стандартный fetch (TCP HTTP/1.1/2)
+const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+    auth: {
+        persistSession: false,
+        autoRefreshToken: false
+    },
+    global: {
+        headers: {
+            'X-Client-Info': 'psy-education-core'
+        },
+        // Используем чистый нативный fetch браузера, который не падает по QUIC протоколу
+        fetch: (...args) => window.fetch(...args)
+    }
+});
 
 
 
-// Единая функция загрузки всей базы данных из Supabase
+
+// ==========================================
+// БЛОК 2: АСИНХРОННАЯ ИЗОЛИРОВАННАЯ ЗАГРУЗКА ДАННЫХ
+// ==========================================
 async function loadDatabase() {
-    try {
-        console.log("📡 Подключение к Supabase и сборка базы данных...");
-        
-        // Обнуляем базу перед загрузкой из облака
-        appDatabase = {
-            flashcards: [],
-            tickets: [],
-            tests: [],
-            sections: [],
-            library: [],
-            news: []
-        };
+    console.log("📡 Подключение к Supabase и сборка базы данных...");
+    
+    // Инициализируем структуру (sections теперь объект согласно паспорту миграции)
+    appDatabase = {
+        flashcards: [],
+        tickets: [],
+        tests: [],
+        sections: {}, 
+        library: [],
+        news: []
+    };
 
-        // 1. Выкачиваем флэш-карточки
-        const { data: cards } = await supabaseClient.from('flashcards').select('term, definition, discipline_id');
-        if (cards) {
+    // Поток 1: Загрузка флэш-карточек
+    try {
+        const { data: cards, error } = await supabaseClient.from('flashcards').select('term, definition, discipline_id');
+        if (!error && cards) {
             appDatabase.flashcards = cards.map(c => ({
                 term: c.term,
                 definition: c.definition,
                 discipline: c.discipline_id
             }));
         }
+    } catch (e) { console.error("⚠️ Сбой загрузки flashcards:", e); }
 
-        // 2. Выкачиваем тесты
-        const { data: qz } = await supabaseClient.from('tests').select('question, options, correct_index, link_url, discipline_id');
-        if (qz) {
+    // Поток 2: Загрузка тестов
+    try {
+        const { data: qz, error } = await supabaseClient.from('tests').select('question, options, correct_index, link_url, discipline_id');
+        if (!error && qz) {
             appDatabase.tests = qz.map(t => ({
                 question: t.question,
                 options: t.options,
@@ -61,10 +80,12 @@ async function loadDatabase() {
                 discipline: t.discipline_id
             }));
         }
+    } catch (e) { console.error("⚠️ Сбой загрузки tests:", e); }
 
-        // 3. Выкачиваем экзаменационные билеты
-        const { data: tk } = await supabaseClient.from('tickets').select('number, title, recommend_time, plan, content, discipline_id');
-        if (tk) {
+    // Поток 3: Загрузка экзаменационных билетов
+    try {
+        const { data: tk, error } = await supabaseClient.from('tickets').select('number, title, recommend_time, plan, content, discipline_id');
+        if (!error && tk) {
             const groups = {};
             const disciplineTitles = {
                 "general-psych": "Общая психология",
@@ -74,7 +95,6 @@ async function loadDatabase() {
             tk.forEach(t => {
                 const dId = t.discipline_id;
                 const titleName = disciplineTitles[dId] || "Раздел экзамена";
-                
                 if (!groups[dId]) {
                     groups[dId] = { id: dId, title: titleName, questions: [] };
                 }
@@ -89,11 +109,12 @@ async function loadDatabase() {
             });
             appDatabase.tickets = Object.values(groups);
         }
+    } catch (e) { console.error("⚠️ Сбой загрузки tickets:", e); }
 
-        // 4. Выкачиваем статьи лонгридов (Разделы психологии)
-        const { data: art } = await supabaseClient.from('articles').select('title, content, discipline_id');
-        if (art) {
-            const secGroups = {};
+    // Поток 4: Загрузка статей-лонгридов (Сохраняем как ЧИСТЫЙ ОБЪЕКТ группировки)
+    try {
+        const { data: art, error } = await supabaseClient.from('articles').select('title, content, discipline_id');
+        if (!error && art) {
             const disciplineTitles = {
                 "general-psych": "Общая психология",
                 "social-psych": "Социальная психология",
@@ -103,66 +124,62 @@ async function loadDatabase() {
                 const dId = a.discipline_id;
                 const titleName = disciplineTitles[dId] || "Раздел";
                 
-                if (!secGroups[dId]) {
-                    secGroups[dId] = { id: dId, title: titleName, articles: [] };
+                if (!appDatabase.sections[dId]) {
+                    appDatabase.sections[dId] = { id: dId, title: titleName, articles: [] };
                 }
-                secGroups[dId].articles.push({
+                appDatabase.sections[dId].articles.push({
                     title: a.title,
                     content: a.content
                 });
             });
-            appDatabase.sections = Object.values(secGroups);
         }
+    } catch (e) { console.error("⚠️ Сбой загрузки articles:", e); }
 
-        // 5. Выкачиваем библиотеку первоисточников
-        const { data: lib } = await supabaseClient.from('library').select('id, title, author, annotation');
-        if (lib) appDatabase.library = lib;
+    // Поток 5: Загрузка библиотеки первоисточников
+    try {
+        const { data: lib, error } = await supabaseClient.from('library').select('id, title, author, annotation');
+        if (!error && lib) appDatabase.library = lib;
+    } catch (e) { console.error("⚠️ Сбой загрузки library:", e); }
 
-        // 6. ИСПРАВЛЕННЫЙ БЛОК: Выкачиваем ченджлог новостей
-        const { data: nw } = await supabaseClient.from('news').select('date, title, changes').order('id', { ascending: false });
-        if (nw) {
+    // Поток 6: Загрузка ченджлога новостей
+    try {
+        const { data: nw, error } = await supabaseClient.from('news').select('date, title, changes').order('id', { ascending: false });
+        if (!error && nw) {
             appDatabase.news = nw.map(item => ({
                 date: item.date,
                 title: item.title,
                 changes: item.changes
             }));
         }
+    } catch (e) { console.error("⚠️ Сбой загрузки news:", e); }
 
-        console.log("✅ База данных Supabase успешно скомпилирована под движок сайта!");
+    console.log("✅ База данных Supabase успешно скомпилирована под движок сайта!");
 
-        // Инициализация интерфейсных модулей сайта
-        if (cardElement) initFlashcards();
-        if (document.querySelector('.tickets-layout') && !document.getElementById('sections-page-marker')) initTickets();
-        if (document.getElementById('quiz-wrapper')) initQuiz();
-        
-        if (document.getElementById('sections-page-marker')) {
-            initSections();
-            
-            const urlParams = new URLSearchParams(window.location.search);
-            const targetDiscipline = urlParams.get('discipline');
-            if (targetDiscipline) {
-                if (window.innerWidth > 768) {
-                    const targetBtn = document.querySelector(`#sections-list-desktop .branch-title-btn[data-discipline-id="${targetDiscipline}"]`);
-                    if (targetBtn) {
-                        setTimeout(() => targetBtn.click(), 100);
-                    }
-                } else {
-                    const mobileTiles = document.querySelectorAll('#mobile-sections-tiles .mobile-tile-btn');
-                    mobileTiles.forEach(tile => {
-                        if (tile.outerHTML.includes(targetDiscipline)) {
-                            setTimeout(() => tile.click(), 100);
-                        }
-                    });
-                }
+    // Синхронный безопасный запуск модулей интерфейса
+    if (cardElement) initFlashcards();
+    if (document.querySelector('.tickets-layout') && !document.getElementById('sections-page-marker')) initTickets();
+    if (document.getElementById('quiz-wrapper')) initQuiz();
+    
+    if (document.getElementById('sections-page-marker')) {
+        initSections();
+        const urlParams = new URLSearchParams(window.location.search);
+        const targetDiscipline = urlParams.get('discipline');
+        if (targetDiscipline) {
+            if (window.innerWidth > 768) {
+                const targetBtn = document.querySelector(`#sections-list-desktop .branch-title-btn[data-discipline-id="${targetDiscipline}"]`);
+                if (targetBtn) setTimeout(() => targetBtn.click(), 100);
+            } else {
+                const mobileTiles = document.querySelectorAll('#mobile-sections-tiles .mobile-tile-btn');
+                mobileTiles.forEach(tile => {
+                    if (tile.outerHTML.includes(targetDiscipline)) setTimeout(() => tile.click(), 100);
+                });
             }
         }
-        if (document.getElementById('library-page-marker')) initLibrary();
-        if (document.getElementById('news-page-marker')) initNews();
-        
-    } catch (error) {
-        console.error("❌ Ошибка сборки базы данных из Supabase:", error);
     }
+    if (document.getElementById('library-page-marker')) initLibrary();
+    if (document.getElementById('news-page-marker')) initNews();
 }
+
 
 
 
