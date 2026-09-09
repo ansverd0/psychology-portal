@@ -34,35 +34,32 @@ const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
     }
 });
 
-// =========================================================================
-// БЛОК 2: ИЗОЛИРОВАННЫЙ СБОР ДАННЫХ ИЗ ОБЛАКА
-// =========================================================================
+// Единая функция загрузки всей базы данных из Supabase
 async function loadDatabase() {
-    console.log("📡 Сборка базы данных из таблиц Supabase...");
-    
-    appDatabase = {
-        flashcards: [],
-        tickets: [],
-        tests: [],
-        sections: [],
-        library: [],
-        news: []
-    };
-
-    // 1. Выкачиваем флэш-карточки
     try {
+        console.log("📡 Подключение к Supabase и сборка базы данных...");
+        
+        // Создаем пустую структуру под ваш старый формат appDatabase
+        appDatabase = {
+            flashcards: [],
+            tickets: [],
+            tests: [],
+            sections: [],
+            library: [],
+            news: []
+        };
+
+        // 1. Асинхронно выкачиваем флэш-карточки
         const { data: cards } = await supabaseClient.from('flashcards').select('term, definition, discipline_id');
         if (cards) {
             appDatabase.flashcards = cards.map(c => ({
                 term: c.term,
                 definition: c.definition,
-                discipline: c.discipline_id
+                discipline: c.discipline_id 
             }));
         }
-    } catch (e) { console.error("⚠️ Ошибка таблицы flashcards:", e); }
 
-    // 2. Выкачиваем интерактивные тесты
-    try {
+        // 2. Выкачиваем тесты
         const { data: qz } = await supabaseClient.from('tests').select('question, options, correct_index, link_url, discipline_id');
         if (qz) {
             appDatabase.tests = qz.map(t => ({
@@ -73,25 +70,28 @@ async function loadDatabase() {
                 discipline: t.discipline_id
             }));
         }
-    } catch (e) { console.error("⚠️ Ошибка таблицы tests:", e); }
 
-    // 3. Выкачиваем экзаменационные билеты
-    try {
-        const { data: tk } = await supabaseClient.from('tickets').select('number, title, recommend_time, plan, content, discipline_id');
+        // 3. Выкачиваем билеты (ИСПРАВЛЕНО: Добавлена сортировка .order по номерам билетов)
+        const { data: tk } = await supabaseClient
+            .from('tickets')
+            .select('number, title, recommend_time, plan, content, discipline_id')
+            .order('number', { ascending: true }); // Билеты выстроятся строго: 1, 2, 3...
+            
         if (tk) {
             const groups = {};
-            const disciplineTitles = {
-                "general-psych": "Общая психология",
-                "social-psych": "Социальная психология",
-                "developmental-psych": "Возрастная психология"
-            };
             tk.forEach(t => {
-                const dId = t.discipline_id;
-                const titleName = disciplineTitles[dId] || "Раздел экзамена";
-                if (!groups[dId]) {
-                    groups[dId] = { id: dId, title: titleName, questions: [] };
+                let cleanId = t.discipline_id;
+                let titleName = "Раздел экзамена";
+                
+                // Железнобетонная синхронизация старых и новых идентификаторов
+                if (cleanId === "general-psych" || cleanId === "general-exam") { cleanId = "general-exam"; titleName = "Общая психология"; }
+                if (cleanId === "social-psych" || cleanId === "social-exam") { cleanId = "social-exam"; titleName = "Социальная психология"; }
+                if (cleanId === "developmental-psych" || cleanId === "developmental-exam") { cleanId = "developmental-exam"; titleName = "Возрастная психология"; }
+                
+                if (!groups[cleanId]) {
+                    groups[cleanId] = { id: cleanId, title: titleName, questions: [] };
                 }
-                groups[dId].questions.push({
+                groups[cleanId].questions.push({
                     number: t.number,
                     title: t.title,
                     time: t.recommend_time,
@@ -102,41 +102,39 @@ async function loadDatabase() {
             });
             appDatabase.tickets = Object.values(groups);
         }
-    } catch (e) { console.error("⚠️ Ошибка таблицы tickets:", e); }
 
-    // 4. Выкачиваем статьи-лонгридов
-    try {
+        // 4. Выкачиваем статьи лонгридов (ИСПРАВЛЕНО: Добавлена сортировка по алфавиту)
         const { data: art } = await supabaseClient.from('articles').select('title, content, discipline_id');
         if (art) {
             const secGroups = {};
-            const disciplineTitles = {
-                "general-psych": "Общая психология",
-                "social-psych": "Социальная психология",
-                "developmental-psych": "Возрастная психология"
-            };
-            art.forEach(a => {
-                const dId = a.discipline_id;
-                const titleName = disciplineTitles[dId] || "Раздел";
-                if (!secGroups[dId]) {
-                    secGroups[dId] = { id: dId, title: titleName, articles: [] };
+            
+            // Сортируем статьи по алфавиту (localeCompare отлично работает с русским языком)
+            const sortedArticles = [...art].sort((a, b) => a.title.localeCompare(b.title, 'ru'));
+
+            sortedArticles.forEach(a => {
+                let cleanId = a.discipline_id;
+                let titleName = "Раздел";
+                
+                if (cleanId.includes("general")) { cleanId = "general-psych"; titleName = "Общая психология"; }
+                if (cleanId.includes("social")) { cleanId = "social-psych"; titleName = "Социальная психология"; }
+                if (cleanId.includes("developmental") || cleanId.includes("age")) { cleanId = "developmental-psych"; titleName = "Возрастная психология"; }
+                
+                if (!secGroups[cleanId]) {
+                    secGroups[cleanId] = { id: cleanId, title: titleName, articles: [] };
                 }
-                secGroups[dId].articles.push({
+                secGroups[cleanId].articles.push({
                     title: a.title,
                     content: a.content
                 });
             });
             appDatabase.sections = Object.values(secGroups);
         }
-    } catch (e) { console.error("⚠️ Ошибка таблицы articles:", e); }
 
-    // 5. Выкачиваем библиотеку
-    try {
+        // 5. Выкачиваем библиотеку первоисточников
         const { data: lib } = await supabaseClient.from('library').select('id, title, author, annotation');
         if (lib) appDatabase.library = lib;
-    } catch (e) { console.error("⚠️ Ошибка таблицы library:", e); }
 
-    // 6. Выкачиваем новости word-by-word
-    try {
+        // 6. Выкачиваем ченджлог новостей (Строго в обратном порядке: от свежих к старым)
         const { data: nw } = await supabaseClient.from('news').select('date, title, changes').order('id', { ascending: false });
         if (nw) {
             appDatabase.news = nw.map(item => ({
@@ -145,39 +143,44 @@ async function loadDatabase() {
                 changes: item.changes
             }));
         }
-    } catch (e) { console.error("⚠️ Ошибка таблицы news:", e); }
 
-    console.log("✅ Все модули скомпилированы из облака Supabase!");
+        console.log("✅ База данных Supabase успешно скомпилирована под движок сайта!");
 
-    // Безопасный синхронный запуск отрисовки страниц
-    if (cardElement) initFlashcards();
-    if (document.querySelector('.tickets-layout') && !document.getElementById('sections-page-marker')) initTickets();
-    if (document.getElementById('quiz-wrapper')) initQuiz();
-    
-    if (document.getElementById('sections-page-marker')) {
-        initSections();
-        const urlParams = new URLSearchParams(window.location.search);
-        const targetDiscipline = urlParams.get('discipline');
-        if (targetDiscipline) {
-            if (window.innerWidth > 768) {
-                const targetBtn = document.querySelector(`#sections-list-desktop .branch-title-btn[data-discipline-id="${targetDiscipline}"]`);
-                if (targetBtn) setTimeout(() => targetBtn.click(), 100);
-            } else {
-                const mobileTiles = document.querySelectorAll('#mobile-sections-tiles .mobile-tile-btn');
-                mobileTiles.forEach(tile => {
-                    if (tile.outerHTML.includes(targetDiscipline)) setTimeout(() => tile.click(), 100);
-                });
+        // Инициализация модулей интерфейса
+        if (cardElement) initFlashcards();
+        if (document.querySelector('.tickets-layout') && !document.getElementById('sections-page-marker')) initTickets();
+        if (document.getElementById('quiz-wrapper')) initQuiz();
+        
+        if (document.getElementById('sections-page-marker')) {
+            initSections();
+            
+            const urlParams = new URLSearchParams(window.location.search);
+            const targetDiscipline = urlParams.get('discipline');
+
+            if (targetDiscipline) {
+                if (window.innerWidth > 768) {
+                    const targetBtn = document.querySelector(`#sections-list-desktop .branch-title-btn[data-discipline-id="${targetDiscipline}"]`);
+                    if (targetBtn) {
+                        setTimeout(() => targetBtn.click(), 100);
+                    }
+                } else {
+                    const mobileTiles = document.querySelectorAll('#mobile-sections-tiles .mobile-tile-btn');
+                    mobileTiles.forEach(tile => {
+                        if (tile.outerHTML.includes(targetDiscipline)) {
+                            setTimeout(() => tile.click(), 100);
+                        }
+                    });
+                }
             }
         }
+
+        if (document.getElementById('library-page-marker')) initLibrary();
+        if (document.getElementById('news-page-marker')) initNews();
+        
+    } catch (error) {
+        console.error("❌ Ошибка сборки базы данных из Supabase:", error);
     }
-    if (document.getElementById('library-page-marker')) initLibrary();
-    if (document.getElementById('news-page-marker')) initNews();
 }
-
-
-
-
-
 
 // ==========================================
 // ЛОГИКА МОДУЛЯ «ТРЕНАЖЕР ТЕРМИНОВ»
@@ -1373,14 +1376,17 @@ function showSectionContent(section) {
     
     let processedContent = section.content;
 
-    // Пробегаемся по объекту глоссария, зашитому ниже в вашем script.js
+    // Автоматически ищем ключевые слова из словаря в тексте и оборачиваем их в специальный тег
     Object.keys(psychologyGlossary).forEach(term => {
-        const regex = new RegExp(`\\b${term}\\b|(?<=\\s|^)${term}(?=\\s|[.,!?;:-]|$`, 'gi');
+        // ИСПРАВЛЕНО: Добавлена закрывающая круглая скобка ) перед символом доллара $ в lookahead-проверке
+        const regex = new RegExp(`\\b${term}\\b|(?<=\\s|^)${term}(?=\\s|[.,!?;:-]|$)`, 'gi');
+        
         processedContent = processedContent.replace(regex, (match) => {
             return `<span class="wiki-term" data-tooltip="${psychologyGlossary[term]}">${match}</span>`;
         });
     });
     
+    // Выводим заголовок статьи и её обработанное содержимое с подсказками
     contentContainer.innerHTML = `
         <h2>${section.title}</h2>
         <div class="content-text">${processedContent}</div>
