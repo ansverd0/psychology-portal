@@ -18,7 +18,7 @@ const ticketsListContainer = document.querySelector('.tickets-sidebar');
 const ticketContentContainer = document.getElementById('ticket-content');
 
 // Инициализация Supabase 
-const SUPABASE_URL = "https://supabase.co";
+const SUPABASE_URL = "https://lrjszannmammzzqotaro.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_bwLDUQMS1RVwHF2wHE62hg_sODGX5vi";
 
 const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
