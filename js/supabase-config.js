@@ -9,7 +9,7 @@ let appDatabase = {
 };
 let appGlossary = {};
 
-const SUPABASE_URL = "https://supabase.co";
+const SUPABASE_URL = "https://lrjszannmammzzqotaro.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_bwLDUQMS1RVwHF2wHE62hg_sODGX5vi";
 
 // Принудительный обход QUIC/UDP (HTTP/3) через стандартный браузерный fetch

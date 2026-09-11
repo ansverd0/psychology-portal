@@ -5,8 +5,11 @@ function initFlashcards() {
     if (!allCards || allCards.length === 0) return;
 
     const tilesContainer = document.getElementById('cards-discipline-tiles');
+    const liveCardElement = document.getElementById('myCard');
+    const liveNextBtn = document.getElementById('next-btn');
+    const livePrevBtn = document.getElementById('prev-btn');
     
-    // Алгоритм Фишера — Йетса для случайного перемешивания массива
+    // Algorithme Fisher-Yates
     function shuffleArray(array) {
         for (let i = array.length - 1; i > 0; i--) {
             const j = Math.floor(Math.random() * (i + 1));
@@ -15,18 +18,15 @@ function initFlashcards() {
         return array;
     }
 
-    // Запуск конкретного режима тренировки
     function startCardMode(filteredCards) {
         currentActiveCards = shuffleArray([...filteredCards]); 
         currentCardIndex = 0;
         updateCard();
     }
 
-    // Генерация плиток навигации по дисциплинам
     if (tilesContainer) {
         tilesContainer.innerHTML = '';
 
-        // Первая обязательная плитка: Общий микс по всему курсу
         const allTile = document.createElement('button');
         allTile.classList.add('mobile-tile-btn', 'active');
         allTile.innerHTML = `🎲<br>Все темы`;
@@ -37,7 +37,6 @@ function initFlashcards() {
         });
         tilesContainer.appendChild(allTile);
 
-        // Динамические плитки: собираем разделы, которые реально есть в карточках
         const uniqueDisciplines = [...new Set(allCards.map(c => c.discipline).filter(Boolean))];
         
         const disciplineMeta = {
@@ -64,13 +63,12 @@ function initFlashcards() {
         });
     }
 
-    // Включение режима общего случайного микса по умолчанию
     startCardMode(allCards);
 
-    // Сброс старых слушателей через клонирование ноды (защита от утечек памяти)
-    if (cardElement) {
-        const newCardElement = cardElement.cloneNode(true);
-        cardElement.parentNode.replaceChild(newCardElement, cardElement);
+    // Безопасный сброс слушателей клика и запуск 3D-анимации поворота
+    if (liveCardElement) {
+        const newCardElement = liveCardElement.cloneNode(true);
+        liveCardElement.parentNode.replaceChild(newCardElement, liveCardElement);
         
         const activeCard = document.getElementById('myCard');
         if (activeCard) {
@@ -80,16 +78,16 @@ function initFlashcards() {
         }
     }
 
-    if (nextBtn) {
-        nextBtn.onclick = () => {
+    if (liveNextBtn) {
+        liveNextBtn.onclick = () => {
             if (currentActiveCards.length === 0) return;
             currentCardIndex = (currentCardIndex < currentActiveCards.length - 1) ? currentCardIndex + 1 : 0;
             updateCard();
         };
     }
 
-    if (prevBtn) {
-        prevBtn.onclick = () => {
+    if (livePrevBtn) {
+        livePrevBtn.onclick = () => {
             if (currentActiveCards.length === 0) return;
             currentCardIndex = (currentCardIndex > 0) ? currentCardIndex - 1 : currentActiveCards.length - 1;
             updateCard();
