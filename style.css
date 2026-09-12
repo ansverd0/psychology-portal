@@ -222,12 +222,12 @@ button:hover {
 .menu-item .badge.new {
     background: #ebf8ff;
     color: #2b6cb0;
-    border: 1px solid #bee3f8;
+    border: 1px solid #e2e8f0;
 }
 
 .menu-item.news-module {
     background: linear-gradient(135deg, #ffffff 0%, #f7fafc 100%);
-    border-color: #bee3f8;
+    border-color: #e2e8f0;
 }
 
 .menu-item.news-module:hover {
@@ -931,6 +931,62 @@ button:hover {
         display: none !important;
     }
 }
+/* Универсальная синяя кнопка-капсула возврата в меню */
+.capsule-back-btn {
+    display: inline-flex;
+    align-items: center;
+    background: #3182ce;
+    color: white !important;
+    text-decoration: none;
+    padding: 10px 24px;
+    font-size: 14px;
+    font-weight: 600;
+    border-radius: 20px;
+    box-shadow: 0 4px 6px rgba(49, 130, 206, 0.15);
+    transition: all 0.2s ease;
+    border: none;
+    cursor: pointer;
+    margin-bottom: 20px;
+}
+
+.capsule-back-btn:hover {
+    background: #2b6cb0;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(49, 130, 206, 0.2);
+}
+
+/* Универсальная плавающая кнопка быстрой прокрутки наверх (ПК + Мобильные) */
+#scroll-top-btn {
+    display: none;
+    position: fixed;
+    bottom: 30px;
+    right: 30px;
+    background: #3182ce;
+    color: white;
+    border: none;
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    font-size: 18px;
+    font-weight: bold;
+    cursor: pointer;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+    z-index: 99999;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+}
+
+#scroll-top-btn:hover {
+    background: #2b6cb0;
+    transform: translateY(-3px);
+    box-shadow: 0 6px 20px rgba(49, 130, 206, 0.3);
+}
+
+#scroll-top-btn.visible {
+    display: flex;
+}
+
 
 
 

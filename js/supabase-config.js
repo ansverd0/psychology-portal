@@ -236,6 +236,10 @@ async function initApplicationHub() {
 
 // Запуск инициализации интерфейса в зависимости от текущей страницы DOM
 function executePageModuleInitialization() {
+    // Мягкий безопасный вызов авторизации Этапа 1 (если функция загрузилась в глобальную видимость)
+    if (typeof proceedResearchAuth === 'function') {
+        proceedResearchAuth();
+    }
     const cardElement = document.getElementById('myCard'); 
     if (cardElement && typeof initFlashcards === 'function') initFlashcards(); 
     if (document.querySelector('.tickets-layout') && !document.getElementById('sections-page-marker') && typeof initTickets === 'function') initTickets(); 
@@ -256,3 +260,23 @@ if ('serviceWorker' in navigator) {
             .catch(err => console.error('⚠️ Ошибка регистрации Service Worker:', err));
     });
 }
+// Автоматический трекинг прокрутки для универсальной кнопки "Наверх"
+window.addEventListener('scroll', () => {
+    const topBtn = document.getElementById('scroll-top-btn');
+    if (topBtn) {
+        // Кнопка плавно появляется, если пользователь пролистал больше 400 пикселей вниз
+        if (window.scrollY > 400) {
+            topBtn.classList.add('visible');
+        } else {
+            topBtn.classList.remove('visible');
+        }
+    }
+});
+
+// Плавный скролл к самому началу страницы при клике
+document.addEventListener('click', (e) => {
+    if (e.target && e.target.id === 'scroll-top-btn') {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+});
+

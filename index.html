@@ -30,60 +30,118 @@
 </head>
 
 <body>
-    <header>
-        <h1>Психология образования</h1>
-        <p>Единый портал для подготовки к экзаменам, зачётам и семинарам</p>
-        <h2>Добро пожаловать в учебный хаб! Выберите нужный инструмент ниже, чтобы начать эффективную подготовку к учёбе.</h2>
+
+    <!-- ВЕРХНЯЯ СИСТЕМНАЯ ПАНЕЛЬ ПЛАТФОРМЫ -->
+    <header style="max-width: 1200px; width: 100%; margin: 30px auto 0 auto; padding: 0 20px; display: flex; justify-content: space-between; align-items: center; font-family: system-ui, sans-serif; box-sizing: border-box;">
+        <!-- Левая часть: заголовок поднят наверх -->
+        <h1 style="color: #1a365d; font-size: 32px; margin: 0; font-weight: 800; letter-spacing: -0.5px;">Психология образования</h1>
+        
+        <!-- Правая часть: только чистый зеленый закругленный элемент ID -->
+        <div id="platform-user-widget">
+            <div id="auth-status-logged" style="display: none; background: #e6fffa; border: 1px solid #b2f5ea; padding: 8px 18px; border-radius: 20px; color: #006d5b; font-size: 14px; font-weight: 700; letter-spacing: 0.3px; box-shadow: 0 2px 4px rgba(0,109,91,0.04);">
+                Ваш ID: <span id="research-key-output" style="color: #004d39; margin-left: 2px;">...</span>
+            </div>
+            <div id="auth-status-guest" style="display: block;">
+                <button id="btn-open-auth-modal" style="background: #3182ce; color: white; border: none; padding: 10px 20px; border-radius: 20px; font-size: 13px; font-weight: 600; cursor: pointer; transition: background 0.2s;">🔑 Войти / Создать ID</button>
+            </div>
+        </div>
     </header>
 
-    <main>
-        <div class="menu-grid">
-            
-        <!-- Блок обновлений "Что нового?" теперь кликабельный -->
-        <a href="news.html" class="menu-item news-module">
-            <div class="badge new">Обновление</div>
-            <div class="icon">🔔</div>
-            <h2>Что нового?</h2>
-            <p>Последние изменения на портале. Кликните, чтобы прочитать патчноут.</p>
-            <div class="update-date">Дата обновления: <strong>04.09.2026</strong></div>
-        </a>
-
-            <!-- Модуль 1: Билеты -->
-            <a href="tickets.html" class="menu-item">
-                <div class="icon">📘</div>
-                <h2>Экзаменационные билеты</h2>
-                <p>Официальная база знаний с конспектами ответов на вопросы экзаменов.</p>
-            </a>
-
-            <!-- Модуль 2: Карточки -->
-            <a href="cards.html" class="menu-item">
-                <div class="icon">🃏</div>
-                <h2>Тренажер терминов</h2>
-                <p>Интервальное повторение ключевых понятий.</p>
-            </a>
-
-            <!-- Модуль 3: Тесты -->
-            <a href="tests.html" class="menu-item">
-                <div class="icon">📝</div>
-                <h2>Интерактивные тесты</h2>
-                <p>Проверка знаний по истории психологии, персоналиям и диагностическим методикам.</p>
-            </a>
-
-            <!-- НОВЫЙ Модуль 4: Разделы психологии -->
-            <a href="sections.html" class="menu-item content-module">
-                <div class="icon">🧠</div>
-                <h2>Разделы психологии</h2>
-                <p>Обзор ключевых теоретических и прикладных направлений психологии.</p>
-            </a>
-
-            <!-- НОВЫЙ Модуль 5: Библиотека -->
-            <a href="library.html" class="menu-item content-module">
-                <div class="icon">📚</div>
-                <h2>Литература</h2>
-                <p>Каталог рекомендованных учебников и научных трудов с аннотациями без полных текстов.</p>
-            </a>
-
-        </div>
+    <!-- ПОДЗАГОЛОВОК СТРАНИЦЫ -->
+    <main style="max-width: 1200px; width: 100%; margin: 15px auto 40px auto; padding: 0 20px; text-align: left; font-family: system-ui, sans-serif; box-sizing: border-box;">
+        <p style="color: #4a5568; font-size: 16px; margin: 0; font-weight: 500;">
+            Единая учебная платформа для подготовки к экзаменам, зачётам и семинарам.
+        </p>
     </main>
+
+    <!-- СЕТКА ИНСТРУМЕНТОВ -->
+    <div class="menu-grid">
+    <!-- Блок 1: Что нового? -->
+    <div class="menu-item news-module" onclick="location.href='news.html'">
+        <div style="display: flex; align-items: center; gap: 10px;">
+            <span class="icon" style="margin: 0;">🔔</span>
+            <h2>Что нового?</h2>
+            <span class="badge new">Обновление</span>
+        </div>
+        <p>Последние изменения на платформе. Кликните, чтобы прочитать патчноут.</p>
+        <div class="update-date">Дата обновления: <strong>04.09.2026</strong></div>
+    </div>
+
+    <!-- Блок 2: Экзаменационные билеты -->
+    <div class="menu-item" onclick="location.href='tickets.html'">
+        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
+            <span class="icon" style="margin: 0;">📘</span>
+            <h2>Экзаменационные билеты</h2>
+        </div>
+        <p>Официальная база знаний с конспектами ответов на вопросы экзаменов.</p>
+    </div>
+
+    <!-- Блок 3: Тренажер терминов -->
+    <div class="menu-item" onclick="location.href='cards.html'">
+        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
+            <span class="icon" style="margin: 0;">🃏</span>
+            <h2>Тренажер терминов</h2>
+        </div>
+        <p>Интервальное повторение ключевых понятий.</p>
+    </div>
+
+    <!-- Блок 4: Интерактивные тесты -->
+    <div class="menu-item" onclick="location.href='tests.html'">
+        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
+            <span class="icon" style="margin: 0;">📝</span>
+            <h2>Интерактивные тесты</h2>
+        </div>
+        <p>Проверка знаний по истории психологии, персоналиям и диагностическим методикам.</p>
+    </div>
+
+    <!-- Блок 5: Разделы психологии -->
+    <div class="menu-item" onclick="location.href='sections.html'">
+        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
+            <span class="icon" style="margin: 0;">🧠</span>
+            <h2>Разделы психологии</h2>
+        </div>
+        <p>Обзор ключевых теоретических и прикладных направлений психологии.</p>
+    </div>
+
+    <!-- Блок 6: Литература -->
+    <div class="menu-item" onclick="location.href='library.html'">
+        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
+            <span class="icon" style="margin: 0;">📚</span>
+            <h2>Литература</h2>
+        </div>
+        <p>Каталог рекомендованных учебников и научных трудов с аннотациями без полных текстов.</p>
+    </div>
+</div>
+
+    </main>
+    <!-- ПОЛНОЭКРАННОЕ МОДАЛЬНОЕ ОКНО АВТОРИЗАЦИИ (Для новых пользователей) -->
+    <div id="research-auth-box" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(26, 32, 44, 0.6); backdrop-filter: blur(4px); z-index: 99999; justify-content: center; align-items: center; font-family: system-ui, sans-serif;">
+        <div style="background: white; width: 100%; max-width: 500px; padding: 35px; border-radius: 20px; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1); position: relative; margin: 20px; text-align: left;">
+            <h3 style="margin: 0 0 12px 0; color: #1a365d; font-size: 20px; font-weight: 800;">🔑 Активация учебного профиля</h3>
+            <p style="margin: 0 0 20px 0; font-size: 14px; color: #4a5568; line-height: 1.5;">
+                Для сохранения личного прогресса тестов, закладок и лекций платформе необходим ваш анонимный идентификатор.
+            </p>
+
+            <div style="margin-bottom: 20px;">
+                <input type="text" id="research-key-input" placeholder="Введите ваш старый ID для синхронизации" style="width: 100%; padding: 12px 15px; border: 2px solid #cbd5e0; border-radius: 8px; font-size: 14px; outline: none; box-sizing: border-box; margin-bottom: 12px;">
+                <button id="btn-login" style="width: 100%; background: #2b6cb0; color: white; border: none; padding: 12px; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 14px;">Войти по существующему ID</button>
+            </div>
+
+            <div style="border-top: 1px solid #edf2f7; padding-top: 20px; margin-bottom: 20px;">
+                <button id="btn-generate" style="width: 100%; background: #f7fafc; color: #2b6cb0; border: 2px dashed #2b6cb0; padding: 12px; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 14px;">🎲 Сгенерировать новый личный ID</button>
+            </div>
+
+            <!-- БЛОК ЕДИНОГО СОГЛАСИЯ НА ОБРАБОТКУ И КУКИ -->
+            <label style="display: flex; align-items: flex-start; gap: 10px; cursor: pointer; user-select: none;">
+                <input type="checkbox" id="chk-consent" checked style="margin-top: 3px; width: 16px; height: 16px; accent-color: #2b6cb0;">
+                <span style="font-size: 12px; color: #718096; line-height: 1.4;">
+                    Я даю согласие на сохранение локальных файлов кэша, куки, фиксацию метрик прогресса тестов и результатов итоговых эссе.
+                </span>
+            </label>
+        </div>
+    </div>
+    <script src="js/supabase-config.js"></script>
+<script src="js/auth.js"></script> <!-- Наш новый изолированный подмодуль -->
+
 </body>
 </html>
