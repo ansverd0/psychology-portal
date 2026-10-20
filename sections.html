@@ -40,10 +40,10 @@
         <h2>Интерактивная база знаний по отраслям психологии. Нажимайте на папки отраслей слева, чтобы открыть список доступных статей. Ключевые термины подсвечены синим цветом — наведите на них для вызова подсказки.</h2>
     </header>
 
-    <main id="sections-page-marker" class="tickets-layout">
+    <main id="sections-page-marker" class="tri-column-layout">
     
     <!-- Левая колонка для ПК и мобильной навигации -->
-<div class="tickets-sidebar">
+    <div class="tickets-sidebar">
     
     <!-- Мобильный поиск -->
     <div class="mobile-search-wrapper" style="position: relative;">
@@ -52,15 +52,15 @@
     </div>
 
     <!-- 📱 Контейнер для мобильных плиток-разделов (карусель/сетка) -->
-    <div id="mobile-sections-tiles" class="mobile-only-tiles"></div>
+    <div id="mobile-sections-tiles" class="mobile-only-tiles limited-tiles"></div>
 
     <!-- Контейнер для вложенного списка статей (общий для поиска и плиток на мобилке) -->
-    <div id="mobile-articles-list" class="mobile-articles-container" style="display: none;"></div>
+    <div id="mobile-articles-list" class="mobile-articles-container limited-articles" style="display: none;"></div>
 
     <!-- Контейнер, куда JavaScript вставляет папки отраслей на ПК -->
-    <div id="sections-list-desktop" class="desktop-only-list"></div>
+    <div id="sections-list-desktop" class="desktop-only-list scrollable-container"></div>
     
-</div>
+    </div>
 
 
     <!-- Правая колонка: Окно просмотра статьи -->
@@ -68,10 +68,16 @@
         <!-- Сюда подгружается контент статьи -->
     </div>
 
+    <!-- ⭐ Правая колонка: Закладки (только на ПК) -->
+    <div class="bookmarks-panel" id="bookmarks-panel">
+        <!-- Рендерится через JS -->
+    </div>
+
 </main>
 
 
     <script src="js/supabase-config.js"></script>
+<script src="js/bookmarks.js"></script>
 <script src="js/sections-wiki.js"></script>
 <!-- Нижний дублирующий блок навигации -->
     <div style="margin: 40px 0; text-align: center;">

@@ -41,7 +41,7 @@
         <h2>Удобные структурированные конспекты с привязкой к авторитетной учебной литературе.</h2>
     </header>
 
-    <main class="tickets-layout">
+    <main class="tri-column-layout">
     
     <!-- 🗂 ЛЕВАЯ КОЛОНКА: Навигация (Автоматически подстраивается под ПК и Мобильные) -->
     <div class="tickets-sidebar">
@@ -52,27 +52,33 @@
             <div id="mobile-tickets-search-results" class="search-results-dropdown" style="display: none;"></div>
         </div>
 
-        <!-- 2. Мобильные плитки-дисциплины (Вариант 2 — скроются на ПК) -->
-        <div id="mobile-tickets-tiles" class="mobile-only-tiles"></div>
+        <!-- 2. Мобильные плитки-дисциплины (скроются на ПК) -->
+        <div id="mobile-tickets-tiles" class="mobile-only-tiles limited-tiles"></div>
 
         <!-- 3. Мобильный список вопросов выбранного экзамена (скроется на ПК) -->
-        <div id="mobile-questions-list" class="mobile-articles-container" style="display: none;"></div>
+        <div id="mobile-questions-list" class="mobile-articles-container limited-articles" style="display: none;"></div>
 
         <!-- 4. ПК-версия: Двухуровневый аккордеон папок (скроется на смартфонах) -->
-        <div id="tickets-list-desktop" class="desktop-only-list"></div>
+        <div id="tickets-list-desktop" class="desktop-only-list scrollable-container"></div>
         
     </div>
 
-    <!-- 📄 ПРАВАЯ КОЛОНКА: Интерактивное окно просмотра конспекта (Общее для ПК и Мобилок) -->
+    <!-- 📄 ЦЕНТРАЛЬНАЯ КОЛОНКА: Интерактивное окно просмотра конспекта -->
     <div class="ticket-viewer">
         <div class="empty-state">
             <p>📋 Выберите экзаменационную дисциплину слева, чтобы открыть список вопросов и конспекты ответов.</p>
         </div>
     </div>
 
+    <!-- ⭐ ПРАВАЯ КОЛОНКА: Закладки (только на ПК) -->
+    <div class="bookmarks-panel" id="bookmarks-panel">
+        <!-- Рендерится через JS -->
+    </div>
+
 </main>
 
     <script src="js/supabase-config.js"></script>
+<script src="js/bookmarks.js"></script>
 <script src="js/tickets.js"></script>
 <!-- Нижний дублирующий блок навигации -->
     <div style="margin: 40px 0; text-align: center;">

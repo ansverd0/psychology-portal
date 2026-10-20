@@ -39,45 +39,50 @@
         <h2>Проверьте уровень своих знаний перед экзаменом. После каждого ответа система покажет правильный вариант и ваш текущий балл.</h2>
     </header>
 
-    <main>
-        <div class="quiz-limit-wrapper">
-    <label for="quiz-limit-select">Количество вопросов в тесте:</label>
-    <div class="custom-select-container">
-        <select id="quiz-limit-select">
-            <option value="5">5 вопросов</option>
-            <option value="10" selected>10 вопросов</option>
-            <option value="20">20 вопросов</option>
-            <option value="30">30 вопросов</option>
-            <option value="all">Все доступные</option>
-        </select>
-    </div>
-</div>
-
-
-        <!-- Плитки выбора дисциплин для тестов -->
-        <div id="quiz-discipline-tiles" class="mobile-only-tiles" style="display: flex !important; max-width: 600px; margin: 0 auto 20px auto;"></div>
-        <!-- Контейнер самого теста -->
-        <div id="quiz-wrapper" class="quiz-card">
-            <div class="quiz-header">
-                <span id="quiz-progress">Вопрос 0 из 0</span>
+    <main class="content-with-sidebar">
+        <!-- ЛЕВАЯ КОЛОНКА: Сайдбар дисциплин -->
+        <div class="discipline-sidebar" id="quiz-discipline-sidebar">
+            <div class="quiz-limit-wrapper" style="margin-bottom: 15px; width: 100%;">
+                <label for="quiz-limit-select" style="font-size: 13px;">Вопросов:</label>
+                <div class="custom-select-container">
+                    <select id="quiz-limit-select">
+                        <option value="5">5 вопросов</option>
+                        <option value="10" selected>10 вопросов</option>
+                        <option value="20">20 вопросов</option>
+                        <option value="30">30 вопросов</option>
+                        <option value="all">Все доступные</option>
+                    </select>
+                </div>
             </div>
-            
-            <h2 id="quiz-question">Загрузка вопроса...</h2>
-            
-            <!-- Сюда JavaScript будет вставлять варианты ответов -->
-            <div id="quiz-options" class="options-container"></div>
-            
-            <div class="quiz-footer">
-                <button id="quiz-next-btn" style="display: none;">Следующий вопрос ➡️</button>
-            </div>
+            <!-- Плитки выбора дисциплин для тестов -->
+            <div id="quiz-discipline-tiles" class="mobile-only-tiles limited-tiles"></div>
         </div>
 
-        <!-- Контейнер для результатов (изначально скрыт) -->
-        <div id="result-wrapper" class="quiz-card" style="display: none;">
-            <h2>Тест завершен! 🎉</h2>
-            <p class="result-score">Ваш результат: <span id="score-text">0 из 0</span></p>
-            <p id="result-feedback"></p>
-            <button onclick="location.reload()">Пройти заново 🔄</button>
+        <!-- ПРАВАЯ КОЛОНКА: Тест -->
+        <div class="content-area">
+            <!-- Контейнер самого теста -->
+            <div id="quiz-wrapper" class="quiz-card">
+                <div class="quiz-header">
+                    <span id="quiz-progress">Вопрос 0 из 0</span>
+                </div>
+                
+                <h2 id="quiz-question">Загрузка вопроса...</h2>
+                
+                <!-- Сюда JavaScript будет вставлять варианты ответов -->
+                <div id="quiz-options" class="options-container"></div>
+                
+                <div class="quiz-footer">
+                    <button id="quiz-next-btn" style="display: none;">Следующий вопрос ➡️</button>
+                </div>
+            </div>
+
+            <!-- Контейнер для результатов (изначально скрыт) -->
+            <div id="result-wrapper" class="quiz-card" style="display: none;">
+                <h2>Тест завершен! 🎉</h2>
+                <p class="result-score">Ваш результат: <span id="score-text">0 из 0</span></p>
+                <p id="result-feedback"></p>
+                <button onclick="location.reload()">Пройти заново 🔄</button>
+            </div>
         </div>
     </main>
 

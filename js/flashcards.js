@@ -50,7 +50,7 @@ function initFlashcards() {
             tile.classList.add('mobile-tile-btn');
             
             const meta = disciplineMeta[dispId] || { title: "Раздел", icon: "📁" };
-            tile.innerHTML = `${meta.icon}<br>${meta.title}`;
+            tile.innerHTML = `${meta.icon} ${meta.title}`;
 
             tile.addEventListener('click', () => {
                 document.querySelectorAll('#cards-discipline-tiles .mobile-tile-btn').forEach(b => b.classList.remove('active'));

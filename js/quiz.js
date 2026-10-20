@@ -58,7 +58,7 @@ function initQuiz() {
 
         const allTile = document.createElement('button');
         allTile.classList.add('mobile-tile-btn', 'active');
-        allTile.innerHTML = `🎲<br>Все темы`;
+        allTile.innerHTML = `🎲 Все темы`;
         allTile.addEventListener('click', () => {
             document.querySelectorAll('#quiz-discipline-tiles .mobile-tile-btn').forEach(b => b.classList.remove('active'));
             allTile.classList.add('active');
@@ -79,7 +79,7 @@ function initQuiz() {
             tile.classList.add('mobile-tile-btn');
             
             const meta = disciplineMeta[dispId] || { title: "Раздел", icon: "📁" };
-            tile.innerHTML = `${meta.icon}<br>${meta.title}`;
+            tile.innerHTML = `${meta.icon} ${meta.title}`;
 
             tile.addEventListener('click', () => {
                 document.querySelectorAll('#quiz-discipline-tiles .mobile-tile-btn').forEach(b => b.classList.remove('active'));

@@ -40,26 +40,31 @@
         <h2>Интерактивные флэш-карты для запоминания ключевых понятий. Кликните на карточку, чтобы перевернуть её и увидеть определение.</h2>
     </header>
 
-    <main>
+    <main class="content-with-sidebar">
         <!-- Плитки выбора дисциплин для карточек -->
-        <div id="cards-discipline-tiles" class="mobile-only-tiles" style="display: flex !important; max-width: 450px; margin: 0 auto 20px auto;"></div>
-
-        <div class="card-perspective">
-            <div class="flash-card" id="myCard">
-                <div class="card-side card-front">
-                    <h2 id="term-text">Загрузка...</h2>
-                    <span class="tap-hint">Кликните, чтобы узнать определение</span>
-                </div>
-                <div class="card-side card-back">
-                    <p id="definition-text">Загрузка...</p>
-                </div>
-            </div>
+        <div class="discipline-sidebar" id="cards-discipline-sidebar">
+            <div id="cards-discipline-tiles" class="mobile-only-tiles"></div>
         </div>
 
-        <div class="controls">
-            <button id="prev-btn">⬅️ Назад</button>
-            <span id="counter-text">0 / 0</span>
-            <button id="next-btn">Вперед ➡️</button>
+        <!-- Центральная область: Карточка -->
+        <div class="content-area">
+            <div class="card-perspective">
+                <div class="flash-card" id="myCard">
+                    <div class="card-side card-front">
+                        <h2 id="term-text">Загрузка...</h2>
+                        <span class="tap-hint">Кликните, чтобы узнать определение</span>
+                    </div>
+                    <div class="card-side card-back">
+                        <p id="definition-text">Загрузка...</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="controls">
+                <button id="prev-btn">⬅️ Назад</button>
+                <span id="counter-text">0 / 0</span>
+                <button id="next-btn">Вперед ➡️</button>
+            </div>
         </div>
     </main>
 

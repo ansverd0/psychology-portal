@@ -80,7 +80,9 @@ function initSections() {
 
                     articleBtn.addEventListener('click', () => {
                         showSectionContent(article);
-                        document.querySelector('.ticket-viewer').scrollIntoView({ behavior: 'smooth' });
+                        // Автопрокрутка к началу статьи
+                        const viewer = document.querySelector('.section-viewer');
+                        if (viewer) viewer.scrollIntoView({ behavior: 'smooth' });
                     });
                     mobileArticlesList.appendChild(articleBtn);
                 });
@@ -162,6 +164,9 @@ function initSections() {
             }
         });
     }
+
+    // Рендер панели закладок при инициализации
+    renderSectionsBookmarksPanel();
 }
 
 // ВЫСОКОПРОИЗВОДИТЕЛЬНЫЙ ДВИЖОК ВИКИ-ПОДСКАЗОК (Линейная O(N) замена)
@@ -175,7 +180,12 @@ function showSectionContent(section) {
     const contentContainer = document.querySelector('.section-viewer');
     if (!contentContainer || !section) return;
     
-    let text = section.content;
+    // 1. Сначала санитизируем сырой контент статьи (убираем опасные теги/скрипты)
+    let safeRawContent = DOMPurify.sanitize(section.content || '', {
+        ALLOWED_TAGS: ['p', 'br', 'strong', 'em', 'u', 'h3', 'h4', 'h5', 'h6', 'ul', 'ol', 'li', 'blockquote', 'a', 'img', 'code', 'pre'],
+        ALLOWED_ATTR: ['href', 'rel', 'target', 'src', 'alt']
+    });
+    
     const terms = Object.keys(appGlossary);
 
     if (terms.length > 0) {
@@ -183,26 +193,69 @@ function showSectionContent(section) {
         const sortedTerms = terms.sort((a, b) => b.length - a.length);
         
         // Экранируем спецсимволы в терминах
-        const escapedTerms = sortedTerms.map(t => t.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&'));
+        const escapedTerms = sortedTerms.map(t => t.replace(/[-\/\^$*+?.()|[\]{}]/g, '\$&'));
         
-        // Конструируем единое регулярное выражение для всех 300+ терминов одновременно
-        const pattern = `\\b(${escapedTerms.join('|')})\\b`;
+        // Конструируем единое регулярное выражение для всех терминов одновременно
+        const pattern = `\b(${escapedTerms.join('|')})\b`;
         const regex = new RegExp(pattern, 'gi');
 
         // Выполняем точечную замену за один проход по строке контента
-        text = text.replace(regex, (match) => {
+        safeRawContent = safeRawContent.replace(regex, (match) => {
             const matchedKey = match.trim();
             // Находим точное соответствие в объекте кэша без учета регистра
             const definition = appGlossary[matchedKey] || 
                                appGlossary[sortedTerms.find(t => t.toLowerCase() === matchedKey.toLowerCase())];
             
             if (definition) {
-                const safeDef = DOMPurify.sanitize(definition);
+                const safeDef = DOMPurify.sanitize(definition, { ALLOWED_TAGS: [], ALLOWED_ATTR: ['data-tooltip'] });
                 return `<span class="wiki-term" data-tooltip="${safeDef}">${match}</span>`;
             }
             return match;
         });
     }
     
-    contentContainer.innerHTML = DOMPurify.sanitize(`<h2>${escapeHtml(section.title)}</h2><div class="content-text">${DOMPurify.sanitize(text)}</div>`);
+    // 2. Добавляем звёздочку закладки
+    const bookmarkActive = isBookmarked(section.title, 'article') ? 'active' : '';
+    const bookmarkIcon = isBookmarked(section.title, 'article') ? '★' : '☆';
+    
+    const headerWithBookmark = `
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin: 0 0 20px 0; padding-bottom: 15px; border-bottom: 2px solid #edf2f7;">
+            <h2 style="margin: 0; font-size: 24px; color: #1a365d; line-height: 1.3; flex: 1;">${escapeHtml(section.title)}</h2>
+            <button class="bookmark-star-btn ${bookmarkActive}" id="section-bookmark-star" title="В закладки" style="margin-left: 15px; flex-shrink: 0;">${bookmarkIcon}</button>
+        </div>
+    `;
+    
+    // 3. Вставляем готовый HTML (wiki-теги уже встроены, повторная санитизация не нужна)
+    contentContainer.innerHTML = `${headerWithBookmark}<div class="content-text">${safeRawContent}</div>`;
+    
+    // 4. Обработчик закладки в просмотрщике
+    const starBtn = document.getElementById('section-bookmark-star');
+    if (starBtn) {
+        starBtn.addEventListener('click', () => {
+            const added = toggleBookmark(section.title, section.title, 'article');
+            updateBookmarkStar(starBtn, section.title, 'article');
+            renderSectionsBookmarksPanel();
+        });
+    }
+}
+
+/** Рендер панели закладок для sections.html */
+function renderSectionsBookmarksPanel() {
+    const panel = document.getElementById('bookmarks-panel');
+    if (!panel) return;
+    
+    renderBookmarksPanel(panel, 'article', (title) => {
+        // При клике на закладку — ищем и открываем статью
+        const sections = appDatabase.sections;
+        if (!sections) return;
+        for (const sec of sections) {
+            const article = sec.articles.find(a => a.title === title);
+            if (article) {
+                showSectionContent(article);
+                const viewer = document.querySelector('.section-viewer');
+                if (viewer) viewer.scrollIntoView({ behavior: 'smooth' });
+                return;
+            }
+        }
+    });
 }

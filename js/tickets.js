@@ -159,6 +159,9 @@ function initTickets() {
             document.querySelectorAll('#mobile-tickets-tiles .mobile-tile-btn').forEach(b => b.classList.remove('active'));
         }
     });
+
+    // Рендер панели закладок при инициализации
+    renderTicketsBookmarksPanel();
 }
 
 function escapeHtml(text) {
@@ -186,17 +189,59 @@ function showTicketContent(ticket) {
             </div>
         `;
     }
-    
-    ticketContentContainer.innerHTML = DOMPurify.sanitize(`
-        <div style="border-bottom: 2px solid #edf2f7; padding-bottom: 12px; margin-bottom: 20px;">
-            <h2 style="margin: 0; font-size: 24px; color: #1a365d; line-height: 1.3;">№${escapeHtml(ticket.number)}. ${escapeHtml(ticket.title)}</h2>
-            ${timeHTML}
+
+    const bookmarkActive = isBookmarked(ticket.number, 'ticket') ? 'active' : '';
+    const bookmarkIcon = isBookmarked(ticket.number, 'ticket') ? '★' : '☆';
+
+    // Санитизируем только контент (не заголовок и не кнопку закладки)
+    const safeContent = DOMPurify.sanitize(ticket.content, {
+        ALLOWED_TAGS: ['p', 'br', 'strong', 'em', 'u', 'h3', 'h4', 'h5', 'h6', 'ul', 'ol', 'li', 'blockquote', 'a', 'img', 'code', 'pre'],
+        ALLOWED_ATTR: ['href', 'rel', 'target', 'src', 'alt']
+    });
+
+    ticketContentContainer.innerHTML = `
+        <div style="border-bottom: 2px solid #edf2f7; padding-bottom: 12px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: flex-start;">
+            <div style="flex: 1;">
+                <h2 style="margin: 0; font-size: 24px; color: #1a365d; line-height: 1.3;">№${escapeHtml(ticket.number)}. ${escapeHtml(ticket.title)}</h2>
+                ${timeHTML}
+            </div>
+            <button class="bookmark-star-btn ${bookmarkActive}" id="ticket-bookmark-star" title="В закладки">${bookmarkIcon}</button>
         </div>
         ${planHTML}
-        <div class="content-text">${DOMPurify.sanitize(ticket.content)}</div>
+        <div class="content-text">${safeContent}</div>
         <div class="literature-box" style="margin-top: 25px;">
             <h3>📚 Рекомендованная литература к вопросу:</h3>
             <ul>${litItems}</ul>
         </div>
-    `);
+    `;
+    
+    // Обработчик закладки в просмотрщике
+    const starBtn = document.getElementById('ticket-bookmark-star');
+    if (starBtn) {
+        starBtn.addEventListener('click', () => {
+            const added = toggleBookmark(ticket.number, ticket.title, 'ticket');
+            updateBookmarkStar(starBtn, ticket.number, 'ticket');
+            renderTicketsBookmarksPanel();
+        });
+    }
+}
+
+/** Рендер панели закладок для tickets.html */
+function renderTicketsBookmarksPanel() {
+    const panel = document.getElementById('bookmarks-panel');
+    if (!panel) return;
+    
+    renderBookmarksPanel(panel, 'ticket', (id) => {
+        // При клике на закладку — открываем билет
+        const examDisciplines = appDatabase.tickets;
+        if (!examDisciplines) return;
+        for (const disc of examDisciplines) {
+            const ticket = disc.questions.find(q => q.number == id);
+            if (ticket) {
+                showTicketContent(ticket);
+                document.querySelector('.ticket-viewer').scrollIntoView({ behavior: 'smooth' });
+                return;
+            }
+        }
+    });
 }

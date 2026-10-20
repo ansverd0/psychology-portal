@@ -1,4 +1,4 @@
-const CACHE_NAME = 'psy-hub-v1';
+const CACHE_NAME = 'psy-hub-v2';
 const ASSETS = [
   '/',
   '/index.html', // Если файл называется иначе (например main.html), замени или удали строку
@@ -15,7 +15,8 @@ const ASSETS = [
   '/js/quiz.js',
   '/js/sections-wiki.js',
   '/js/tickets.js',
-  '/js/news-library.js'
+  '/js/news-library.js',
+  '/js/bookmarks.js'
 ];
 
 // Безопасная поштучная установка ресурсов в кэш (Защита от падения addAll при 404)

@@ -988,6 +988,242 @@ button:hover {
 }
 
 
+/* ==========================================================================
+   НОВЫЕ СТИЛИ: РЕДИЗАЙН ИНТЕРФЕЙСА (2026-10-20)
+   ========================================================================== */
+
+/* --- ДВУХКОЛОНОЧНЫЙ ЛЕЙАУТ (cards.html, tests.html — ПК) --- */
+.content-with-sidebar {
+    display: grid;
+    grid-template-columns: 240px 1fr;
+    gap: 20px;
+    max-width: 1200px;
+    width: 100%;
+    margin-top: 20px;
+    padding: 0 20px;
+    box-sizing: border-box;
+    align-items: flex-start;
+}
+
+.discipline-sidebar {
+    flex: 0 0 240px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    background: white;
+    padding: 16px;
+    border-radius: 16px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+    box-sizing: border-box;
+}
+
+.discipline-sidebar .mobile-tile-btn {
+    flex: none;
+    width: 100%;
+    text-align: center;
+    padding: 10px 12px;
+    font-size: 14px;
+}
+
+.content-area {
+    flex: 1;
+    min-width: 0;
+}
+
+/* --- ТРЁХКОЛОНОЧНЫЙ ЛЕЙАУТ (tickets.html, sections.html — ПК) --- */
+.tri-column-layout {
+    display: grid;
+    grid-template-columns: 280px 1fr 260px;
+    gap: 20px;
+    max-width: 1400px;
+    width: 100%;
+    margin-top: 20px;
+    padding: 0 20px;
+    box-sizing: border-box;
+    align-items: flex-start;
+}
+
+.bookmarks-panel {
+    flex: 0 0 260px;
+    display: flex;
+    flex-direction: column;
+    background: white;
+    padding: 16px;
+    border-radius: 16px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+    box-sizing: border-box;
+}
+
+.bookmarks-panel h3 {
+    margin: 0 0 12px 0;
+    font-size: 16px;
+    color: #1a365d;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.bookmarks-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    overflow-y: auto;
+    max-height: calc(100vh - 200px);
+}
+
+.bookmark-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 12px;
+    background: #f7fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    font-size: 13px;
+    color: #4a5568;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.bookmark-item:hover {
+    background: #ebf8ff;
+    color: #2b6cb0;
+    border-color: #bee3f8;
+}
+
+.bookmark-item .bookmark-title {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    flex: 1;
+    margin-right: 8px;
+}
+
+.bookmark-remove-btn {
+    background: none;
+    border: none;
+    color: #a0aec0;
+    cursor: pointer;
+    font-size: 16px;
+    padding: 0 4px;
+    transition: color 0.2s;
+    flex-shrink: 0;
+}
+
+.bookmark-remove-btn:hover {
+    color: #e53e3e;
+}
+
+.bookmarks-empty {
+    color: #a0aec0;
+    font-size: 13px;
+    text-align: center;
+    padding: 20px 0;
+}
+
+/* --- КНОПКА ЗАКЛАДКИ (звёздочка) --- */
+.bookmark-star-btn {
+    background: none;
+    border: none;
+    font-size: 22px;
+    cursor: pointer;
+    padding: 4px 8px;
+    transition: all 0.2s ease;
+    display: inline-block;
+    line-height: 1;
+}
+
+.bookmark-star-btn:hover {
+    transform: scale(1.2);
+}
+
+.bookmark-star-btn.active {
+    color: #f6ad55;
+}
+
+.bookmark-star-btn:not(.active) {
+    color: #cbd5e0;
+}
+
+/* --- СКРОЛЛЯЩИЕСЯ КОНТЕЙНЕРЫ ДЛЯ МОБИЛЬНЫХ --- */
+.scrollable-container {
+    max-height: 60vh;
+    overflow-y: auto;
+    padding-right: 6px;
+}
+
+.scrollable-container::-webkit-scrollbar {
+    width: 5px;
+}
+
+.scrollable-container::-webkit-scrollbar-track {
+    background: #f7fafc;
+    border-radius: 3px;
+}
+
+.scrollable-container::-webkit-scrollbar-thumb {
+    background: #cbd5e0;
+    border-radius: 3px;
+}
+
+.scrollable-container::-webkit-scrollbar-thumb:hover {
+    background: #a0aec0;
+}
+
+/* --- ПЛИТКИ С ОГРАНИЧЕНИЕМ СТРОК (мобильные) --- */
+.limited-tiles {
+    max-height: calc(3 * 60px); /* 3 строки плиток */
+    overflow-y: auto;
+}
+
+.limited-articles {
+    max-height: calc(5 * 44px); /* 5 строк статей */
+    overflow-y: auto;
+}
+
+/* --- АДАПТИВНОСТЬ: МОБИЛЬНЫЕ (<= 768px) --- */
+@media screen and (max-width: 768px) {
+    /* Убираем трёхколоночный лейаут */
+    .tri-column-layout {
+        grid-template-columns: 1fr !important;
+        padding: 0 !important;
+    }
+    
+    /* Убираем двухколоночный лейаут */
+    .content-with-sidebar {
+        grid-template-columns: 1fr !important;
+        padding: 0 !important;
+    }
+    
+    /* Закладки скрываем на мобильных (в табе/модалке) */
+    .bookmarks-panel {
+        display: none;
+    }
+    
+    /* Скролльчые контейнеры для мобильных плиток */
+    .limited-tiles,
+    .scrollable-container {
+        max-height: 45vh;
+    }
+    
+    /* Скролльчые контейнеры для мобильных статей */
+    .limited-articles {
+        max-height: calc(5 * 44px);
+    }
+}
+
+/* --- АДАПТИВНОСТЬ: ПЛАНШЕТЫ (769–1024px) --- */
+@media screen and (min-width: 769px) and (max-width: 1024px) {
+    .tri-column-layout {
+        grid-template-columns: 240px 1fr 220px;
+    }
+    
+    .content-with-sidebar {
+        grid-template-columns: 200px 1fr;
+    }
+}
+
+
 
 
 
