@@ -10,6 +10,7 @@ const ASSETS = [
   '/news.html',
   '/style.css', // Проверь путь! Если лежит в папке: '/css/style.css'
   '/js/supabase-config.js',
+  '/js/auth.js',
   '/js/flashcards.js',
   '/js/quiz.js',
   '/js/sections-wiki.js',

@@ -103,9 +103,74 @@ function initSections() {
             if (mobileTile && window.innerWidth <= 768) mobileTile.click();
         }, 150); 
     }
+
+    // 4. ЖИВОЙ ПОИСК СТАТЕЙ (для sections.html)
+    const searchInput = document.getElementById('mobile-search-input');
+    const resultsContainer = document.getElementById('mobile-search-results');
+
+    if (searchInput && resultsContainer) {
+        searchInput.addEventListener('input', (e) => {
+            const searchText = e.target.value.toLowerCase().trim();
+            resultsContainer.innerHTML = '';
+
+            if (searchText === '') {
+                resultsContainer.style.display = 'none';
+                searchInput.classList.remove('open-dropdown');
+                return;
+            }
+
+            let matchesFound = false;
+
+            sections.forEach(section => {
+                section.articles.forEach(article => {
+                    if (article.title.toLowerCase().includes(searchText)) {
+                        matchesFound = true;
+
+                        const button = document.createElement('button');
+                        button.classList.add('search-suggest-item');
+                        button.innerHTML = `
+                            <span class="search-suggest-category">${section.title}</span>
+                            <strong>${article.title}</strong>
+                        `;
+
+                        button.addEventListener('click', () => {
+                            showSectionContent(article);
+                            searchInput.value = article.title;
+                            resultsContainer.style.display = 'none';
+                            searchInput.classList.remove('open-dropdown');
+                        });
+
+                        resultsContainer.appendChild(button);
+                    }
+                });
+            });
+
+            if (matchesFound) {
+                resultsContainer.style.display = 'block';
+                searchInput.classList.add('open-dropdown');
+            } else {
+                resultsContainer.innerHTML = '<div style="padding: 15px; color: #718096; text-align:center; font-size:14px;">Ничего не найдено 😕</div>';
+                resultsContainer.style.display = 'block';
+                searchInput.classList.add('open-dropdown');
+            }
+        });
+
+        document.addEventListener('click', (e) => {
+            if (!searchInput.contains(e.target) && !resultsContainer.contains(e.target)) {
+                resultsContainer.style.display = 'none';
+                searchInput.classList.remove('open-dropdown');
+            }
+        });
+    }
 }
 
 // ВЫСОКОПРОИЗВОДИТЕЛЬНЫЙ ДВИЖОК ВИКИ-ПОДСКАЗОК (Линейная O(N) замена)
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.appendChild(document.createTextNode(text));
+    return div.innerHTML;
+}
+
 function showSectionContent(section) {
     const contentContainer = document.querySelector('.section-viewer');
     if (!contentContainer || !section) return;
@@ -132,12 +197,12 @@ function showSectionContent(section) {
                                appGlossary[sortedTerms.find(t => t.toLowerCase() === matchedKey.toLowerCase())];
             
             if (definition) {
-                const safeDef = definition.replace(/"/g, '&quot;');
+                const safeDef = DOMPurify.sanitize(definition);
                 return `<span class="wiki-term" data-tooltip="${safeDef}">${match}</span>`;
             }
             return match;
         });
     }
     
-    contentContainer.innerHTML = `<h2>${section.title}</h2><div class="content-text">${text}</div>`;
+    contentContainer.innerHTML = DOMPurify.sanitize(`<h2>${escapeHtml(section.title)}</h2><div class="content-text">${DOMPurify.sanitize(text)}</div>`);
 }

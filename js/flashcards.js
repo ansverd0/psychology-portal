@@ -1,4 +1,5 @@
 let currentActiveCards = [];
+let currentCardIndex = 0;
 
 function initFlashcards() {
     const allCards = appDatabase.flashcards;
@@ -20,7 +21,6 @@ function initFlashcards() {
 
     function startCardMode(filteredCards) {
         currentActiveCards = shuffleArray([...filteredCards]); 
-        currentCardIndex = 0;
         updateCard();
     }
 

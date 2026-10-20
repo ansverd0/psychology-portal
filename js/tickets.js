@@ -161,11 +161,17 @@ function initTickets() {
     });
 }
 
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.appendChild(document.createTextNode(text));
+    return div.innerHTML;
+}
+
 function showTicketContent(ticket) {
     const ticketContentContainer = document.querySelector('.ticket-viewer');
     if (!ticketContentContainer || !ticket) return;
     
-    const litItems = ticket.literature ? ticket.literature.map(book => `<li>${book}</li>`).join('') : '';
+    const litItems = ticket.literature ? ticket.literature.map(book => `<li>${escapeHtml(book)}</li>`).join('') : '';
     
     let timeHTML = '';
     if (ticket.time) {
@@ -176,21 +182,21 @@ function showTicketContent(ticket) {
     if (ticket.plan) {
         planHTML = `
             <div style="background: #fffaf0; border-left: 4px solid #dd6b20; padding: 12px 15px; border-radius: 4px; margin-bottom: 20px; font-size: 14px; color: #7b341e; margin-top: 15px;">
-                <strong>📋 Рекомендуемый план ответа:</strong> ${ticket.plan}
+                <strong>📋 Рекомендуемый план ответа:</strong> ${escapeHtml(ticket.plan)}
             </div>
         `;
     }
     
-    ticketContentContainer.innerHTML = `
+    ticketContentContainer.innerHTML = DOMPurify.sanitize(`
         <div style="border-bottom: 2px solid #edf2f7; padding-bottom: 12px; margin-bottom: 20px;">
-            <h2 style="margin: 0; font-size: 24px; color: #1a365d; line-height: 1.3;">№${ticket.number}. ${ticket.title}</h2>
+            <h2 style="margin: 0; font-size: 24px; color: #1a365d; line-height: 1.3;">№${escapeHtml(ticket.number)}. ${escapeHtml(ticket.title)}</h2>
             ${timeHTML}
         </div>
         ${planHTML}
-        <div class="content-text">${ticket.content}</div>
+        <div class="content-text">${DOMPurify.sanitize(ticket.content)}</div>
         <div class="literature-box" style="margin-top: 25px;">
             <h3>📚 Рекомендованная литература к вопросу:</h3>
             <ul>${litItems}</ul>
         </div>
-    `;
+    `);
 }

@@ -1,4 +1,6 @@
 let currentActiveQuestions = [];
+let currentTestIndex = 0;
+let score = 0;
 
 function initQuiz() {
     const allQuestions = appDatabase.tests;

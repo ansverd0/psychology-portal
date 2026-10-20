@@ -12,11 +12,20 @@ let appGlossary = {};
 const SUPABASE_URL = "https://lrjszannmammzzqotaro.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_bwLDUQMS1RVwHF2wHE62hg_sODGX5vi";
 
-// Принудительный обход QUIC/UDP (HTTP/3) через стандартный браузерный fetch
-const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-    auth: { persistSession: false, autoRefreshToken: false },
-    global: { fetch: (...args) => window.fetch(...args) }
-});
+// Безопасная инициализация клиента Supabase — если CDN не отвечает, сайт продолжает работу в оффлайн-режиме
+let supabaseClient = null;
+try {
+    if (typeof supabase !== 'undefined') {
+        supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+            auth: { persistSession: false, autoRefreshToken: false },
+            global: { fetch: (...args) => window.fetch(...args) }
+        });
+    } else {
+        console.warn('⚠️ Supabase CDN не загружен (unpkg.com недоступен). Сайт запустится в оффлайн-режиме из localStorage.');
+    }
+} catch (e) {
+    console.warn('⚠️ Ошибка создания Supabase-клиента:', e.message, '— сайт запустится в оффлайн-режиме из localStorage.');
+}
 
 // Индикаторы загрузки для интерфейсных элементов
 function setElementLoading(id, text) {
@@ -68,6 +77,13 @@ function activateLocalDatabaseFallback() {
 // Высокопроизводительный оркестратор с валидацией версии (Вариант Б)
 async function initApplicationHub() {
     console.log("📡 Запуск системы контроля версий хаба...");
+
+    // Если Supabase CDN не загружен — сразу переходим в оффлайн-режим
+    if (!supabaseClient) {
+        console.warn("⚠️ Supabase клиент недоступен. Запуск из локального кэша...");
+        activateLocalDatabaseFallback();
+        return;
+    }
 
     const cachedDb = localStorage.getItem('hub_database_snapshot');
     const cachedGloss = localStorage.getItem('hub_cached_glossary');
@@ -236,6 +252,10 @@ async function initApplicationHub() {
 
 // Запуск инициализации интерфейса в зависимости от текущей страницы DOM
 function executePageModuleInitialization() {
+    // Мягкий безопасный вызов авторизации Этапа 1 (если функция загрузилась в глобальную видимость)
+    if (typeof proceedResearchAuth === 'function') {
+        proceedResearchAuth();
+    }
     const cardElement = document.getElementById('myCard'); 
     if (cardElement && typeof initFlashcards === 'function') initFlashcards(); 
     if (document.querySelector('.tickets-layout') && !document.getElementById('sections-page-marker') && typeof initTickets === 'function') initTickets(); 
@@ -256,3 +276,32 @@ if ('serviceWorker' in navigator) {
             .catch(err => console.error('⚠️ Ошибка регистрации Service Worker:', err));
     });
 }
+// Автоматический трекинг прокрутки для универсальной кнопки "Наверх"
+window.addEventListener('scroll', () => {
+    const topBtn = document.getElementById('scroll-top-btn');
+    if (topBtn) {
+        // Кнопка плавно появляется, если пользователь пролистал больше 400 пикселей вниз
+        if (window.scrollY > 400) {
+            topBtn.classList.add('visible');
+        } else {
+            topBtn.classList.remove('visible');
+        }
+    }
+});
+
+// Автоматическая установка og:url в реальном домене
+function updateOpenGraphUrl() {
+    const ogUrl = document.querySelector('meta[property="og:url"]');
+    if (ogUrl && ogUrl.content === 'https://vercel.app') {
+        ogUrl.content = window.location.href;
+    }
+}
+document.addEventListener('DOMContentLoaded', updateOpenGraphUrl);
+
+// Плавный скролл к самому началу страницы при клике
+document.addEventListener('click', (e) => {
+    if (e.target && e.target.id === 'scroll-top-btn') {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+});
+
