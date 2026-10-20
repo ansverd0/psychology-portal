@@ -1,0 +1,51 @@
+# === Документация ВКР (не публиковать на Vercel) ===
+*.docx
+*.doc
+*.pdf
+# Временные файлы Microsoft Word
+~$*
+
+# === Скриншоты и референсы интерфейса ===
+мобила разделы.jpg
+пк разделы.png
+*.sketch
+*.fig
+
+# === Локальные бэкапы и рабочие копии кода ===
+бэкапы/
+json и js/
+*.bak
+*.backup
+*-backup/
+
+# === Рабочие заметки ===
+roadmap-diplom.md
+roadmap*.md
+TODO.md
+ЗАМЕТКИ.md
+
+# === Секреты и учётные данные (никогда не коммитить) ===
+.env
+.env.local
+*.pem
+*.key
+*password*
+*secret*
+*credentials*
+supabase-password.txt
+
+# === Служебные файлы операционной системы ===
+Thumbs.db
+.DS_Store
+desktop.ini
+
+# === Служебные файлы редакторов ===
+.vscode/
+.idea/
+*.swp
+
+# === Инструменты сборки (если появятся) ===
+node_modules/
+.vercel/
+dist/
+.cache/
