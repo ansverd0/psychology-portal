@@ -57,7 +57,7 @@ psychology-portal/
 | `library` | Каталог литературы | `id`, `title`, `author`, `annotation` |
 | `news` | Ченджлог | `id`, `date`, `title`, `changes` (массив) |
 | `ticket_library` | Билеты → литература | `ticket_id`, `book_id` |
-| `version_control` | Версионирование | `version` |
+| `version_control` | Автоверсия контента (триггеры на контентных таблицах) | `version` |
 
 ---
 
@@ -101,11 +101,11 @@ psychology-portal/
 
 ## SERVICE WORKER
 
-- Версия: `psy-hub-v1`
-- Кэширует все HTML, CSS, JS, шрифты
-- Supabase-запросы исключены из кэша
-- Graceful degradation: при ошибке `cache.add()` — предупреждение, не падение
-- Автообновление: `self.skipWaiting()` + очистка старых кэшей
+- Версия: `psy-hub-v10`
+- Стратегия: cache-first для статики, network-first для навигации с таймаутом 2.5 с
+- Кэширует все HTML, CSS, JS, шрифты; Supabase-запросы исключены
+- Ошибка `cache.add()` не валит установку
+- Автообновление: `self.skipWaiting()` + очистка старых кэшей + один reload по `controllerchange`
 
 ---
 

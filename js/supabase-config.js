@@ -8,6 +8,7 @@ let appDatabase = {
     news: []
 };
 let appGlossary = {};
+let cacheRendered = false;
 
 const SUPABASE_URL = "https://lrjszannmammzzqotaro.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_bwLDUQMS1RVwHF2wHE62hg_sODGX5vi";
@@ -74,25 +75,54 @@ function showOfflineNotification() {
     }
 }
 
-// Активация локального оффлайн-фолбека из localStorage
-function activateLocalDatabaseFallback() {
+// Читает локальный снимок в appDatabase/appGlossary.
+// Возвращает true, если снимок существует и корректно разобран.
+function applyCachedSnapshot() {
     const cachedDb = localStorage.getItem('hub_database_snapshot');
-    const cachedGloss = localStorage.getItem('hub_cached_glossary');
+    if (!cachedDb) return false;
 
     try {
-        if (cachedDb) appDatabase = JSON.parse(cachedDb);
+        appDatabase = JSON.parse(cachedDb);
+        const cachedGloss = localStorage.getItem('hub_cached_glossary');
         if (cachedGloss) appGlossary = JSON.parse(cachedGloss);
+        return true;
     } catch (e) {
-        console.warn('⚠️ Локальный кэш повреждён, продолжаем с пустой базой:', e.message);
+        console.warn('⚠️ Локальный кэш повреждён, продолжаем без него:', e.message);
+        return false;
+    }
+}
+
+// Активация локального оффлайн-фолбека из localStorage
+function activateLocalDatabaseFallback() {
+    if (!cacheRendered) {
+        cacheRendered = applyCachedSnapshot();
     }
 
     showOfflineNotification();
-    executePageModuleInitialization();
+
+    // Если кэш уже отрисован, повторно инициализировать модули нельзя:
+    // это продублирует обработчики событий.
+    if (!cacheRendered) {
+        executePageModuleInitialization();
+    }
 }
 
 // Высокопроизводительный оркестратор с валидацией версии (Вариант Б)
 async function initApplicationHub() {
     console.log("📡 Запуск системы контроля версий хаба...");
+
+    const cachedDb = localStorage.getItem('hub_database_snapshot');
+    const localVersion = localStorage.getItem('hub_app_version');
+
+    // Сначала показываем сохранённый снимок, не дожидаясь сети.
+    // Проверка версии и обновление идут в фоне и не блокируют первый экран.
+    if (cachedDb && !cacheRendered) {
+        if (applyCachedSnapshot()) {
+            cacheRendered = true;
+            executePageModuleInitialization();
+            console.log("⚡ Мгновенный старт из локального снимка");
+        }
+    }
 
     // Если Supabase CDN не загружен — сразу переходим в оффлайн-режим
     if (!supabaseClient) {
@@ -100,10 +130,6 @@ async function initApplicationHub() {
         activateLocalDatabaseFallback();
         return;
     }
-
-    const cachedDb = localStorage.getItem('hub_database_snapshot');
-    const cachedGloss = localStorage.getItem('hub_cached_glossary');
-    const localVersion = localStorage.getItem('hub_app_version');
 
     // Перехват полного отсутствия интернет-соединения
     if (!navigator.onLine) {
@@ -124,19 +150,19 @@ async function initApplicationHub() {
         const cloudVersion = verData?.[0]?.version || "0.0.0";
         console.log(`📦 Версия в облаке: ${cloudVersion} | Версия на устройстве: ${localVersion}`);
 
-        // СЦЕНАРИЙ 1: Версии совпали и кэш существует — мгновенный запуск без скачивания таблиц
-        if (cachedDb && localVersion === cloudVersion) {
-            console.log("🚀 Изменений в БД нет. Мгновенный импорт из локального snapshot...");
-            appDatabase = JSON.parse(cachedDb);
-            if (cachedGloss) appGlossary = JSON.parse(cachedGloss);
-            
-            executePageModuleInitialization();
-            return; // Сетевой поток успешно завершен, экономим трафик и время
+        // СЦЕНАРИЙ 1: кэш уже отрисован и версии совпали — ничего не делаем
+        if (cacheRendered && localVersion === cloudVersion) {
+            try { sessionStorage.removeItem('hub_reload_' + cloudVersion); } catch (e) { /* ignore */ }
+            return;
         }
 
-        // СЦЕНАРИЙ 2: Первый вход или версия изменилась — запускаем синхронное скачивание таблиц
-        console.log("🔄 Обнаружено обновление контента или пустой кэш. Выкачиваем таблицы...");
-        showLoadingStates();
+        // СЦЕНАРИЙ 2: первый вход или контент обновился — скачиваем таблицы
+        if (!cacheRendered) {
+            console.log("🔄 Обнаружено обновление контента или пустой кэш. Выкачиваем таблицы...");
+            showLoadingStates();
+        } else {
+            console.log("🔄 Фоновое обновление контента...");
+        }
 
         let networkSuccess = true;
         let freshDatabase = { flashcards: [], tickets: [], tests: [], sections: [], library: [], news: [] };
@@ -275,6 +301,19 @@ async function initApplicationHub() {
             localStorage.setItem('hub_database_snapshot', JSON.stringify(appDatabase));
             localStorage.setItem('hub_cached_glossary', JSON.stringify(appGlossary));
             localStorage.setItem('hub_app_version', cloudVersion); // Фиксируем версию на устройстве
+
+            if (cacheRendered) {
+                // Пользователь уже читает старый снимок. Обновляем кэш и
+                // перезагружаем один раз, чтобы не дублировать обработчики.
+                const reloadKey = 'hub_reload_' + cloudVersion;
+                if (sessionStorage.getItem(reloadKey) === '1') {
+                    console.warn('⚠️ Кэш обновлён, но перезагрузка уже была — оставляем текущий экран.');
+                    return;
+                }
+                sessionStorage.setItem(reloadKey, '1');
+                window.location.reload();
+                return;
+            }
 
             executePageModuleInitialization();
         } else {
