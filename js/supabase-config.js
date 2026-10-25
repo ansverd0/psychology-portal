@@ -172,10 +172,24 @@ async function fetchCloudVersion() {
     return data?.[0]?.version || '0.0.0';
 }
 
-async function fetchTable(table, columns) {
-    const { data, error } = await supabaseClient.from(table).select(columns);
-    if (error) throw error;
-    return data || [];
+async function fetchTable(table, columns, attempts = 2) {
+    let lastError = null;
+
+    for (let attempt = 0; attempt < attempts; attempt++) {
+        try {
+            const { data, error } = await supabaseClient.from(table).select(columns);
+            if (error) throw error;
+            return data || [];
+        } catch (e) {
+            lastError = e;
+            console.warn(`⚠️ ${table}: попытка ${attempt + 1} из ${attempts} не удалась:`, e.message);
+            if (attempt < attempts - 1) {
+                await new Promise(resolve => setTimeout(resolve, 400));
+            }
+        }
+    }
+
+    throw lastError;
 }
 
 function mapFlashcards(data) {
@@ -287,7 +301,10 @@ const PAGE_LOADERS = {
     sections: async () => {
         const [articles, glossary] = await Promise.all([
             fetchTable('articles', 'title, content, discipline_id'),
-            fetchTable('glossary', 'term, definition')
+            fetchTable('glossary', 'term, definition').catch(e => {
+                console.warn('⚠️ Глоссарий недоступен, статьи покажем без подсказок:', e.message);
+                return [];
+            })
         ]);
         return { db: { sections: mapArticles(articles) }, glossary: mapGlossary(glossary) };
     },
@@ -295,8 +312,14 @@ const PAGE_LOADERS = {
     tickets: async () => {
         const [tickets, links, library] = await Promise.all([
             fetchTable('tickets', 'id, number, title, recommend_time, plan, content, discipline_id'),
-            fetchTable('ticket_library', 'ticket_id, book_id'),
-            fetchTable('library', 'id, title, author, annotation')
+            fetchTable('ticket_library', 'ticket_id, book_id').catch(e => {
+                console.warn('⚠️ Связи билетов с литературой недоступны:', e.message);
+                return [];
+            }),
+            fetchTable('library', 'id, title, author, annotation').catch(e => {
+                console.warn('⚠️ Литература недоступна, билеты покажем без списка книг:', e.message);
+                return [];
+            })
         ]);
         return { db: { tickets: mapTickets(tickets, links, library), library }, glossary: {} };
     }
@@ -399,14 +422,33 @@ document.addEventListener('DOMContentLoaded', initApplicationHub);
 
 // Глобальная фоновая регистрация PWA Service Worker для оффлайн-удержания статики
 if ('serviceWorker' in navigator) {
-    // Если воркер уже управлял страницей, после обновления перезагружаем её один раз,
-    // чтобы пользователь сразу увидел новый интерфейс, а не старый кэш.
     const hadController = Boolean(navigator.serviceWorker.controller);
-    let refreshing = false;
+    let updateShown = false;
+
+    function showUpdateBanner() {
+        if (updateShown || document.getElementById('update-banner')) return;
+        updateShown = true;
+
+        const banner = document.createElement('div');
+        banner.id = 'update-banner';
+        banner.className = 'update-banner';
+        banner.innerHTML =
+            '<span>Доступна новая версия портала.</span>' +
+            '<div class="update-banner__actions">' +
+                '<button type="button" id="update-reload">Обновить</button>' +
+                '<button type="button" id="update-dismiss" class="secondary">Позже</button>' +
+            '</div>';
+        document.body.appendChild(banner);
+
+        document.getElementById('update-reload').addEventListener('click', () => window.location.reload());
+        document.getElementById('update-dismiss').addEventListener('click', () => banner.remove());
+    }
+
+    // Не перезагружаем страницу принудительно: пользователь может потерять ввод.
+    // Показываем баннер, решение остаётся за ним.
     navigator.serviceWorker.addEventListener('controllerchange', () => {
-        if (!hadController || refreshing) return;
-        refreshing = true;
-        window.location.reload();
+        if (!hadController) return;
+        showUpdateBanner();
     });
 
     window.addEventListener('load', () => {

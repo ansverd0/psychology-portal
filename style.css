@@ -1655,6 +1655,57 @@ button:hover {
     }
 }
 
+/* Плашка «Доступна новая версия» */
+.update-banner {
+    position: fixed;
+    top: 12px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 100001;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+    width: max-content;
+    max-width: calc(100% - 20px);
+    padding: 10px 14px;
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+    font-size: 13px;
+    color: #2d3748;
+    box-sizing: border-box;
+}
+
+.update-banner__actions {
+    display: flex;
+    gap: 8px;
+}
+
+.update-banner button {
+    padding: 8px 14px;
+    font-size: 13px;
+    border-radius: 8px;
+}
+
+.update-banner button.secondary {
+    background: #edf2f7;
+    color: #2d3748;
+}
+
+@media screen and (max-width: 600px) {
+    .update-banner {
+        top: 8px;
+        left: 10px;
+        right: 10px;
+        transform: none;
+        width: auto;
+        max-width: none;
+    }
+}
+
 
 
 

@@ -1,7 +1,7 @@
 // Service Worker: офлайн-первый для статики и быстрый фолбек при медленной сети.
 // Важно: при каждом релизе меняйте CACHE_NAME — это и есть инвалидация кэша.
 
-const CACHE_NAME = 'psy-hub-v11';
+const CACHE_NAME = 'psy-hub-v12';
 
 // Пути относительные: работают и в корне домена, и в подпапке (GitHub Pages).
 const ASSETS = [
@@ -13,6 +13,7 @@ const ASSETS = [
   './sections.html',
   './library.html',
   './news.html',
+  './offline.html',
   './privacy.html',
   './style.css',
   './js/vendor/supabase.js',
@@ -119,7 +120,7 @@ self.addEventListener('fetch', (event) => {
         if (response) return response;
         const cached = await caches.match(request, { ignoreSearch: true });
         if (cached) return cached;
-        const fallback = await caches.match('./index.html');
+        const fallback = await caches.match('./offline.html');
         if (fallback) return fallback;
         return new Response('Страница недоступна офлайн', {
           status: 503,

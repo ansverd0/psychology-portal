@@ -20,7 +20,7 @@
 ## Структура
 
 ```
-index.html, tickets.html, sections.html, cards.html, tests.html, library.html, news.html, privacy.html
+index.html, tickets.html, sections.html, cards.html, tests.html, library.html, news.html, privacy.html, offline.html
 style.css
 sw.js
 js/                 # модули страниц + vendor (supabase-js, DOMPurify) + analytics.js
