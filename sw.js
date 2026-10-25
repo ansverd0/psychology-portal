@@ -1,4 +1,4 @@
-const CACHE_NAME = 'psy-hub-v3';
+const CACHE_NAME = 'psy-hub-v4';
 const ASSETS = [
   '/',
   '/index.html', // Если файл называется иначе (например main.html), замени или удали строку

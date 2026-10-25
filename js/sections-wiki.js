@@ -165,6 +165,12 @@ function escapeHtml(text) {
     return div.innerHTML;
 }
 
+/** Если DOMPurify не загрузился с CDN — не роняем страницу, а показываем текст */
+function sanitizeWikiHtml(html, config) {
+    if (typeof DOMPurify === 'undefined') return escapeHtml(html || '');
+    return DOMPurify.sanitize(html, config);
+}
+
 /** Рисует список статей во второй колонке навигации.
  *  activeTitle — статья, которую нужно подсветить и подматривать в неё */
 function renderArticlesColumn(articles, container, activeTitle) {
@@ -223,7 +229,7 @@ function showSectionContent(section) {
     if (!contentContainer || !section) return;
     
     // 1. Сначала санитизируем сырой контент статьи (убираем опасные теги/скрипты)
-    let safeRawContent = DOMPurify.sanitize(section.content || '', {
+    let safeRawContent = sanitizeWikiHtml(section.content || '', {
         ALLOWED_TAGS: ['p', 'br', 'strong', 'em', 'u', 'h3', 'h4', 'h5', 'h6', 'ul', 'ol', 'li', 'blockquote', 'a', 'img', 'code', 'pre'],
         ALLOWED_ATTR: ['href', 'rel', 'target', 'src', 'alt']
     });
@@ -249,7 +255,7 @@ function showSectionContent(section) {
                                appGlossary[sortedTerms.find(t => t.toLowerCase() === matchedKey.toLowerCase())];
             
             if (definition) {
-                const safeDef = DOMPurify.sanitize(definition, { ALLOWED_TAGS: [], ALLOWED_ATTR: ['data-tooltip'] });
+                const safeDef = sanitizeWikiHtml(definition, { ALLOWED_TAGS: [], ALLOWED_ATTR: ['data-tooltip'] });
                 return `<span class="wiki-term" data-tooltip="${safeDef}">${match}</span>`;
             }
             return match;

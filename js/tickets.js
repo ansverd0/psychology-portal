@@ -206,6 +206,12 @@ function escapeHtml(text) {
     return div.innerHTML;
 }
 
+/** Если DOMPurify не загрузился с CDN — не роняем страницу, а показываем текст */
+function sanitizeDbHtml(html, config) {
+    if (typeof DOMPurify === 'undefined') return escapeHtml(html || '');
+    return DOMPurify.sanitize(html, config);
+}
+
 function showTicketContent(ticket) {
     const ticketContentContainer = document.querySelector('.ticket-viewer');
     if (!ticketContentContainer || !ticket) return;
@@ -230,7 +236,7 @@ function showTicketContent(ticket) {
     const bookmarkIcon = isBookmarked(ticket.number, 'ticket') ? '★' : '☆';
 
     // Санитизируем только контент (не заголовок и не кнопку закладки)
-    const safeContent = DOMPurify.sanitize(ticket.content, {
+    const safeContent = sanitizeDbHtml(ticket.content, {
         ALLOWED_TAGS: ['p', 'br', 'strong', 'em', 'u', 'h3', 'h4', 'h5', 'h6', 'ul', 'ol', 'li', 'blockquote', 'a', 'img', 'code', 'pre'],
         ALLOWED_ATTR: ['href', 'rel', 'target', 'src', 'alt']
     });

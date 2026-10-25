@@ -27,6 +27,7 @@ TODO.md
 # === Секреты и учётные данные (никогда не коммитить) ===
 .env
 .env.local
+.mcp.json
 .kodacli/
 *.pem
 *.key
@@ -50,3 +51,8 @@ node_modules/
 .vercel/
 dist/
 .cache/
+
+# === Рабочие артефакты аудита и дампы БД ===
+.audit/
+backups/
+AUDIT.md

@@ -156,6 +156,17 @@ function showQuestion() {
     }
 }
 
+/** Разрешаем только http/https-ссылки: javascript: и data: из БД не должны попадать в href */
+function getSafeReviewLink(rawLink) {
+    if (!rawLink) return null;
+    try {
+        const url = new URL(String(rawLink), window.location.origin);
+        return (url.protocol === 'http:' || url.protocol === 'https:') ? url.href : null;
+    } catch (e) {
+        return null;
+    }
+}
+
 function handleAnswer(selectedButton, selectedIndex, correctIndex) {
     const quizOptionsContainer = document.getElementById('quiz-options');
     if (!quizOptionsContainer) return;
@@ -176,9 +187,10 @@ function handleAnswer(selectedButton, selectedIndex, correctIndex) {
         selectedButton.classList.add('wrong');
         if (allButtons[correctIndex]) allButtons[correctIndex].classList.add('correct');
 
-        if (currentQuestion.link) {
+        const reviewLinkUrl = getSafeReviewLink(currentQuestion.link);
+        if (reviewLinkUrl) {
             const reviewLink = document.createElement('a');
-            reviewLink.href = currentQuestion.link;
+            reviewLink.href = reviewLinkUrl;
             reviewLink.classList.add('review-theme-btn');
             reviewLink.innerHTML = `📖 Повторить тему конспекта`;
             quizOptionsContainer.appendChild(reviewLink);
