@@ -23,9 +23,9 @@
 index.html, tickets.html, sections.html, cards.html, tests.html, library.html, news.html, privacy.html, offline.html
 style.css
 sw.js
-js/                 # модули страниц + vendor (supabase-js, DOMPurify) + analytics.js
+js/                 # модули страниц + vendor (supabase-js, DOMPurify) + analytics.js + vitals.js
 db/                 # SQL-миграции
-scripts/            # бэкап, выполнение SQL, проверка прав, MCP-лаунчер
+scripts/            # бэкап, выполнение SQL, проверка прав, проверка vendor, MCP-лаунчер
 .github/workflows/  # pages.yml, backup.yml, monitor.yml
 docs/RUNBOOK.md     # эксплуатация и восстановление
 ```
@@ -60,6 +60,7 @@ node scripts/backup-db.mjs                  # дамп public-таблиц + с�
 node scripts/db-exec.mjs db/file.sql --dry-run
 node scripts/db-exec.mjs db/file.sql        # применить миграцию
 node scripts/check-permissions.mjs          # 10 проверок прав anon
+node scripts/check-vendor.mjs               # sha256 локальных supabase-js и DOMPurify
 node scripts/mcp-supabase.mjs               # MCP-сервер с токеном из .env
 ```
 
@@ -82,6 +83,8 @@ GitHub Action `Sync gh-pages` зеркалит `master` в `gh-pages`, Pages п�
 - Контент из БД санитизируется (DOMPurify + экранирование).
 - Секреты — только в `.env`; `.mcp.json` и `.env` в `.gitignore`.
 - Политика данных и согласие: `privacy.html`.
+- CSP через `<meta http-equiv>` и `Referrer-Policy` на всех страницах (GitHub Pages не даёт HTTP-заголовки).
+- Версии и sha256 vendor-библиотек зафиксированы в `js/vendor/manifest.json`.
 
 ## Тесты
 
@@ -91,4 +94,6 @@ GitHub Action `Sync gh-pages` зеркалит `master` в `gh-pages`, Pages п�
 - билеты, статьи, карточки, тесты, новости и литература отдают контент;
 - вики-термины показывают подсказки;
 - закладки сохраняются после перезагрузки;
-- `node scripts/check-permissions.mjs` — 10/10 PASS.
+- `node scripts/check-permissions.mjs` — 10/10 PASS;
+- `node scripts/check-vendor.mjs` — sha256 совпадает;
+- в консоли нет ошибок CSP; `hubVitals.latest()` в DevTools показывает LCP/CLS/INP.

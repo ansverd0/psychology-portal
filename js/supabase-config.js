@@ -410,7 +410,7 @@ function executePageModuleInitialization() {
     }
     const cardElement = document.getElementById('myCard'); 
     if (cardElement && typeof initFlashcards === 'function') initFlashcards(); 
-    if ((document.querySelector('.tickets-layout') || document.querySelector('.tri-column-layout')) && !document.getElementById('sections-page-marker') && typeof initTickets === 'function') initTickets(); 
+    if (document.querySelector('.tri-column-layout') && !document.getElementById('sections-page-marker') && typeof initTickets === 'function') initTickets();
     if (document.getElementById('quiz-wrapper') && typeof initQuiz === 'function') initQuiz(); 
     if (document.getElementById('sections-page-marker') && typeof initSections === 'function') initSections(); 
     if (document.getElementById('library-page-marker') && typeof initLibrary === 'function') initLibrary(); 

@@ -7,6 +7,7 @@
   "scripts": {
     "backup": "node scripts/backup-db.mjs",
     "check:permissions": "node scripts/check-permissions.mjs",
+    "check:vendor": "node scripts/check-vendor.mjs",
     "db:exec": "node scripts/db-exec.mjs",
     "mcp:supabase": "node scripts/mcp-supabase.mjs"
   },

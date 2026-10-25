@@ -1,0 +1,22 @@
+{
+  "note": "Контрольные суммы локальных библиотек. Не редактировать вручную: пересчитывать через `node scripts/check-vendor.mjs --update`.",
+  "algorithm": "sha256",
+  "files": [
+    {
+      "file": "supabase.js",
+      "version": "2.43.4",
+      "source": "https://unpkg.com/@supabase/supabase-js@2.43.4/dist/umd/supabase.js",
+      "license": "Apache-2.0",
+      "bytes": 106011,
+      "sha256": "a97c70db60533cf63ea432d5a08f4481ac09ec6d16e23190cd158d74a53afa2a"
+    },
+    {
+      "file": "dompurify.min.js",
+      "version": "3.0.11",
+      "source": "https://cdn.jsdelivr.net/npm/dompurify@3.0.11/dist/purify.min.js",
+      "license": "Apache-2.0 / MPL-2.0",
+      "bytes": 21251,
+      "sha256": "833a4bb2049353452eaac19dfe376324c0f11d33b008765f094bfadf4a5501f0"
+    }
+  ]
+}

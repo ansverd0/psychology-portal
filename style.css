@@ -45,19 +45,6 @@ button:hover {
     background: #2b6cb0;
 }
 
-.back-link {
-    display: inline-block;
-    color: #3182ce;
-    text-decoration: none;
-    font-weight: 600;
-    margin-bottom: 15px;
-    transition: 0.2s;
-}
-
-.back-link:hover {
-    color: #2b6cb0;
-}
-
 /* ==========================================================================
    2. МОДУЛЬ «ТРЕНАЖЕР ТЕРМИНОВ» (ФЛЭШ-КАРТОЧКИ)
    ========================================================================== */
@@ -176,7 +163,7 @@ button:hover {
     height: 100%;
 }
 
-.menu-item:not(.locked):hover {
+.menu-item:hover {
     transform: translateY(-5px);
     border-color: #3182ce;
     box-shadow: 0 10px 20px rgba(49, 130, 206, 0.1);
@@ -198,13 +185,6 @@ button:hover {
     font-size: 14px;
     color: #4a5568;
     line-height: 1.5;
-}
-
-.menu-item.locked {
-    background: #f7fafc;
-    border-color: #edf2f7;
-    cursor: not-allowed;
-    opacity: 0.8;
 }
 
 .menu-item .badge {
@@ -250,17 +230,6 @@ button:hover {
 /* ==========================================================================
    4. ДВУХКОЛОНОЧНЫЙ МАКЕТ (БИЛЕТЫ И РАЗДЕЛЫ НА ПК)
    ========================================================================== */
-.tickets-layout {
-    display: flex;
-    gap: 30px;
-    width: 100%;
-    max-width: 1100px;
-    margin-top: 20px;
-    padding: 0 20px;
-    box-sizing: border-box;
-    align-items: flex-start;
-}
-
 /* Колонка навигации №1: поиск + папки */
 .tickets-sidebar {
     display: flex;
@@ -328,53 +297,6 @@ button:hover {
     background: #3182ce;
     color: white;
     border-color: #3182ce;
-}
-
-.branch-title-btn {
-    font-weight: 600 !important;
-    background: #edf2f7 !important;
-    color: #1a365d !important;
-    border-left: 4px solid #cbd5e0 !important;
-    margin-bottom: 2px;
-}
-
-.branch-title-btn.branch-active {
-    border-left-color: #3182ce !important;
-    background: #e2e8f0 !important;
-}
-
-.submenu-container {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-    padding-left: 15px;
-    margin-bottom: 8px;
-    border-left: 2px dashed #e2e8f0;
-    margin-left: 10px;
-}
-
-.submenu-item-btn {
-    background: transparent;
-    border: none;
-    color: #4a5568;
-    padding: 10px 12px;
-    text-align: left;
-    font-size: 14px;
-    cursor: pointer;
-    border-radius: 6px;
-    transition: all 0.2s ease;
-    width: 100%;
-}
-
-.submenu-item-btn:hover {
-    background: #ebf8ff;
-    color: #2b6cb0;
-}
-
-.submenu-item-btn.active {
-    background: #3182ce;
-    color: white;
-    font-weight: 500;
 }
 
 .ticket-viewer, .section-viewer {
@@ -713,27 +635,12 @@ button:hover {
         grid-template-columns: repeat(3, minmax(150px, 1fr));
         gap: 25px;grid-auto-rows: 1fr;
     }
-    main.tickets-layout {
-        display: flex !important;
-        flex-direction: row !important;
-        align-items: flex-start !important;
-        gap: 30px !important;
-    }
-    .desktop-only-list {
-        display: flex !important;
-        flex-direction: column;
-        gap: 10px;width: 100%;
-    }
-}/* 📱 СМАРТФОНЫ И ПЛАНШЕТЫ (МЕНЬШЕ 768px) */
+}
+
+/* 📱 СМАРТФОНЫ И ПЛАНШЕТЫ (МЕНЬШЕ 768px) */
 @media screen and (max-width: 768px) {
     body {
         padding: 10px !important;
-    }
-    .tickets-layout {
-        flex-direction: column;
-        gap: 15px;width: 100% !important;
-        padding: 0 !important;
-        margin: 0 !important;
     }
     .ticket-viewer, .section-viewer {
         width: 100% !important;
@@ -754,13 +661,11 @@ button:hover {
     .mobile-only-tiles {
         display: flex !important;
     }
-    .desktop-only-list {
-        display: none !important;
-    }
     .quiz-footer {
         justify-content: center !important;
         width: 100%;
-    }#quiz-next-btn {
+    }
+    #quiz-next-btn {
         width: 100%;
         max-width: 280px;
     }
@@ -1335,31 +1240,6 @@ button:hover {
     }
 }
 
-/* --- СКРОЛЛЯЩИЕСЯ КОНТЕЙНЕРЫ ДЛЯ МОБИЛЬНЫХ --- */
-.scrollable-container {
-    max-height: 60vh;
-    overflow-y: auto;
-    padding-right: 6px;
-}
-
-.scrollable-container::-webkit-scrollbar {
-    width: 5px;
-}
-
-.scrollable-container::-webkit-scrollbar-track {
-    background: #f7fafc;
-    border-radius: 3px;
-}
-
-.scrollable-container::-webkit-scrollbar-thumb {
-    background: #cbd5e0;
-    border-radius: 3px;
-}
-
-.scrollable-container::-webkit-scrollbar-thumb:hover {
-    background: #a0aec0;
-}
-
 /* --- ПЛИТКИ/СПИСКИ С ОГРАНИЧЕНИЕМ (мобильные) --- */
 .limited-tiles {
     max-height: 260px; /* ~3 строки плиток */
@@ -1408,10 +1288,6 @@ button:hover {
         display: none;
     }
     
-    .scrollable-container {
-        max-height: 45vh;
-    }
-
     .limited-tiles {
         max-height: 260px;
     }

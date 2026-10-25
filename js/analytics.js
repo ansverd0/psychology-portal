@@ -103,6 +103,22 @@
         });
     }
 
+    // Публичный мини-API: другие модули (vitals.js) не знают номер счётчика и правила согласия
+    window.PsyAnalytics = {
+        counterId: COUNTER_ID,
+        hasConsent: function () { return readConsent() === 'granted'; },
+        trackVitals: function (metrics, goalName) {
+            if (readConsent() !== 'granted' || typeof ym !== 'function') return false;
+            try {
+                ym(COUNTER_ID, 'params', metrics);
+                if (goalName) ym(COUNTER_ID, 'reachGoal', goalName, metrics);
+                return true;
+            } catch (e) {
+                return false;
+            }
+        }
+    };
+
     var choice = readConsent();
 
     if (choice === 'granted') {

@@ -48,7 +48,7 @@ git push --force origin master
 - Список кэшируемых файлов — `ASSETS` в `sw.js`.
 - Любое изменение HTML/CSS/JS → `CACHE_NAME = 'psy-hub-vN+1'`.
 - Версия **контента** (`version_control`) обновляется автоматически триггерами при INSERT/UPDATE/DELETE в контентных таблицах (`db/2026-10-25_auto_content_version.sql`). Вручную бампать не нужно; после правок в Table Editor клиенты сами скачают новую версию.
-- Обновление у пользователя: вкладка получает новый SW, `controllerchange` перезагружает страницу один раз.
+- Обновление у пользователя: вкладка получает новый SW, показывается баннер «Доступна новая версия»; перезагрузка — по кнопке, введённый текст не теряется.
 - Если пользователь видит старую версию: Ctrl+F5; в DevTools → Application → Service Workers → Unregister.
 
 ---
@@ -213,3 +213,32 @@ curl.exe -H "apikey: <publishable>" -H "Authorization: Bearer <publishable>" `
 - Согласие в модалке: чекбокс **не** предзаполнен, ссылка на политику.
 - Аналитика: `js/analytics.js`, только после согласия.
 - При изменении состава данных/третьих лиц обновить `privacy.html` и дату редакции.
+
+---
+
+## 11. Диагностика фронтенда (CSP и Web Vitals)
+
+### CSP
+
+- Политика задана `<meta http-equiv="Content-Security-Policy">` в `<head>` каждой страницы; менять её нужно синхронно во всех 9 HTML-файлах.
+- Нарушения видны в DevTools → Console как `Refused to load…`; проверять после добавления любого внешнего домена.
+- GitHub Pages не отдаёт HTTP-заголовки, поэтому `X-Content-Type-Options`/HSTS/`frame-ancestors` недоступны — не пытаться «починить» это в HTML.
+- `'unsafe-inline'` в `script-src` нужен из-за `onclick` в разметке; снимается вместе с `U-01`.
+
+### Web Vitals
+
+- Модуль `js/vitals.js`; результат — в `localStorage['hub_web_vitals']` (20 последних загрузок).
+- В консоли страницы: `hubVitals.latest()` — последняя запись, `hubVitals.log()` — все, `hubVitals.clear()` — очистить.
+- После согласия на аналитику метрики уходят в Метрику: параметры + цель `web_vitals`.
+- Ориентиры: LCP < 2.5 с, CLS < 0.1, INP < 200 мс.
+
+---
+
+## 12. Vendor-библиотеки
+
+```powershell
+node scripts/check-vendor.mjs            # сверка с js/vendor/manifest.json
+node scripts/check-vendor.mjs --update   # после осознанной замены файла
+```
+
+После замены библиотеки поднимите `CACHE_NAME` в `sw.js` и проверьте `tickets.html`/`sections.html` (DOMPurify) и загрузку данных (supabase-js).

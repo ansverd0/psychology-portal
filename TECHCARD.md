@@ -2,7 +2,7 @@
 
 > Одна актуальная техкарта. Все изменения вносятся сюда. Старые docx-версии удалены.
 > Технический бэклог, приоритеты и правила для новых чатов: `TECH-ROADMAP.md`.
-> Обновлено: 2026-10-25
+> Обновлено: 2026-10-26
 
 ---
 
@@ -35,17 +35,19 @@ psychology-portal/
 ├── README.md, docs/RUNBOOK.md
 ├── .github/workflows/      # pages.yml, backup.yml, monitor.yml
 ├── db/                     # миграции RLS и авто-версии
-├── scripts/                # backup, db-exec, check-permissions, mcp
+├── scripts/                # backup, db-exec, check-permissions, check-vendor, mcp
 └── js/
     ├── supabase-config.js  # Ядро: клиент, PAGE_LOADERS, кэш, SW
-    ├── analytics.js        # Метрика после согласия, защита полей
+    ├── analytics.js        # Метрика после согласия, защита полей, PsyAnalytics API
+    ├── vitals.js           # Web Vitals: LCP/CLS/INP → localStorage + Метрика
     ├── auth.js             # Авторизация по анонимным ключам
     ├── flashcards.js       # Тренажёр терминов
     ├── quiz.js             # Интерактивные тесты
     ├── tickets.js          # Экзаменационные билеты
     ├── sections-wiki.js    # Разделы психологии + вики-эффект
     ├── news-library.js     # Новости + библиотека
-    └── bookmarks.js        # Система закладок для tickets и sections
+    ├── bookmarks.js        # Система закладок для tickets и sections
+    └── vendor/             # supabase-js 2.43.4, DOMPurify 3.0.11, manifest.json (sha256)
 ```
 
 ---
@@ -118,12 +120,43 @@ psychology-portal/
 
 ## SERVICE WORKER
 
-- Версия: `psy-hub-v12`
+- Версия: `psy-hub-v13`
 - Стратегия: cache-first для статики, network-first для навигации с таймаутом 2.5 с
 - Кэширует все HTML, CSS, JS, шрифты; Supabase-запросы исключены
+- В `ASSETS` также `js/vitals.js` (добавлен в v13)
 - Фолбек навигации — `offline.html`
 - Ошибка `cache.add()` не валит установку
 - Обновление: `self.skipWaiting()` + очистка старых кэшей; при `controllerchange` показывается баннер «Доступна новая версия» без принудительного reload
+
+---
+
+## WEB VITALS
+
+- Модуль `js/vitals.js` (без зависимостей) на всех страницах, кроме служебных исключений нет — включён и в `offline.html`.
+- Метрики: **LCP** (`largest-contentful-paint`), **CLS** (сессионные окна по 1 с, максимум 5 с), **INP** (Event Timing, `durationThreshold: 40`), плюс **FCP** и **TTFB**.
+- Отчёт формируется один раз на `pagehide`/`visibilitychange → hidden`.
+- Свой лог: `localStorage['hub_web_vitals']` — последние 20 загрузок (страница, метрики, viewport, тип соединения).
+- Метрика: только после согласия, через `window.PsyAnalytics.trackVitals()` (`params` + цель `web_vitals`).
+- Ручная проверка в консоли: `hubVitals.latest()`, `hubVitals.log()`, `hubVitals.clear()`.
+
+---
+
+## БЕЗОПАСНОСТЬ: CSP
+
+- На всех 9 страницах `<meta http-equiv="Content-Security-Policy">` сразу после `viewport`.
+- Политика: `default-src 'self'`; скрипты — `'self' 'unsafe-inline'` + `https://mc.yandex.ru`; стили — `'self' 'unsafe-inline'` (inline-атрибуты в HTML); изображения — `'self' data: https://mc.yandex.ru`; `connect-src` — Supabase и Метрика; `object-src 'none'`, `base-uri 'self'`, `form-action 'self'`.
+- `Referrer-Policy` — `<meta name="referrer" content="strict-origin-when-cross-origin">`.
+- Ограничение: GitHub Pages не отдаёт HTTP-заголовки, поэтому `X-Content-Type-Options`, `frame-ancestors` и HSTS задать нельзя; `'unsafe-inline'` нужен из-за inline-обработчиков `onclick` (снять в `U-01`).
+- Проверено в Chrome: CSP-нарушений нет на 1440/1024/768/390 px; Метрика после согласия грузится без блокировок.
+
+---
+
+## VENDOR-БИБЛИОТЕКИ
+
+- `js/vendor/supabase.js` — supabase-js 2.43.4, `js/vendor/dompurify.min.js` — DOMPurify 3.0.11; лежат локально, без CDN.
+- Версии, размеры и sha256 — `js/vendor/manifest.json`.
+- Проверка: `node scripts/check-vendor.mjs` (код 1 при расхождении).
+- После замены файла: `node scripts/check-vendor.mjs --update`, затем поднять `CACHE_NAME` в `sw.js`.
 
 ---
 
@@ -131,7 +164,7 @@ psychology-portal/
 
 Актуальный бэклог и приоритеты — в `TECH-ROADMAP.md`. В этом файле оставлены только подтверждённые пункты:
 
-- не настроены CSP и заголовки безопасности (`S-04`);
+- HTTP-заголовки безопасности (`X-Content-Type-Options`, HSTS, `frame-ancestors`) на GitHub Pages недоступны — работает только meta-CSP (`S-04`);
 - нет unit/E2E-тестов и проверок в CI (`A-03`–`A-05`);
 - исследовательский модуль (события, срез, эссе, выгрузка) не реализован (`R-*`);
 - нет админки, контент правится через Table Editor (`O-01`).
@@ -153,7 +186,6 @@ js/
 - `.content-with-sidebar` — 2 колонки (240px | 1fr) для cards/tests
 - `.discipline-sidebar` — сайдбар с вертикальным списком дисциплин
 - `.bookmarks-panel` — панель закладок справа (ПК)
-- `.scrollable-container` — скроллящийся контейнер (max-height: 60vh)
 - `.limited-tiles` — плитки с лимитом 3 строк
 - `.limited-articles` — статьи с лимитом 5 строк
 - `.bookmark-star-btn` — кнопка-звёздочка закладки
@@ -185,10 +217,10 @@ js/
 # Сохранение изменений
 git add .
 git commit -m "описание изменений"
-git push
+git push origin master
 
 # Деплой
-# Автоматический через Vercel при push в master
+# Автоматический: GitHub Actions зеркалит master в gh-pages → GitHub Pages
 ```
 
 ---
