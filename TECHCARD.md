@@ -120,7 +120,7 @@ psychology-portal/
 
 ## SERVICE WORKER
 
-- Версия: `psy-hub-v15`
+- Версия: `psy-hub-v16`
 - Стратегия: cache-first для статики, network-first для навигации с таймаутом 2.5 с
 - Кэширует все HTML, CSS, JS, шрифты; Supabase-запросы исключены
 - В `ASSETS` также `js/vitals.js` (добавлен в v13)
