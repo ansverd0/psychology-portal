@@ -1,54 +1,35 @@
+// Папка, открытая в навигации сейчас. Нужна, чтобы закладка помнила
+// свою дисциплину: номера вопросов в разных дисциплинах повторяются.
+let ticketsActiveFolderId = null;
+
 function initTickets() {
     const examDisciplines = appDatabase.tickets;
     if (!examDisciplines || examDisciplines.length === 0) return;
 
-    const desktopContainer = document.getElementById('tickets-list-desktop');
+    const foldersCol = document.getElementById('tickets-folders-col');
+    const questionsCol = document.getElementById('tickets-questions-col');
     const tilesContainer = document.getElementById('mobile-tickets-tiles');
     const mobileQuestionsList = document.getElementById('mobile-questions-list');
 
-    if (desktopContainer) desktopContainer.innerHTML = '';
+    // 1. ДЛЯ ПК (ДВЕ КОЛОНКИ НАВИГАЦИИ: ПАПКИ + ВОПРОСЫ)
+    if (foldersCol && questionsCol) {
+        foldersCol.innerHTML = '';
 
-    // 1. ДЛЯ ПК (АККОРДЕОН ДИСЦИПЛИН)
-    if (desktopContainer) {
         examDisciplines.forEach((discipline) => {
-            const branchBtn = document.createElement('button');
-            branchBtn.classList.add('ticket-nav-btn', 'branch-title-btn');
-            branchBtn.innerHTML = `📁 ${discipline.title}`;
-            
-            const submenuContainer = document.createElement('div');
-            submenuContainer.classList.add('submenu-container');
-            submenuContainer.style.display = 'none';
+            const folderBtn = document.createElement('button');
+            folderBtn.classList.add('folder-nav-btn');
+            folderBtn.dataset.disciplineId = discipline.id;
+            folderBtn.innerHTML = `📁 ${discipline.title}`;
 
-            discipline.questions.forEach(q => {
-                const qBtn = document.createElement('button');
-                qBtn.classList.add('submenu-item-btn');
-                qBtn.innerText = `№${q.number}: ${q.title}`;
-                
-                qBtn.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    document.querySelectorAll('#tickets-list-desktop .submenu-item-btn').forEach(btn => btn.classList.remove('active'));
-                    qBtn.classList.add('active');
-                    showTicketContent(q);
-                });
-                submenuContainer.appendChild(qBtn);
+            folderBtn.addEventListener('click', () => {
+                openTicketInNav(discipline);
             });
 
-            branchBtn.addEventListener('click', () => {
-                const isOpened = submenuContainer.style.display === 'block';
-                document.querySelectorAll('#tickets-list-desktop .submenu-container').forEach(sub => sub.style.display = 'none');
-                document.querySelectorAll('#tickets-list-desktop .branch-title-btn').forEach(btn => btn.classList.remove('branch-active'));
-
-                if (!isOpened) {
-                    submenuContainer.style.display = 'block';
-                    branchBtn.classList.add('branch-active');
-                } else {
-                    submenuContainer.style.display = 'none';
-                }
-            });
-
-            desktopContainer.appendChild(branchBtn);
-            desktopContainer.appendChild(submenuContainer);
+            foldersCol.appendChild(folderBtn);
         });
+
+        // Открываем первую дисциплину по умолчанию
+        openTicketInNav(examDisciplines[0]);
     }
 
     // 2. ДЛЯ МОБИЛЬНЫХ (ПЛИТКИ ДИСЦИПЛИН)
@@ -69,6 +50,8 @@ function initTickets() {
             tile.addEventListener('click', () => {
                 document.querySelectorAll('#mobile-tickets-tiles .mobile-tile-btn').forEach(b => b.classList.remove('active'));
                 tile.classList.add('active');
+                ticketsActiveFolderId = discipline.id;
+
 
                 mobileQuestionsList.innerHTML = `<h4 style="margin: 5px 0 10px 5px; color: #718096; font-size: 13px;">Вопросы к экзамену:</h4>`;
                 
@@ -123,6 +106,7 @@ function initTickets() {
                         `;
 
                         button.addEventListener('click', () => {
+                            ticketsActiveFolderId = discipline.id;
                             showTicketContent(q);
                             searchInput.value = q.title; 
                             resultsContainer.style.display = 'none';
@@ -162,6 +146,58 @@ function initTickets() {
 
     // Рендер панели закладок при инициализации
     renderTicketsBookmarksPanel();
+}
+
+/** Рисует список вопросов во второй колонке навигации.
+ *  activeNumber — вопрос, который нужно подсветить и подматривать в него */
+function renderQuestionsColumn(questions, container, activeNumber) {
+    container.innerHTML = '';
+    let activeBtn = null;
+
+    questions.forEach(q => {
+        const qBtn = document.createElement('button');
+        qBtn.classList.add('question-nav-btn');
+        qBtn.innerText = `№${q.number}: ${q.title}`;
+
+        qBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            document.querySelectorAll('.question-nav-btn').forEach(btn => btn.classList.remove('active'));
+            qBtn.classList.add('active');
+            showTicketContent(q);
+        });
+
+        container.appendChild(qBtn);
+
+        if (activeNumber !== null && activeNumber !== undefined && q.number == activeNumber) {
+            qBtn.classList.add('active');
+            activeBtn = qBtn;
+        }
+    });
+
+    if (activeBtn) scrollIntoContainer(container, activeBtn);
+}
+
+/** Единая точка открытия билета: подсвечивает папку, рисует вопросы, показывает ответ.
+ *  Используется кликом по папке, загрузкой страницы и кликом по закладке */
+function openTicketInNav(discipline, ticket) {
+    const foldersCol = document.getElementById('tickets-folders-col');
+    const questionsCol = document.getElementById('tickets-questions-col');
+    if (!foldersCol || !questionsCol || !discipline) return;
+
+    const target = ticket || discipline.questions[0] || null;
+    ticketsActiveFolderId = discipline.id;
+
+    foldersCol.querySelectorAll('.folder-nav-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.disciplineId === discipline.id);
+    });
+
+    if (!target) {
+        questionsCol.innerHTML = '<div class="questions-placeholder">Вопросов нет</div>';
+        return;
+    }
+
+    renderQuestionsColumn(discipline.questions, questionsCol, target.number);
+    showTicketContent(target);
 }
 
 function escapeHtml(text) {
@@ -219,7 +255,8 @@ function showTicketContent(ticket) {
     const starBtn = document.getElementById('ticket-bookmark-star');
     if (starBtn) {
         starBtn.addEventListener('click', () => {
-            const added = toggleBookmark(ticket.number, ticket.title, 'ticket');
+            const meta = { number: ticket.number, folder: ticketsActiveFolderId };
+            const added = toggleBookmark(ticket.number, ticket.title, 'ticket', meta);
             updateBookmarkStar(starBtn, ticket.number, 'ticket');
             renderTicketsBookmarksPanel();
         });
@@ -231,17 +268,24 @@ function renderTicketsBookmarksPanel() {
     const panel = document.getElementById('bookmarks-panel');
     if (!panel) return;
     
-    renderBookmarksPanel(panel, 'ticket', (id) => {
-        // При клике на закладку — открываем билет
+    renderBookmarksPanel(panel, 'ticket', (id, bookmark) => {
+        // При клике на закладку — открываем билет и подсвечиваем его в навигации
         const examDisciplines = appDatabase.tickets;
         if (!examDisciplines) return;
-        for (const disc of examDisciplines) {
-            const ticket = disc.questions.find(q => q.number == id);
-            if (ticket) {
-                showTicketContent(ticket);
-                document.querySelector('.ticket-viewer').scrollIntoView({ behavior: 'smooth' });
-                return;
-            }
+
+        // Сначала ищем в той же дисциплине, где закладку создали
+        // (номера вопросов между дисциплинами повторяются)
+        let discipline = bookmark && bookmark.folder
+            ? examDisciplines.find(d => d.id === bookmark.folder)
+            : null;
+
+        if (!discipline || !discipline.questions.some(q => q.number == id)) {
+            discipline = examDisciplines.find(d => d.questions.some(q => q.number == id));
         }
+        if (!discipline) return;
+
+        const ticket = discipline.questions.find(q => q.number == id);
+        openTicketInNav(discipline, ticket);
+        document.querySelector('.ticket-viewer').scrollIntoView({ behavior: 'smooth' });
     });
 }

@@ -42,9 +42,9 @@
 
     <main id="sections-page-marker" class="tri-column-layout">
     
-    <!-- Левая колонка для ПК и мобильной навигации -->
-    <div class="tickets-sidebar">
-    
+    <!-- 🗂 КОЛОНКА 1: Поиск и папки разделов -->
+    <aside class="tickets-sidebar nav-pane">
+
     <!-- Мобильный поиск -->
     <div class="mobile-search-wrapper" style="position: relative;">
         <input type="text" id="mobile-search-input" placeholder="🔍 Поиск темы по названию...">
@@ -54,13 +54,24 @@
     <!-- 📱 Контейнер для мобильных плиток-разделов (карусель/сетка) -->
     <div id="mobile-sections-tiles" class="mobile-only-tiles limited-tiles"></div>
 
+    <!-- Папки разделов -->
+    <div id="sections-folders-col" class="tickets-folders-column"></div>
+
+    </aside>
+
+    <!-- 🗒 КОЛОНКА 2: Содержимое выбранной папки (статьи) -->
+    <aside class="tickets-contents nav-pane">
+
     <!-- Контейнер для вложенного списка статей (общий для поиска и плиток на мобилке) -->
     <div id="mobile-articles-list" class="mobile-articles-container limited-articles" style="display: none;"></div>
 
-    <!-- Контейнер, куда JavaScript вставляет папки отраслей на ПК -->
-    <div id="sections-list-desktop" class="desktop-only-list scrollable-container"></div>
-    
+    <!-- Список статей выбранного раздела -->
+    <div id="sections-articles-col" class="tickets-questions-column">
+        <div class="questions-placeholder">Выберите раздел слева</div>
     </div>
+
+    </aside>
+
 
 
     <!-- Правая колонка: Окно просмотра статьи -->

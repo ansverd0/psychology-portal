@@ -27,6 +27,7 @@ TODO.md
 # === Секреты и учётные данные (никогда не коммитить) ===
 .env
 .env.local
+.kodacli/
 *.pem
 *.key
 *password*

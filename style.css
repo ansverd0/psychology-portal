@@ -261,8 +261,8 @@ button:hover {
     align-items: flex-start;
 }
 
+/* Колонка навигации №1: поиск + папки */
 .tickets-sidebar {
-    flex: 0 0 280px;
     display: flex;
     flex-direction: column;
     gap: 10px;
@@ -271,6 +271,39 @@ button:hover {
     border-radius: 16px;
     box-shadow: 0 4px 12px rgba(0,0,0,0.03);
     box-sizing: border-box;
+    min-width: 0;
+}
+
+/* Колонка навигации №2: содержимое выбранной папки */
+.tickets-contents {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    background: white;
+    padding: 20px;
+    border-radius: 16px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+    box-sizing: border-box;
+    min-width: 0;
+}
+
+/* ПК: навигация разведена по двум колонкам (папки | содержимое папок) */
+@media screen and (min-width: 769px) {
+    /* Мобильные плитки скрываем на ПК */
+    .mobile-only-tiles {
+        display: none !important;
+    }
+    
+    /* Мобильный список скрываем на ПК */
+    .mobile-articles-container {
+        display: none !important;
+    }
+    
+    /* Обе колонки навигации показываем */
+    .tickets-folders-column,
+    .tickets-questions-column {
+        display: flex !important;
+    }
 }
 
 .ticket-nav-btn {
@@ -353,6 +386,14 @@ button:hover {
     text-align: left;
     box-sizing: border-box;
     min-height: 400px;
+    min-width: 0; /* Колонка не должна растягивать сетку страницы */
+}
+
+/* Длинные слова (термины, номера билетов) переносим, а не выпускаем за колонку */
+.ticket-viewer h2, .section-viewer h2,
+.ticket-viewer .content-text, .section-viewer .content-text,
+.literature-box {
+    overflow-wrap: anywhere;
 }
 
 .ticket-viewer, .section-viewer h2 {
@@ -700,8 +741,8 @@ button:hover {
         border-radius: 12px;
         box-shadow: none;
     }
-    .tickets-sidebar {
-        flex: none;
+    .tickets-sidebar,
+    .tickets-contents {
         width: 100%;
         padding: 0;
         background: transparent;
@@ -1030,17 +1071,24 @@ button:hover {
     min-width: 0;
 }
 
-/* --- ТРЁХКОЛОНОЧНЫЙ ЛЕЙАУТ (tickets.html, sections.html — ПК) --- */
+/* --- ЛЕЙАУТ НАВИГАЦИИ (tickets.html, sections.html — ПК) ---
+   Колонки: 1) папки  2) содержимое папок  3) просмотрщик  4) закладки */
 .tri-column-layout {
     display: grid;
-    grid-template-columns: 280px 1fr 260px;
+    grid-template-columns: 200px 240px minmax(0, 1fr) 220px;
     gap: 20px;
-    max-width: 1400px;
     width: 100%;
     margin-top: 20px;
-    padding: 0 20px;
+    padding: 0; /* Навигация прижата к левому краю, текст тянется на всю ширину */
     box-sizing: border-box;
     align-items: flex-start;
+}
+
+/* Широкие экраны — навигация чуть просторнее, текст растёт сам */
+@media screen and (min-width: 1500px) {
+    .tri-column-layout {
+        grid-template-columns: 220px 280px minmax(0, 1fr) 240px;
+    }
 }
 
 .bookmarks-panel {
@@ -1145,6 +1193,103 @@ button:hover {
     color: #cbd5e0;
 }
 
+/* --- КОЛОНКИ НАВИГАЦИИ: ПАПКИ (1) И ИХ СОДЕРЖИМОЕ (2) --- */
+.tickets-folders-column {
+    display: none;
+    flex-direction: column;
+    gap: 4px;
+    width: 100%;
+    max-height: 60vh;
+    overflow-y: auto;
+}
+
+.tickets-questions-column {
+    display: none;
+    flex-direction: column;
+    gap: 3px;
+    width: 100%;
+    max-height: 60vh;
+    overflow-y: auto;
+    min-height: 120px;
+}
+
+.tickets-questions-column .questions-placeholder {
+    color: #a0aec0;
+    font-size: 13px;
+    text-align: center;
+    padding: 20px 8px;
+}
+
+/* Кнопки-папки в навигации */
+.folder-nav-btn {
+    background: #f7fafc;
+    color: #1a365d;
+    border: 1px solid #e2e8f0;
+    padding: 10px 12px;
+    text-align: left;
+    font-size: 13px;
+    font-weight: 600;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    width: 100%;
+    border-left: 3px solid #cbd5e0;
+}
+
+.folder-nav-btn:hover {
+    background: #ebf8ff;
+    border-left-color: #3182ce;
+    color: #2b6cb0;
+}
+
+.folder-nav-btn.active {
+    background: #ebf8ff;
+    border-left-color: #3182ce;
+    color: #2b6cb0;
+    border-color: #bee3f8;
+}
+
+/* Кнопки вопросов в правой подколонке */
+.question-nav-btn {
+    background: transparent;
+    color: #4a5568;
+    border: none;
+    padding: 8px 10px;
+    text-align: left;
+    font-size: 13px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    width: 100%;
+    line-height: 1.4;
+}
+
+.question-nav-btn:hover {
+    background: #ebf8ff;
+    color: #2b6cb0;
+}
+
+.question-nav-btn.active {
+    background: #3182ce;
+    color: white;
+    font-weight: 500;
+}
+
+/* --- АДАПТИВ: ПК (>= 769px) — две колонки навигации --- */
+@media screen and (min-width: 769px) {
+    /* Колонки навигации закрепляются при прокрутке текста */
+    .nav-pane {
+        position: sticky;
+        top: 20px;
+    }
+
+    .tickets-folders-column,
+    .tickets-questions-column {
+        display: flex !important;
+        max-height: calc(100vh - 200px);
+    }
+}
+
 /* --- СКРОЛЛЯЩИЕСЯ КОНТЕЙНЕРЫ ДЛЯ МОБИЛЬНЫХ --- */
 .scrollable-container {
     max-height: 60vh;
@@ -1214,12 +1359,28 @@ button:hover {
 
 /* --- АДАПТИВНОСТЬ: ПЛАНШЕТЫ (769–1024px) --- */
 @media screen and (min-width: 769px) and (max-width: 1024px) {
-    .tri-column-layout {
-        grid-template-columns: 240px 1fr 220px;
-    }
-    
     .content-with-sidebar {
         grid-template-columns: 200px 1fr;
+    }
+}
+
+/* --- АДАПТИВНОСТЬ: УЗКИЕ ЭКРАНЫ ПК (769–1120px) ---
+   Закладки прячем, чтобы хватило ширины на папки, их содержимое и текст */
+@media screen and (min-width: 769px) and (max-width: 1120px) {
+    .tri-column-layout {
+        grid-template-columns: 200px 240px minmax(0, 1fr);
+    }
+
+    .bookmarks-panel {
+        display: none;
+    }
+}
+
+/* --- АДАПТИВНОСТЬ: ОЧЕНЬ УЗКИЕ ОКНА ПК (769–950px) --- */
+@media screen and (min-width: 769px) and (max-width: 950px) {
+    .tri-column-layout {
+        grid-template-columns: 160px 200px minmax(0, 1fr);
+        gap: 12px;
     }
 }
 

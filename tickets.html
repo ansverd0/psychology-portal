@@ -43,25 +43,35 @@
 
     <main class="tri-column-layout">
     
-    <!-- 🗂 ЛЕВАЯ КОЛОНКА: Навигация (Автоматически подстраивается под ПК и Мобильные) -->
-    <div class="tickets-sidebar">
-        
-        <!-- 1. Мобильная строка поиска по вопросам (скроется на ПК) -->
+    <!-- 🗂 КОЛОНКА 1: Поиск и папки дисциплин -->
+    <aside class="tickets-sidebar nav-pane">
+
+        <!-- 1. Строка поиска по вопросам -->
         <div class="mobile-search-wrapper" style="position: relative;">
             <input type="text" id="mobile-tickets-search" placeholder="🔍 Найти экзаменационный вопрос...">
             <div id="mobile-tickets-search-results" class="search-results-dropdown" style="display: none;"></div>
         </div>
 
-        <!-- 2. Мобильные плитки-дисциплины (скроются на ПК) -->
+        <!-- 2. Мобильные плитки-дисциплины (скрываются на ПК) -->
         <div id="mobile-tickets-tiles" class="mobile-only-tiles limited-tiles"></div>
 
-        <!-- 3. Мобильный список вопросов выбранного экзамена (скроется на ПК) -->
+        <!-- 3. Папки дисциплин -->
+        <div id="tickets-folders-col" class="tickets-folders-column"></div>
+
+    </aside>
+
+    <!-- 🗒 КОЛОНКА 2: Содержимое выбранной папки (вопросы) -->
+    <aside class="tickets-contents nav-pane">
+
+        <!-- 1. Мобильный список вопросов выбранного экзамена (скрывается на ПК) -->
         <div id="mobile-questions-list" class="mobile-articles-container limited-articles" style="display: none;"></div>
 
-        <!-- 4. ПК-версия: Двухуровневый аккордеон папок (скроется на смартфонах) -->
-        <div id="tickets-list-desktop" class="desktop-only-list scrollable-container"></div>
-        
-    </div>
+        <!-- 2. Список вопросов выбранной дисциплины -->
+        <div id="tickets-questions-col" class="tickets-questions-column">
+            <div class="questions-placeholder">Выберите дисциплину слева</div>
+        </div>
+
+    </aside>
 
     <!-- 📄 ЦЕНТРАЛЬНАЯ КОЛОНКА: Интерактивное окно просмотра конспекта -->
     <div class="ticket-viewer">

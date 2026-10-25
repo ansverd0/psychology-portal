@@ -1,55 +1,41 @@
+// Раздел, открытый в навигации сейчас. Нужен, чтобы закладка знала,
+// в какой папке лежит статья.
+let sectionsActiveFolderId = null;
+
 function initSections() {
     const sections = appDatabase.sections;
     if (!sections || sections.length === 0) return;
 
-    const desktopContainer = document.getElementById('sections-list-desktop');
+    const foldersCol = document.getElementById('sections-folders-col');
+    const articlesCol = document.getElementById('sections-articles-col');
     const mobileArticlesList = document.getElementById('mobile-articles-list');
     const tilesContainer = document.getElementById('mobile-sections-tiles');
 
-    if (desktopContainer) desktopContainer.innerHTML = '';
+    // 1. ДЛЯ ПК (ДВЕ КОЛОНКИ НАВИГАЦИИ: РАЗДЕЛЫ + СТАТЬИ)
+    if (foldersCol && articlesCol) {
+        foldersCol.innerHTML = '';
 
-    sections.forEach((section) => {
-        if (desktopContainer) {
+        sections.forEach((section) => {
             const branchBtn = document.createElement('button');
-            branchBtn.classList.add('ticket-nav-btn', 'branch-title-btn');
+            branchBtn.classList.add('folder-nav-btn');
             branchBtn.innerHTML = `📁 ${section.title}`;
-            branchBtn.id = `branch-btn-${section.id}`; 
-            
-            const submenuContainer = document.createElement('div');
-            submenuContainer.classList.add('submenu-container');
-            submenuContainer.style.display = 'none';
-
-            section.articles.forEach(article => {
-                const articleBtn = document.createElement('button');
-                articleBtn.classList.add('submenu-item-btn');
-                articleBtn.innerText = article.title;
-                
-                articleBtn.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    document.querySelectorAll('.submenu-item-btn').forEach(btn => btn.classList.remove('active'));
-                    articleBtn.classList.add('active');
-                    showSectionContent(article);
-                });
-                submenuContainer.appendChild(articleBtn);
-            });
+            branchBtn.id = `branch-btn-${section.id}`;
+            branchBtn.dataset.sectionId = section.id;
 
             branchBtn.addEventListener('click', () => {
-                const isOpened = submenuContainer.style.display === 'block';
-                document.querySelectorAll('.submenu-container').forEach(sub => sub.style.display = 'none');
-                document.querySelectorAll('.branch-title-btn').forEach(btn => btn.classList.remove('branch-active'));
-
-                if (!isOpened) {
-                    submenuContainer.style.display = 'block';
-                    branchBtn.classList.add('branch-active');
-                } else {
-                    submenuContainer.style.display = 'none';
-                }
+                openSectionInNav(section);
             });
 
-            desktopContainer.appendChild(branchBtn);
-            desktopContainer.appendChild(submenuContainer);
+            foldersCol.appendChild(branchBtn);
+        });
+
+        // Открываем первый раздел по умолчанию (клик отрисует статьи)
+        if (sections.length > 0) {
+            const firstFolderBtn = foldersCol.querySelector('.folder-nav-btn');
+            if (firstFolderBtn) firstFolderBtn.click();
         }
-    });
+    }
+
 
     // Навигационные плитки для мобильной версии хаба
     if (tilesContainer && mobileArticlesList) {
@@ -69,6 +55,8 @@ function initSections() {
             tile.addEventListener('click', () => {
                 document.querySelectorAll('.mobile-tile-btn').forEach(b => b.classList.remove('active'));
                 tile.classList.add('active');
+                sectionsActiveFolderId = section.id;
+
 
                 mobileArticlesList.innerHTML = `<h4 style="margin: 5px 0 10px 5px; color: #718096; font-size: 13px;">Статьи раздела:</h4>`;
                 
@@ -136,6 +124,7 @@ function initSections() {
                         `;
 
                         button.addEventListener('click', () => {
+                            sectionsActiveFolderId = section.id;
                             showSectionContent(article);
                             searchInput.value = article.title;
                             resultsContainer.style.display = 'none';
@@ -175,6 +164,59 @@ function escapeHtml(text) {
     div.appendChild(document.createTextNode(text));
     return div.innerHTML;
 }
+
+/** Рисует список статей во второй колонке навигации.
+ *  activeTitle — статья, которую нужно подсветить и подматривать в неё */
+function renderArticlesColumn(articles, container, activeTitle) {
+    container.innerHTML = '';
+    let activeBtn = null;
+
+    articles.forEach(article => {
+        const articleBtn = document.createElement('button');
+        articleBtn.classList.add('question-nav-btn');
+        articleBtn.innerText = article.title;
+
+        articleBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            document.querySelectorAll('.question-nav-btn').forEach(btn => btn.classList.remove('active'));
+            articleBtn.classList.add('active');
+            showSectionContent(article);
+        });
+
+        container.appendChild(articleBtn);
+
+        if (activeTitle && article.title === activeTitle) {
+            articleBtn.classList.add('active');
+            activeBtn = articleBtn;
+        }
+    });
+
+    if (activeBtn) scrollIntoContainer(container, activeBtn);
+}
+
+/** Единая точка открытия статьи: подсвечивает раздел, рисует статьи, показывает текст.
+ *  Используется кликом по разделу, загрузкой страницы и кликом по закладке */
+function openSectionInNav(section, article) {
+    const foldersCol = document.getElementById('sections-folders-col');
+    const articlesCol = document.getElementById('sections-articles-col');
+    if (!foldersCol || !articlesCol || !section) return;
+
+    const target = article || section.articles[0] || null;
+    sectionsActiveFolderId = section.id;
+
+    foldersCol.querySelectorAll('.folder-nav-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.sectionId === section.id);
+    });
+
+    if (!target) {
+        articlesCol.innerHTML = '<div class="questions-placeholder">Статей нет</div>';
+        return;
+    }
+
+    renderArticlesColumn(section.articles, articlesCol, target.title);
+    showSectionContent(target);
+}
+
 
 function showSectionContent(section) {
     const contentContainer = document.querySelector('.section-viewer');
@@ -232,7 +274,8 @@ function showSectionContent(section) {
     const starBtn = document.getElementById('section-bookmark-star');
     if (starBtn) {
         starBtn.addEventListener('click', () => {
-            const added = toggleBookmark(section.title, section.title, 'article');
+            const meta = { folder: sectionsActiveFolderId };
+            const added = toggleBookmark(section.title, section.title, 'article', meta);
             updateBookmarkStar(starBtn, section.title, 'article');
             renderSectionsBookmarksPanel();
         });
@@ -244,18 +287,25 @@ function renderSectionsBookmarksPanel() {
     const panel = document.getElementById('bookmarks-panel');
     if (!panel) return;
     
-    renderBookmarksPanel(panel, 'article', (title) => {
-        // При клике на закладку — ищем и открываем статью
+    renderBookmarksPanel(panel, 'article', (title, bookmark) => {
+        // При клике на закладку — открываем статью и подсвечиваем её в навигации
         const sections = appDatabase.sections;
         if (!sections) return;
-        for (const sec of sections) {
-            const article = sec.articles.find(a => a.title === title);
-            if (article) {
-                showSectionContent(article);
-                const viewer = document.querySelector('.section-viewer');
-                if (viewer) viewer.scrollIntoView({ behavior: 'smooth' });
-                return;
-            }
+
+        // Сначала ищем в том же разделе, где закладку создали
+        let section = bookmark && bookmark.folder
+            ? sections.find(s => s.id === bookmark.folder)
+            : null;
+
+        if (!section || !section.articles.some(a => a.title === title)) {
+            section = sections.find(s => s.articles.some(a => a.title === title));
         }
+        if (!section) return;
+
+        const article = section.articles.find(a => a.title === title);
+        openSectionInNav(section, article);
+
+        const viewer = document.querySelector('.section-viewer');
+        if (viewer) viewer.scrollIntoView({ behavior: 'smooth' });
     });
 }
