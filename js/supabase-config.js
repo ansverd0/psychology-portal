@@ -142,27 +142,45 @@ async function initApplicationHub() {
         let freshDatabase = { flashcards: [], tickets: [], tests: [], sections: [], library: [], news: [] };
         let freshGlossary = {};
 
+        // Все таблицы запрашиваем параллельно: при медленном канале это экономит
+        // десятки секунд по сравнению с последовательными запросами.
+        const q = (table, columns) => Promise.resolve(supabaseClient.from(table).select(columns));
+        const pending = {
+            flashcards: q('flashcards', 'term, definition, discipline_id'),
+            tests: q('tests', 'question, options, correct_index, link_url, discipline_id'),
+            library: q('library', 'id, title, author, annotation'),
+            glossary: q('glossary', 'term, definition'),
+            tickets: q('tickets', 'id, number, title, recommend_time, plan, content, discipline_id'),
+            ticketLibrary: q('ticket_library', 'ticket_id, book_id'),
+            articles: q('articles', 'title, content, discipline_id'),
+            news: q('news', 'id, date, title, changes')
+        };
+
         // 1. Флэш-карточки
         try {
-            const { data } = await supabaseClient.from('flashcards').select('term, definition, discipline_id');
+            const { data, error } = await pending.flashcards;
+            if (error) throw error;
             if (data) freshDatabase.flashcards = data.map(c => ({ term: c.term, definition: c.definition, discipline: c.discipline_id }));
         } catch (e) { networkSuccess = false; }
 
         // 2. Интерактивные тесты
         try {
-            const { data } = await supabaseClient.from('tests').select('question, options, correct_index, link_url, discipline_id');
+            const { data, error } = await pending.tests;
+            if (error) throw error;
             if (data) freshDatabase.tests = data.map(t => ({ question: t.question, options: t.options, correct: t.correct_index, link: t.link_url, discipline: t.discipline_id }));
         } catch (e) { networkSuccess = false; }
 
         // 3. Библиотека
         try {
-            const { data } = await supabaseClient.from('library').select('id, title, author, annotation');
+            const { data, error } = await pending.library;
+            if (error) throw error;
             if (data) freshDatabase.library = data;
         } catch (e) { networkSuccess = false; }
 
         // 4. Глоссарий
         try {
-            const { data } = await supabaseClient.from('glossary').select('term, definition');
+            const { data, error } = await pending.glossary;
+            if (error) throw error;
             if (data) {
                 data.forEach(g => { freshGlossary[g.term.trim()] = g.definition; });
             }
@@ -170,10 +188,12 @@ async function initApplicationHub() {
 
         // 5. Экзаменационные билеты
         try {
-            const { data: tk } = await supabaseClient.from('tickets').select('id, number, title, recommend_time, plan, content, discipline_id');
+            const { data: tk, error: tkError } = await pending.tickets;
+            if (tkError) throw tkError;
             if (tk) {
                 const groups = {};
-                const { data: links } = await supabaseClient.from('ticket_library').select('ticket_id, book_id');
+                const { data: links, error: linksError } = await pending.ticketLibrary;
+                if (linksError) throw linksError;
 
                 tk.forEach(t => {
                     let cleanId = t.discipline_id;
@@ -207,7 +227,8 @@ async function initApplicationHub() {
 
         // 6. Статьи лонгридов
         try {
-            const { data: art } = await supabaseClient.from('articles').select('title, content, discipline_id');
+            const { data: art, error: artError } = await pending.articles;
+            if (artError) throw artError;
             if (art) {
                 const secGroups = {};
                 art.forEach(a => {
@@ -236,7 +257,8 @@ async function initApplicationHub() {
 
         // 7. Ченджлог новостей
         try {
-            const { data } = await supabaseClient.from('news').select('id, date, title, changes');
+            const { data, error } = await pending.news;
+            if (error) throw error;
             if (data) {
                 freshDatabase.news = [...data]
                     .sort((a, b) => parseInt(b.id, 10) - parseInt(a.id, 10))
