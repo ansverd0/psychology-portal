@@ -1306,7 +1306,8 @@ button:hover {
     }
 
     /* На узком экране выключенный по ширине текст даёт «реки» — читаем по левому краю */
-    .content-text {
+    .content-text,
+    #news-timeline ul li {
         text-align: left;
     }
 
