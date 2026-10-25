@@ -21,6 +21,7 @@ function initFlashcards() {
 
     function startCardMode(filteredCards) {
         currentActiveCards = shuffleArray([...filteredCards]); 
+        currentCardIndex = 0;
         updateCard();
     }
 
@@ -111,6 +112,13 @@ function updateCard() {
     if (activeCard) activeCard.classList.remove('flipped');
     
     const currentItem = currentActiveCards[currentCardIndex];
+
+    if (!currentItem) {
+        if (liveTermText) liveTermText.innerText = "В этой теме пока нет карточек";
+        if (liveDefinitionText) liveDefinitionText.innerText = "Скоро они здесь появятся!";
+        if (liveCounterText) liveCounterText.innerText = "0 / 0";
+        return;
+    }
     
     if (liveTermText) liveTermText.innerText = currentItem.term;
     if (liveDefinitionText) liveDefinitionText.innerText = currentItem.definition;

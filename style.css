@@ -870,6 +870,13 @@ button:hover {
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.02);
     border: 2px solid #e2e8f0;
     width: fit-content;
+    max-width: 100%;
+    box-sizing: border-box;
+}
+
+.quiz-limit-wrapper .custom-select-container,
+.quiz-limit-wrapper .custom-select-container select {
+    max-width: 100%;
 }
 
 .quiz-limit-wrapper label {
@@ -1036,7 +1043,8 @@ button:hover {
 /* --- ДВУХКОЛОНОЧНЫЙ ЛЕЙАУТ (cards.html, tests.html — ПК) --- */
 .content-with-sidebar {
     display: grid;
-    grid-template-columns: 240px 1fr;
+    grid-template-columns: 240px minmax(0, 720px) 240px;
+    justify-content: center;
     gap: 20px;
     max-width: 1200px;
     width: 100%;
@@ -1072,27 +1080,64 @@ button:hover {
 }
 
 /* --- ЛЕЙАУТ НАВИГАЦИИ (tickets.html, sections.html — ПК) ---
-   Колонки: 1) папки  2) содержимое папок  3) просмотрщик  4) закладки */
+   Слева — единая колонка навигации, в центре — текст, справа — закладки.
+   flex + justify-content:center держит блок конспекта по центру экрана. */
 .tri-column-layout {
-    display: grid;
-    grid-template-columns: 200px 240px minmax(0, 1fr) 220px;
-    gap: 20px;
-    width: 100%;
-    margin-top: 20px;
-    padding: 0; /* Навигация прижата к левому краю, текст тянется на всю ширину */
-    box-sizing: border-box;
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
     align-items: flex-start;
+    gap: 24px;
+    width: 100%;
+    max-width: 1600px;
+    margin: 20px auto 0;
+    padding: 0 20px;
+    box-sizing: border-box;
 }
 
-/* Широкие экраны — навигация чуть просторнее, текст растёт сам */
+/* Единая левая колонка: поиск/папки сверху, список вопросов снизу */
+.nav-left {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    flex: 0 0 280px;
+    width: 280px;
+    min-width: 0;
+    position: sticky;
+    top: 20px;
+    align-self: flex-start;
+}
+
+.nav-left .nav-pane {
+    position: static;
+    width: 100%;
+}
+
+.nav-left .tickets-folders-column {
+    max-height: none;
+}
+
+.nav-left .tickets-questions-column {
+    max-height: 46vh;
+}
+
+.tri-column-layout > .ticket-viewer,
+.tri-column-layout > .section-viewer {
+    flex: 1 1 780px;
+    max-width: 780px;
+    min-width: 0;
+}
+
 @media screen and (min-width: 1500px) {
     .tri-column-layout {
-        grid-template-columns: 220px 280px minmax(0, 1fr) 240px;
+        gap: 28px;
     }
 }
 
 .bookmarks-panel {
-    flex: 0 0 260px;
+    flex: 0 0 280px;
+    width: 280px;
+    max-width: 280px;
     display: flex;
     flex-direction: column;
     background: white;
@@ -1315,23 +1360,41 @@ button:hover {
     background: #a0aec0;
 }
 
-/* --- ПЛИТКИ С ОГРАНИЧЕНИЕМ СТРОК (мобильные) --- */
+/* --- ПЛИТКИ/СПИСКИ С ОГРАНИЧЕНИЕМ (мобильные) --- */
 .limited-tiles {
-    max-height: calc(3 * 60px); /* 3 строки плиток */
+    max-height: 260px; /* ~3 строки плиток */
     overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
 }
 
 .limited-articles {
-    max-height: calc(5 * 44px); /* 5 строк статей */
+    max-height: 250px; /* ~5 строк статей + заголовок */
     overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
 }
 
 /* --- АДАПТИВНОСТЬ: МОБИЛЬНЫЕ (<= 768px) --- */
 @media screen and (max-width: 768px) {
-    /* Убираем трёхколоночный лейаут */
+    /* Навигация, текст и закладки — в одну колонку */
     .tri-column-layout {
-        grid-template-columns: 1fr !important;
+        flex-direction: column;
         padding: 0 !important;
+        gap: 15px;
+    }
+
+    .nav-left {
+        position: static;
+        flex: none;
+        width: 100%;
+        gap: 15px;
+    }
+
+    /* В колонке flex-basis задаёт высоту — сбрасываем, иначе текст вылезает за main */
+    .tri-column-layout > .ticket-viewer,
+    .tri-column-layout > .section-viewer {
+        flex: none;
+        width: 100%;
+        max-width: none;
     }
     
     /* Убираем двухколоночный лейаут */
@@ -1345,15 +1408,48 @@ button:hover {
         display: none;
     }
     
-    /* Скролльчые контейнеры для мобильных плиток */
-    .limited-tiles,
     .scrollable-container {
         max-height: 45vh;
     }
-    
-    /* Скролльчые контейнеры для мобильных статей */
+
+    .limited-tiles {
+        max-height: 260px;
+    }
+
     .limited-articles {
-        max-height: calc(5 * 44px);
+        max-height: 250px;
+    }
+
+    /* 5 вопросов билетов (высокие кнопки) и 5 статей (низкие) */
+    #mobile-questions-list {
+        max-height: 384px;
+    }
+
+    #mobile-articles-list {
+        max-height: 224px;
+    }
+
+    /* На узком экране выключенный по ширине текст даёт «реки» — читаем по левому краю */
+    .content-text {
+        text-align: left;
+    }
+
+    /* На телефоне плитки дисциплин снова идут по три в ряд */
+    .discipline-sidebar .mobile-only-tiles {
+        justify-content: flex-start;
+    }
+
+    #cards-discipline-tiles,
+    #quiz-discipline-tiles {
+        justify-content: flex-start;
+    }
+
+    .discipline-sidebar .mobile-tile-btn {
+        flex: 0 0 calc(33.33% - 7px);
+        width: auto;
+        text-align: center;
+        padding: 12px;
+        font-size: 14px;
     }
 }
 
@@ -1365,24 +1461,69 @@ button:hover {
 }
 
 /* --- АДАПТИВНОСТЬ: УЗКИЕ ЭКРАНЫ ПК (769–1120px) ---
-   Закладки прячем, чтобы хватило ширины на папки, их содержимое и текст */
+   Закладки прячем, чтобы хватило ширины на навигацию и текст */
 @media screen and (min-width: 769px) and (max-width: 1120px) {
     .tri-column-layout {
-        grid-template-columns: 200px 240px minmax(0, 1fr);
+        gap: 16px;
     }
 
     .bookmarks-panel {
         display: none;
     }
+
+    .tri-column-layout > .ticket-viewer,
+    .tri-column-layout > .section-viewer {
+        max-width: none;
+    }
+
+    .nav-left {
+        flex: 0 0 260px;
+        width: 260px;
+    }
+}
+
+/* --- ПК: дисциплины слева вертикальным списком (cards.html, tests.html) --- */
+@media screen and (min-width: 769px) {
+    .discipline-sidebar .mobile-only-tiles {
+        display: flex !important;
+        flex-direction: column;
+        flex-wrap: nowrap;
+        gap: 8px;
+        width: 100%;
+        margin-bottom: 0;
+        max-height: none;
+        overflow: visible;
+    }
+
+    .discipline-sidebar .mobile-tile-btn {
+        flex: none;
+        width: 100%;
+        text-align: left;
+        padding: 12px 14px;
+        font-size: 14px;
+    }
+}
+
+/* Карточка/тест по центру своей области */
+.content-area {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
 }
 
 /* --- АДАПТИВНОСТЬ: ОЧЕНЬ УЗКИЕ ОКНА ПК (769–950px) --- */
 @media screen and (min-width: 769px) and (max-width: 950px) {
     .tri-column-layout {
-        grid-template-columns: 160px 200px minmax(0, 1fr);
         gap: 12px;
+        padding: 0 12px;
+    }
+
+    .nav-left {
+        flex: 0 0 220px;
+        width: 220px;
     }
 }
+
 
 
 

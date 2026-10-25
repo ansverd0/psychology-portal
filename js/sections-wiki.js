@@ -224,58 +224,108 @@ function openSectionInNav(section, article) {
 }
 
 
+function escapeRegExp(value) {
+    return String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+/** Подсветка терминов по текстовым узлам (не по HTML-строке).
+ *  \b в JavaScript не работает с кириллицей, поэтому границы заданы через \p{L}. */
+function applyWikiTerms(root, glossary) {
+    if (!root || !glossary) return;
+
+    const terms = Object.keys(glossary)
+        .map(term => String(term || '').trim())
+        .filter(term => term.length >= 3);
+    if (!terms.length) return;
+
+    terms.sort((a, b) => b.length - a.length);
+
+    const definitionByTerm = new Map();
+    terms.forEach(term => definitionByTerm.set(term.toLowerCase(), glossary[term]));
+
+    const regex = new RegExp(
+        `(^|[^\\p{L}\\p{N}_])(${terms.map(escapeRegExp).join('|')})(?![\\p{L}\\p{N}_])`,
+        'giu'
+    );
+
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+        acceptNode(node) {
+            const parent = node.parentElement;
+            if (!parent) return NodeFilter.FILTER_REJECT;
+            if (parent.closest('a, code, pre, script, style, h1, h2, h3, h4, h5, h6, .wiki-term')) {
+                return NodeFilter.FILTER_REJECT;
+            }
+            return node.nodeValue && node.nodeValue.trim() ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT;
+        }
+    });
+
+    const textNodes = [];
+    while (walker.nextNode()) textNodes.push(walker.currentNode);
+
+    textNodes.forEach(node => {
+        const text = node.nodeValue;
+        let match;
+        let lastIndex = 0;
+        let fragment = null;
+
+        regex.lastIndex = 0;
+        while ((match = regex.exec(text)) !== null) {
+            const prefix = match[1];
+            const term = match[2];
+            const termStart = match.index + prefix.length;
+            const definition = definitionByTerm.get(term.toLowerCase());
+            if (!definition) continue;
+
+            if (!fragment) fragment = document.createDocumentFragment();
+            if (termStart > lastIndex) {
+                fragment.appendChild(document.createTextNode(text.slice(lastIndex, termStart)));
+            }
+
+            const span = document.createElement('span');
+            span.className = 'wiki-term';
+            span.setAttribute('data-tooltip', definition);
+            span.textContent = term;
+            fragment.appendChild(span);
+
+            lastIndex = termStart + term.length;
+        }
+
+        if (fragment) {
+            if (lastIndex < text.length) {
+                fragment.appendChild(document.createTextNode(text.slice(lastIndex)));
+            }
+            node.parentNode.replaceChild(fragment, node);
+        }
+    });
+}
+
 function showSectionContent(section) {
     const contentContainer = document.querySelector('.section-viewer');
     if (!contentContainer || !section) return;
-    
+
     // 1. Сначала санитизируем сырой контент статьи (убираем опасные теги/скрипты)
-    let safeRawContent = sanitizeWikiHtml(section.content || '', {
+    const safeRawContent = sanitizeWikiHtml(section.content || '', {
         ALLOWED_TAGS: ['p', 'br', 'strong', 'em', 'u', 'h3', 'h4', 'h5', 'h6', 'ul', 'ol', 'li', 'blockquote', 'a', 'img', 'code', 'pre'],
         ALLOWED_ATTR: ['href', 'rel', 'target', 'src', 'alt']
     });
-    
-    const terms = Object.keys(appGlossary);
 
-    if (terms.length > 0) {
-        // Сортировка терминов по длине (от длинных к коротким) для предотвращения разрушения вложенных слов
-        const sortedTerms = terms.sort((a, b) => b.length - a.length);
-        
-        // Экранируем спецсимволы в терминах
-        const escapedTerms = sortedTerms.map(t => t.replace(/[-\/\^$*+?.()|[\]{}]/g, '\$&'));
-        
-        // Конструируем единое регулярное выражение для всех терминов одновременно
-        const pattern = `\b(${escapedTerms.join('|')})\b`;
-        const regex = new RegExp(pattern, 'gi');
-
-        // Выполняем точечную замену за один проход по строке контента
-        safeRawContent = safeRawContent.replace(regex, (match) => {
-            const matchedKey = match.trim();
-            // Находим точное соответствие в объекте кэша без учета регистра
-            const definition = appGlossary[matchedKey] || 
-                               appGlossary[sortedTerms.find(t => t.toLowerCase() === matchedKey.toLowerCase())];
-            
-            if (definition) {
-                const safeDef = sanitizeWikiHtml(definition, { ALLOWED_TAGS: [], ALLOWED_ATTR: ['data-tooltip'] });
-                return `<span class="wiki-term" data-tooltip="${safeDef}">${match}</span>`;
-            }
-            return match;
-        });
-    }
-    
     // 2. Добавляем звёздочку закладки
     const bookmarkActive = isBookmarked(section.title, 'article') ? 'active' : '';
     const bookmarkIcon = isBookmarked(section.title, 'article') ? '★' : '☆';
-    
+
     const headerWithBookmark = `
         <div style="display: flex; justify-content: space-between; align-items: flex-start; margin: 0 0 20px 0; padding-bottom: 15px; border-bottom: 2px solid #edf2f7;">
             <h2 style="margin: 0; font-size: 24px; color: #1a365d; line-height: 1.3; flex: 1;">${escapeHtml(section.title)}</h2>
             <button class="bookmark-star-btn ${bookmarkActive}" id="section-bookmark-star" title="В закладки" style="margin-left: 15px; flex-shrink: 0;">${bookmarkIcon}</button>
         </div>
     `;
-    
-    // 3. Вставляем готовый HTML (wiki-теги уже встроены, повторная санитизация не нужна)
+
+    // 3. Вставляем санитизированный HTML и уже в DOM подсвечиваем термины
     contentContainer.innerHTML = `${headerWithBookmark}<div class="content-text">${safeRawContent}</div>`;
-    
+
+    const contentText = contentContainer.querySelector('.content-text');
+    applyWikiTerms(contentText, appGlossary);
+
     // 4. Обработчик закладки в просмотрщике
     const starBtn = document.getElementById('section-bookmark-star');
     if (starBtn) {

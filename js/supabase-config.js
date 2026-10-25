@@ -14,7 +14,7 @@ const SUPABASE_ANON_KEY = "sb_publishable_bwLDUQMS1RVwHF2wHE62hg_sODGX5vi";
 
 // Таймаут сетевых запросов к Supabase: при медленном/заблокированном канале
 // приложение должно быстро уйти в офлайн-кэш, а не «висеть» минутами.
-const SUPABASE_TIMEOUT_MS = 7000;
+const SUPABASE_TIMEOUT_MS = 12000;
 
 function fetchWithTimeout(input, init) {
     if (init && init.signal) return window.fetch(input, init);
