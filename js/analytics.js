@@ -25,6 +25,13 @@
     function initMetrika() {
         try {
             if (typeof ym !== 'function') return;
+
+            // Сначала помечаем поля, чтобы Вебвизор не записал ввод
+            protectInputs();
+            if (document.body) {
+                new MutationObserver(protectInputs).observe(document.body, { childList: true, subtree: true });
+            }
+
             ym(COUNTER_ID, 'init', {
                 ssr: true,
                 webvisor: true,
@@ -35,11 +42,6 @@
                 accurateTrackBounce: true,
                 trackLinks: true
             });
-
-            protectInputs();
-            if (document.body) {
-                new MutationObserver(protectInputs).observe(document.body, { childList: true, subtree: true });
-            }
 
             var key = null;
             try { key = localStorage.getItem('research_user_key'); } catch (e) { /* ignore */ }
