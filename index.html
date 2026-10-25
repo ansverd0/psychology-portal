@@ -2,28 +2,6 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <!-- Yandex.Metrika counter — неблокируемая загрузка с защитой от сбоев ЦОД -->
-<script type="text/javascript">
-    (function(m,e,t,r,i,k,a){
-        m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
-        m[i].l=1*new Date();
-        for (var j = 0; j < document.scripts.length; j++) {if (document.scripts[j].src === r) { return; }}
-        k=e.createElement(t);a=e.getElementsByTagName(t)[0];k.async=1;k.src=r;k.onerror=function(){console.warn('⚠️ Яндекс.Метрика недоступна, сайт продолжает работу');a.parentNode.insertBefore(k,a)};a.parentNode.insertBefore(k,a)
-    })(window, document,'script','https://mc.yandex.ru/metrika/tag.js?id=112398882', 'ym');
-</script>
-<noscript><div><img src="https://mc.yandex.ru/watch/112398882" style="position:absolute; left:-9999px;" alt="" /></div></noscript>
-<!-- /Yandex.Metrika counter -->
-<script type="text/javascript">
-    // Инициализация Метрики после загрузки страницы — никогда не блокирует сайт
-    window.addEventListener('load', function() {
-        try {
-            if (typeof ym === 'function') {
-                ym(112398882, 'init', {ssr:true, webvisor:true, clickmap:true, ecommerce:"dataLayer", referrer: document.referrer, url: location.href, accurateTrackBounce:true, trackLinks:true});
-            }
-        } catch(e) { console.warn('⚠️ Метрика не инициализирована:', e.message); }
-    });
-</script>
-
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="preconnect" href="https://lrjszannmammzzqotaro.supabase.co" crossorigin>
     <title>Интерактивная образовательная платформа для студентов-психологов</title>
@@ -36,6 +14,7 @@
     <meta property="og:title" content="Интерактивная образовательная платформа для студентов-психологов">
     <meta property="og:description" content="Единый учебный портал с базой знаний, экзаменационными билетами, тренажёрами понятий и тестами по профильным дисциплинам семестра.">
     <meta property="og:url" content="https://ansverd0.github.io/psychology-portal/">
+    <script src="js/analytics.js" defer></script>
 </head>
 
 <body>
@@ -145,13 +124,18 @@
 
             <!-- БЛОК ЕДИНОГО СОГЛАСИЯ НА ОБРАБОТКУ И КУКИ -->
             <label style="display: flex; align-items: flex-start; gap: 10px; cursor: pointer; user-select: none;">
-                <input type="checkbox" id="chk-consent" checked style="margin-top: 3px; width: 16px; height: 16px; accent-color: #2b6cb0;">
+                <input type="checkbox" id="chk-consent" style="margin-top: 3px; width: 16px; height: 16px; accent-color: #2b6cb0;">
                 <span style="font-size: 12px; color: #718096; line-height: 1.4;">
-                    Я даю согласие на сохранение локальных файлов кэша, куки, фиксацию метрик прогресса тестов и результатов итоговых эссе.
+                    Я ознакомлен(а) с <a href="privacy.html" target="_blank" rel="noopener" style="color: #2b6cb0;">политикой обработки данных</a>
+                    и даю согласие на сохранение локальных файлов кэша, куки, фиксацию метрик прогресса тестов и результатов итоговых эссе.
                 </span>
             </label>
         </div>
     </div>
+    <footer style="margin: 10px 20px 30px; text-align: center;">
+        <a href="privacy.html" class="footer-link">Политика обработки данных</a>
+    </footer>
+
     <script src="js/supabase-config.js"></script>
 <script src="js/auth.js"></script> <!-- Наш новый изолированный подмодуль -->
 

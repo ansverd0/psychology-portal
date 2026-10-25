@@ -48,7 +48,7 @@ psychology-portal/
 
 | Таблица | Назначение | Ключевые поля |
 |---------|------------|---------------|
-| `users_profiles` | Анонимные ключи | `user_key` (UNIQUE), `tests_completed_count`, `essay_submitted` |
+| `users_profiles` | Анонимные ключи | `user_key` (UNIQUE), `created_at`; поля прогресса — в R-05 |
 | `flashcards` | Карточки терминов | `term`, `definition`, `discipline_id` |
 | `tests` | Вопросы тестов | `question`, `options` (массив), `correct_index`, `link_url`, `discipline_id` |
 | `tickets` | Экзаменационные билеты | `number`, `title`, `recommend_time`, `plan`, `content`, `discipline_id` |

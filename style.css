@@ -1524,6 +1524,137 @@ button:hover {
     }
 }
 
+/* ==========================================================================
+   СОГЛАСИЕ НА АНАЛИТИКУ И ПОЛИТИКА ДАННЫХ
+   ========================================================================== */
+
+.consent-banner {
+    position: fixed;
+    left: 16px;
+    right: 16px;
+    bottom: 16px;
+    z-index: 100000;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    flex-wrap: wrap;
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 14px;
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.16);
+    padding: 14px 18px;
+    font-size: 13px;
+    line-height: 1.45;
+    color: #2d3748;
+    box-sizing: border-box;
+}
+
+.consent-banner__text {
+    flex: 1 1 320px;
+}
+
+.consent-banner__text a {
+    color: #2b6cb0;
+    font-weight: 600;
+}
+
+.consent-banner__actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.consent-banner button {
+    padding: 9px 14px;
+    font-size: 13px;
+    border-radius: 8px;
+}
+
+.consent-banner button.secondary {
+    background: #edf2f7;
+    color: #2d3748;
+}
+
+.consent-banner button.secondary:hover {
+    background: #e2e8f0;
+}
+
+@media screen and (max-width: 600px) {
+    .consent-banner {
+        left: 10px;
+        right: 10px;
+        bottom: 10px;
+        padding: 12px;
+    }
+
+    .consent-banner button {
+        flex: 1 1 auto;
+    }
+}
+
+.footer-link {
+    display: inline-block;
+    margin-top: 10px;
+    color: #718096;
+    font-size: 12px;
+    text-decoration: none;
+    border-bottom: 1px dotted #a0aec0;
+}
+
+.footer-link:hover {
+    color: #2b6cb0;
+    border-bottom-color: #2b6cb0;
+}
+
+.privacy-content {
+    width: 100%;
+    max-width: 900px;
+    margin: 20px auto 0;
+    padding: 32px 36px;
+    background: #ffffff;
+    border-radius: 16px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
+    text-align: left;
+    box-sizing: border-box;
+}
+
+.privacy-content h2 {
+    color: #1a365d;
+    font-size: 20px;
+    margin: 26px 0 10px;
+}
+
+.privacy-content h2:first-child {
+    margin-top: 0;
+}
+
+.privacy-content p,
+.privacy-content li {
+    color: #2d3748;
+    font-size: 15px;
+    line-height: 1.7;
+}
+
+.privacy-content ul {
+    padding-left: 22px;
+}
+
+.privacy-content .muted {
+    color: #718096;
+    font-size: 13px;
+}
+
+#revoke-consent {
+    margin-top: 8px;
+}
+
+@media screen and (max-width: 600px) {
+    .privacy-content {
+        padding: 22px 18px;
+    }
+}
+
 
 
 

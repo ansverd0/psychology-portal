@@ -1,6 +1,6 @@
 // Дамп данных и security-состояния Supabase через Management API.
 // Запуск: node scripts/backup-db.mjs [--out <папка>]
-// Токен берётся из .env (SUPABASE_PAT, SUPABASE_PROJECT_REF), в файлы не пишется.
+// Токен берётся из .env или из переменных окружения (для GitHub Actions), в файлы не пишется.
 
 import fs from 'node:fs';
 import path from 'node:path';
@@ -9,21 +9,23 @@ import { fileURLToPath } from 'node:url';
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const envPath = path.join(root, '.env');
 
-if (!fs.existsSync(envPath)) {
-  console.error(`.env не найден: ${envPath}`);
-  process.exit(1);
+const env = {};
+if (fs.existsSync(envPath)) {
+  for (const line of fs.readFileSync(envPath, 'utf8').split(/\r?\n/)) {
+    const m = line.match(/^\s*([^#=]+)=(.*)$/);
+    if (m) env[m[1].trim()] = m[2].trim();
+  }
 }
 
-const env = {};
-for (const line of fs.readFileSync(envPath, 'utf8').split(/\r?\n/)) {
-  const m = line.match(/^\s*([^#=]+)=(.*)$/);
-  if (m) env[m[1].trim()] = m[2].trim();
+// Переменные окружения важнее .env — так работает CI
+for (const key of ['SUPABASE_PAT', 'SUPABASE_PROJECT_REF', 'SUPABASE_URL', 'SUPABASE_SERVICE_ROLE']) {
+  if (process.env[key]) env[key] = process.env[key].trim();
 }
 
 const pat = env.SUPABASE_PAT;
 const ref = env.SUPABASE_PROJECT_REF;
 if (!pat || !ref) {
-  console.error('В .env должны быть SUPABASE_PAT и SUPABASE_PROJECT_REF');
+  console.error('Нужны SUPABASE_PAT и SUPABASE_PROJECT_REF (.env или переменные окружения)');
   process.exit(1);
 }
 

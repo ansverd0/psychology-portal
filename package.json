@@ -1,0 +1,32 @@
+{
+  "name": "psychology-portal",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Psy-Education Hub — статический учебный портал с Supabase, PWA и GitHub Pages",
+  "type": "commonjs",
+  "scripts": {
+    "backup": "node scripts/backup-db.mjs",
+    "check:permissions": "node scripts/check-permissions.mjs",
+    "db:exec": "node scripts/db-exec.mjs",
+    "mcp:supabase": "node scripts/mcp-supabase.mjs"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ansverd0/psychology-portal.git"
+  },
+  "keywords": [
+    "psychology",
+    "education",
+    "supabase",
+    "pwa"
+  ],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/ansverd0/psychology-portal/issues"
+  },
+  "homepage": "https://ansverd0.github.io/psychology-portal/",
+  "dependencies": {
+    "@supabase/mcp-server-supabase": "^0.14.0"
+  }
+}

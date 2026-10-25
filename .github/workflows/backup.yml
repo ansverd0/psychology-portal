@@ -1,0 +1,56 @@
+name: Backup database
+
+on:
+  schedule:
+    - cron: '0 3 * * *' # 06:00 МСК
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Dump and encrypt
+        env:
+          SUPABASE_PAT: ${{ secrets.SUPABASE_PAT }}
+          SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+          BACKUP_PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
+        run: |
+          set -euo pipefail
+
+          if [ -z "${SUPABASE_PAT}" ] || [ -z "${SUPABASE_PROJECT_REF}" ]; then
+            echo "::warning::SUPABASE_PAT/SUPABASE_PROJECT_REF не заданы — бэкап пропущен."
+            exit 0
+          fi
+
+          if [ -z "${BACKUP_PASSPHRASE}" ]; then
+            echo "::error::BACKUP_PASSPHRASE не задан. Открытый дамп в artifact не выгружаем."
+            exit 1
+          fi
+
+          node scripts/backup-db.mjs --out backups/db
+
+          tar -czf backup.tar.gz -C backups/db .
+          gpg --batch --yes --pinentry-mode loopback \
+            --symmetric --cipher-algo AES256 \
+            --passphrase "${BACKUP_PASSPHRASE}" \
+            -o backup.tar.gz.gpg backup.tar.gz
+          rm -f backup.tar.gz
+
+      - name: Upload encrypted backup
+        if: ${{ hashFiles('backup.tar.gz.gpg') != '' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: db-backup-${{ github.run_id }}
+          path: backup.tar.gz.gpg
+          retention-days: 14

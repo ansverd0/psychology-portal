@@ -1,0 +1,56 @@
+name: Uptime check
+
+on:
+  schedule:
+    - cron: '*/30 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Check site and Supabase
+        run: |
+          set -euo pipefail
+
+          curl -fsS --max-time 20 "https://ansverd0.github.io/psychology-portal/index.html" > /dev/null
+          curl -fsS --max-time 20 "https://ansverd0.github.io/psychology-portal/sw.js" > /dev/null
+
+          KEY=$(grep -o 'sb_publishable_[A-Za-z0-9_-]*' js/supabase-config.js | head -n 1)
+          test -n "$KEY"
+          curl -fsS --max-time 20 \
+            -H "apikey: $KEY" -H "Authorization: Bearer $KEY" \
+            "https://lrjszannmammzzqotaro.supabase.co/rest/v1/version_control?select=version&limit=1" > /dev/null
+
+      - name: Open incident issue
+        if: failure()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh label create incident --color d73a4a --description "Автоматически: портал недоступен" 2>/dev/null || true
+          EXISTING=$(gh issue list --state open --label incident --limit 1 --json number --jq '.[0].number // empty')
+          if [ -z "$EXISTING" ]; then
+            gh issue create \
+              --title "Портал недоступен (автопроверка)" \
+              --label incident \
+              --body "Проверка $(date -u +%Y-%m-%dT%H:%MZ) не смогла открыть сайт или Supabase. Проверьте GitHub Pages, последний деплой и статус Supabase."
+          else
+            gh issue comment "$EXISTING" --body "Проверка $(date -u +%Y-%m-%dT%H:%MZ): портал всё ещё недоступен."
+          fi
+
+      - name: Close incident issue
+        if: success()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          EXISTING=$(gh issue list --state open --label incident --limit 1 --json number --jq '.[0].number // empty')
+          if [ -n "$EXISTING" ]; then
+            gh issue close "$EXISTING" --comment "Проверка $(date -u +%Y-%m-%dT%H:%MZ): портал снова доступен."
+          fi
