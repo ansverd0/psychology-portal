@@ -12,16 +12,28 @@ let appGlossary = {};
 const SUPABASE_URL = "https://lrjszannmammzzqotaro.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_bwLDUQMS1RVwHF2wHE62hg_sODGX5vi";
 
-// Безопасная инициализация клиента Supabase — если CDN не отвечает, сайт продолжает работу в оффлайн-режиме
+// Таймаут сетевых запросов к Supabase: при медленном/заблокированном канале
+// приложение должно быстро уйти в офлайн-кэш, а не «висеть» минутами.
+const SUPABASE_TIMEOUT_MS = 7000;
+
+function fetchWithTimeout(input, init) {
+    if (init && init.signal) return window.fetch(input, init);
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), SUPABASE_TIMEOUT_MS);
+    return window.fetch(input, Object.assign({}, init, { signal: controller.signal }))
+        .finally(() => clearTimeout(timer));
+}
+
+// Инициализация клиента Supabase (библиотека лежит локально в js/vendor)
 let supabaseClient = null;
 try {
     if (typeof supabase !== 'undefined') {
         supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
             auth: { persistSession: false, autoRefreshToken: false },
-            global: { fetch: (...args) => window.fetch(...args) }
+            global: { fetch: fetchWithTimeout }
         });
     } else {
-        console.warn('⚠️ Supabase CDN не загружен (unpkg.com недоступен). Сайт запустится в оффлайн-режиме из localStorage.');
+        console.warn('⚠️ supabase-js не загружен. Сайт запустится в оффлайн-режиме из localStorage.');
     }
 } catch (e) {
     console.warn('⚠️ Ошибка создания Supabase-клиента:', e.message, '— сайт запустится в оффлайн-режиме из localStorage.');
@@ -67,8 +79,12 @@ function activateLocalDatabaseFallback() {
     const cachedDb = localStorage.getItem('hub_database_snapshot');
     const cachedGloss = localStorage.getItem('hub_cached_glossary');
 
-    if (cachedDb) appDatabase = JSON.parse(cachedDb);
-    if (cachedGloss) appGlossary = JSON.parse(cachedGloss);
+    try {
+        if (cachedDb) appDatabase = JSON.parse(cachedDb);
+        if (cachedGloss) appGlossary = JSON.parse(cachedGloss);
+    } catch (e) {
+        console.warn('⚠️ Локальный кэш повреждён, продолжаем с пустой базой:', e.message);
+    }
 
     showOfflineNotification();
     executePageModuleInitialization();
@@ -270,9 +286,19 @@ document.addEventListener('DOMContentLoaded', initApplicationHub);
 
 // Глобальная фоновая регистрация PWA Service Worker для оффлайн-удержания статики
 if ('serviceWorker' in navigator) {
+    // Если воркер уже управлял страницей, после обновления перезагружаем её один раз,
+    // чтобы пользователь сразу увидел новый интерфейс, а не старый кэш.
+    const hadController = Boolean(navigator.serviceWorker.controller);
+    let refreshing = false;
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+        if (!hadController || refreshing) return;
+        refreshing = true;
+        window.location.reload();
+    });
+
     window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/sw.js')
-            .then(reg => console.log('🚀 Глобальный Service Worker успешно зарегистрирован!'))
+        navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' })
+            .then(reg => console.log('🚀 Service Worker зарегистрирован:', reg.scope))
             .catch(err => console.error('⚠️ Ошибка регистрации Service Worker:', err));
     });
 }

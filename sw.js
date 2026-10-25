@@ -1,67 +1,149 @@
-const CACHE_NAME = 'psy-hub-v4';
+// Service Worker: офлайн-первый для статики и быстрый фолбек при медленной сети.
+// Важно: при каждом релизе меняйте CACHE_NAME — это и есть инвалидация кэша.
+
+const CACHE_NAME = 'psy-hub-v5';
+
+// Пути относительные: работают и в корне домена, и в подпапке (GitHub Pages).
 const ASSETS = [
-  '/',
-  '/index.html', // Если файл называется иначе (например main.html), замени или удали строку
-  '/tests.html',
-  '/cards.html',
-  '/tickets.html',
-  '/sections.html',
-  '/library.html',
-  '/news.html',
-  '/style.css', // Проверь путь! Если лежит в папке: '/css/style.css'
-  '/js/supabase-config.js',
-  '/js/auth.js',
-  '/js/flashcards.js',
-  '/js/quiz.js',
-  '/js/sections-wiki.js',
-  '/js/tickets.js',
-  '/js/news-library.js',
-  '/js/bookmarks.js'
+  './',
+  './index.html',
+  './tests.html',
+  './cards.html',
+  './tickets.html',
+  './sections.html',
+  './library.html',
+  './news.html',
+  './style.css',
+  './js/vendor/supabase.js',
+  './js/vendor/dompurify.min.js',
+  './js/supabase-config.js',
+  './js/auth.js',
+  './js/flashcards.js',
+  './js/quiz.js',
+  './js/sections-wiki.js',
+  './js/tickets.js',
+  './js/news-library.js',
+  './js/bookmarks.js'
 ];
 
-// Безопасная поштучная установка ресурсов в кэш (Защита от падения addAll при 404)
-self.addEventListener('install', (e) => {
-  e.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => {
-      const cachePromises = ASSETS.map((asset) => {
-        return cache.add(asset).catch((err) => {
-          console.warn(`⚠️ Воркер пропустил ресурс (нет файла на сервере): ${asset}`, err.message);
-        });
-      });
-      return Promise.all(cachePromises);
-    })
-  );
-  self.skipWaiting();
-});
+const NAV_TIMEOUT = 2500;   // навигация: ждём сеть не дольше 2.5 c, потом отдаём кэш
+const ASSET_TIMEOUT = 8000; // статика: таймаут фонового обновления
+const INSTALL_TIMEOUT = 8000;
 
-self.addEventListener('activate', (e) => {
-  e.waitUntil(
-    caches.keys().then((keys) => {
-      return Promise.all(
-        keys.map((key) => {
-          if (key !== CACHE_NAME) return caches.delete(key);
-        })
-      );
-    })
-  );
-  self.clients.claim();
-});
+function fetchWithTimeout(request, ms) {
+  return new Promise((resolve, reject) => {
+    let settled = false;
+    const timer = setTimeout(() => {
+      if (!settled) { settled = true; reject(new Error('network timeout')); }
+    }, ms);
 
-self.addEventListener('fetch', (e) => {
-  if (e.request.url.includes('supabase.co')) return;
-  e.respondWith(
-    fetch(e.request)
-      .then((res) => {
-        // Кэшируем только успешные GET-запросы от приложения
-        if (!res || res.status !== 200 || res.type !== 'basic' || e.request.method !== 'GET') {
-          return res;
-        }
-        const resClone = res.clone();
-        caches.open(CACHE_NAME).then((cache) => {
-          cache.put(e.request, resClone);
-        });
-        return res;
+    fetch(request)
+      .then((response) => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timer);
+        resolve(response);
       })
-      .catch(() => caches.match(e.request))
+      .catch((error) => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timer);
+        reject(error);
+      });
+  });
+}
+
+self.addEventListener('install', (event) => {
+  // Новый воркер активируется сразу, не дожидаясь закрытия всех вкладок
+  self.skipWaiting();
+
+  event.waitUntil(
+    caches.open(CACHE_NAME).then((cache) =>
+      Promise.all(
+        ASSETS.map((asset) =>
+          fetchWithTimeout(new Request(asset, { cache: 'reload' }), INSTALL_TIMEOUT)
+            .then((response) => {
+              if (response && response.ok) return cache.put(asset, response);
+              return null;
+            })
+            .catch((error) => {
+              console.warn(`⚠️ Воркер пропустил ресурс: ${asset}`, error.message);
+              return null;
+            })
+        )
+      )
+    )
+  );
+});
+
+self.addEventListener('activate', (event) => {
+  event.waitUntil(
+    caches.keys()
+      .then((keys) =>
+        Promise.all(
+          keys.map((key) => {
+            if (key !== CACHE_NAME) return caches.delete(key);
+            return null;
+          })
+        )
+      )
+      .then(() => self.clients.claim())
+  );
+});
+
+self.addEventListener('fetch', (event) => {
+  const request = event.request;
+
+  // Пишем только GET и только свои файлы; Supabase и внешние CDN не трогаем
+  if (request.method !== 'GET') return;
+  const url = new URL(request.url);
+  if (url.origin !== self.location.origin) return;
+
+  if (request.mode === 'navigate') {
+    const network = fetchWithTimeout(request, NAV_TIMEOUT)
+      .then((response) => {
+        if (response && response.ok) {
+          const copy = response.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(request, copy));
+        }
+        return response;
+      })
+      .catch(() => null);
+
+    // Держим воркер живым, пока идёт (возможно, медленный) запрос
+    event.waitUntil(network);
+    event.respondWith(
+      network.then(async (response) => {
+        if (response) return response;
+        const cached = await caches.match(request, { ignoreSearch: true });
+        if (cached) return cached;
+        const fallback = await caches.match('./index.html');
+        if (fallback) return fallback;
+        return new Response('Страница недоступна офлайн', {
+          status: 503,
+          headers: { 'Content-Type': 'text/plain; charset=utf-8' }
+        });
+      })
+    );
+    return;
+  }
+
+  // Статика: сразу из кэша; в фоне — обновление для следующего визита
+  const network = fetchWithTimeout(request, ASSET_TIMEOUT)
+    .then((response) => {
+      if (response && response.ok) {
+        const copy = response.clone();
+        caches.open(CACHE_NAME).then((cache) => cache.put(request, copy));
+      }
+      return response;
+    })
+    .catch(() => null);
+
+  event.waitUntil(network);
+  event.respondWith(
+    caches.match(request, { ignoreSearch: true }).then((cached) => {
+      if (cached) return cached;
+      return network.then((response) => response || new Response('', { status: 504 }));
+    })
   );
 });
