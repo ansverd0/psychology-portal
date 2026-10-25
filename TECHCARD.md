@@ -178,6 +178,7 @@ git push
 
 ## ССЫЛКИ
 
-- Сайт: `https://psy-education.vercel.app/index.html`
+- Сайт (рабочий, доступен из РФ): `https://ansverd0.github.io/psychology-portal/index.html`
+- Зеркало Vercel (может быть недоступно из РФ): `https://psy-education.vercel.app/index.html`
 - GitHub: `https://github.com/ansverd0/psychology-portal`
 - Supabase: `https://supabase.com/dashboard/project/lrjszannmammzzqotaro`
