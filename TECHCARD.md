@@ -11,8 +11,8 @@
 - **Backend:** Supabase (PostgreSQL)
 - **Аналитика:** Яндекс.Метрика (с Вебвизором)
 - **PWA:** Service Worker (sw.js)
-- **Деплой:** Vercel (через Git push)
-- **Репозиторий:** `psy-education.vercel.app`
+- **Деплой:** GitHub Pages (ветка `gh-pages`, автосинхронизация из `master`), зеркало — Vercel
+- **Сайт:** `https://ansverd0.github.io/psychology-portal/`
 
 ---
 
