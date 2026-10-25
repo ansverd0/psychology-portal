@@ -99,6 +99,17 @@ psychology-portal/
 
 ---
 
+## ЗАГРУЗКА ДАННЫХ
+
+- `PAGE_LOADERS` в `js/supabase-config.js`: каждая страница запрашивает только свои таблицы.
+  - `index` — без Supabase (только авторизация);
+  - `cards` — `flashcards`; `tests` — `tests`; `tickets` — `tickets` + `ticket_library` + `library`;
+  - `sections` — `articles` + `glossary`; `library` — `library`; `news` — `news`.
+- Кэш страницы: `hub_page_cache_<page>` и `hub_page_version_<page>`; старый общий `hub_database_snapshot` автоматически мигрирует при первом визите.
+- Версия контента (`version_control`) обновляется триггерами в БД, вручную не бампается.
+
+---
+
 ## SERVICE WORKER
 
 - Версия: `psy-hub-v10`

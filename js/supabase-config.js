@@ -75,253 +75,305 @@ function showOfflineNotification() {
     }
 }
 
-// Читает локальный снимок в appDatabase/appGlossary.
-// Возвращает true, если снимок существует и корректно разобран.
-function applyCachedSnapshot() {
-    const cachedDb = localStorage.getItem('hub_database_snapshot');
-    if (!cachedDb) return false;
+let currentPage = 'index';
 
+function detectPage() {
+    if (document.body && document.body.dataset.page) return document.body.dataset.page;
+    if (document.getElementById('myCard')) return 'cards';
+    if (document.getElementById('quiz-wrapper')) return 'tests';
+    if (document.getElementById('sections-page-marker')) return 'sections';
+    if (document.querySelector('.ticket-viewer')) return 'tickets';
+    if (document.getElementById('library-page-marker')) return 'library';
+    if (document.getElementById('news-page-marker')) return 'news';
+    return 'index';
+}
+
+function readPageCache(page) {
     try {
-        appDatabase = JSON.parse(cachedDb);
-        const cachedGloss = localStorage.getItem('hub_cached_glossary');
-        if (cachedGloss) appGlossary = JSON.parse(cachedGloss);
+        const raw = localStorage.getItem('hub_page_cache_' + page);
+        if (raw) {
+            const parsed = JSON.parse(raw);
+            if (parsed && parsed.db) {
+                return {
+                    db: parsed.db,
+                    glossary: parsed.glossary || {},
+                    version: localStorage.getItem('hub_page_version_' + page),
+                    legacy: false
+                };
+            }
+        }
+    } catch (e) {
+        console.warn('⚠️ Кэш страницы повреждён:', e.message);
+    }
+
+    // Совместимость со старым общим снимком (до P-02)
+    try {
+        const legacyRaw = localStorage.getItem('hub_database_snapshot');
+        if (!legacyRaw) return null;
+        const glossRaw = localStorage.getItem('hub_cached_glossary');
+        return {
+            db: JSON.parse(legacyRaw),
+            glossary: glossRaw ? JSON.parse(glossRaw) : {},
+            version: localStorage.getItem('hub_app_version'),
+            legacy: true
+        };
+    } catch (e) {
+        console.warn('⚠️ Старый кэш повреждён:', e.message);
+        return null;
+    }
+}
+
+function savePageCache(page, db, glossary, version) {
+    try {
+        localStorage.setItem('hub_page_cache_' + page, JSON.stringify({ db, glossary: glossary || {} }));
+        localStorage.setItem('hub_page_version_' + page, version);
+        // Старый общий снимок больше не нужен и занимает место
+        localStorage.removeItem('hub_database_snapshot');
+        localStorage.removeItem('hub_cached_glossary');
+        localStorage.removeItem('hub_app_version');
         return true;
     } catch (e) {
-        console.warn('⚠️ Локальный кэш повреждён, продолжаем без него:', e.message);
+        console.warn('⚠️ Не удалось сохранить кэш страницы:', e.message);
         return false;
     }
+}
+
+function applyPageData(db, glossary) {
+    if (db && typeof db === 'object') {
+        Object.keys(db).forEach(key => { appDatabase[key] = db[key]; });
+    }
+    appGlossary = glossary || {};
 }
 
 // Активация локального оффлайн-фолбека из localStorage
 function activateLocalDatabaseFallback() {
     if (!cacheRendered) {
-        cacheRendered = applyCachedSnapshot();
+        const cached = readPageCache(currentPage);
+        if (cached) {
+            applyPageData(cached.db, cached.glossary);
+            cacheRendered = true;
+            executePageModuleInitialization();
+        }
     }
 
     showOfflineNotification();
 
-    // Если кэш уже отрисован, повторно инициализировать модули нельзя:
-    // это продублирует обработчики событий.
     if (!cacheRendered) {
         executePageModuleInitialization();
     }
 }
 
-// Высокопроизводительный оркестратор с валидацией версии (Вариант Б)
-async function initApplicationHub() {
-    console.log("📡 Запуск системы контроля версий хаба...");
+async function fetchCloudVersion() {
+    const { data, error } = await supabaseClient
+        .from('version_control')
+        .select('version')
+        .limit(1);
+    if (error) throw error;
+    return data?.[0]?.version || '0.0.0';
+}
 
-    const cachedDb = localStorage.getItem('hub_database_snapshot');
-    const localVersion = localStorage.getItem('hub_app_version');
+async function fetchTable(table, columns) {
+    const { data, error } = await supabaseClient.from(table).select(columns);
+    if (error) throw error;
+    return data || [];
+}
 
-    // Сначала показываем сохранённый снимок, не дожидаясь сети.
-    // Проверка версии и обновление идут в фоне и не блокируют первый экран.
-    if (cachedDb && !cacheRendered) {
-        if (applyCachedSnapshot()) {
-            cacheRendered = true;
-            executePageModuleInitialization();
-            console.log("⚡ Мгновенный старт из локального снимка");
+function mapFlashcards(data) {
+    return data.map(c => ({ term: c.term, definition: c.definition, discipline: c.discipline_id }));
+}
+
+function mapTests(data) {
+    return data.map(t => ({ question: t.question, options: t.options, correct: t.correct_index, link: t.link_url, discipline: t.discipline_id }));
+}
+
+function mapGlossary(data) {
+    const glossary = {};
+    data.forEach(g => { glossary[g.term.trim()] = g.definition; });
+    return glossary;
+}
+
+function mapArticles(data) {
+    const groups = {};
+    data.forEach(a => {
+        let cleanId = a.discipline_id;
+        if (cleanId.includes('general')) cleanId = 'general-psych';
+        if (cleanId.includes('social')) cleanId = 'social-psych';
+        if (cleanId.includes('developmental') || cleanId.includes('age')) cleanId = 'developmental-psych';
+
+        const titleName = cleanId === 'general-psych' ? 'Общая психология' : (cleanId === 'social-psych' ? 'Социальная психология' : 'Возрастная психология');
+        if (!groups[cleanId]) groups[cleanId] = { id: cleanId, title: titleName, articles: [] };
+        groups[cleanId].articles.push({ title: a.title, content: a.content });
+    });
+
+    Object.keys(groups).forEach(key => {
+        groups[key].articles.sort((a, b) => {
+            const numA = parseInt(a.title.match(/^\d+/)?.[0] || 0, 10);
+            const numB = parseInt(b.title.match(/^\d+/)?.[0] || 0, 10);
+            return numA - numB;
+        });
+    });
+
+    const order = ['general-psych', 'social-psych', 'developmental-psych'];
+    return order.filter(id => groups[id]).map(id => groups[id]);
+}
+
+function mapTickets(tickets, links, library) {
+    const groups = {};
+    const safeLinks = links || [];
+    const safeLibrary = library || [];
+
+    tickets.forEach(t => {
+        let cleanId = t.discipline_id;
+        if (cleanId === 'general-psych' || cleanId === 'general-exam') cleanId = 'general-exam';
+        if (cleanId === 'social-psych' || cleanId === 'social-exam') cleanId = 'social-exam';
+        if (cleanId === 'developmental-psych' || cleanId === 'developmental-exam') cleanId = 'developmental-exam';
+
+        const titleName = cleanId === 'general-exam' ? 'Общая психология' : (cleanId === 'social-exam' ? 'Социальная психология' : 'Возрастная психология');
+
+        let literature = [];
+        if (safeLibrary.length > 0) {
+            const boundBookIds = safeLinks.filter(l => l.ticket_id == t.id).map(l => l.book_id);
+            literature = safeLibrary
+                .filter(b => boundBookIds.includes(b.id))
+                .map(b => `${b.author} — ${b.title}`);
         }
+
+        if (!groups[cleanId]) groups[cleanId] = { id: cleanId, title: titleName, questions: [] };
+        groups[cleanId].questions.push({
+            number: t.number,
+            title: t.title,
+            time: t.recommend_time,
+            plan: t.plan,
+            content: t.content,
+            literature
+        });
+    });
+
+    Object.keys(groups).forEach(key => {
+        groups[key].questions.sort((a, b) => parseInt(a.number, 10) - parseInt(b.number, 10));
+    });
+
+    const order = ['general-exam', 'social-exam', 'developmental-exam'];
+    return order.filter(id => groups[id]).map(id => groups[id]);
+}
+
+function mapNews(data) {
+    return [...data]
+        .sort((a, b) => parseInt(b.id, 10) - parseInt(a.id, 10))
+        .map(item => ({ date: item.date, title: item.title, changes: item.changes }));
+}
+
+const PAGE_LOADERS = {
+    cards: async () => {
+        const flashcards = mapFlashcards(await fetchTable('flashcards', 'term, definition, discipline_id'));
+        return { db: { flashcards }, glossary: {} };
+    },
+
+    tests: async () => {
+        const tests = mapTests(await fetchTable('tests', 'question, options, correct_index, link_url, discipline_id'));
+        return { db: { tests }, glossary: {} };
+    },
+
+    library: async () => {
+        const library = await fetchTable('library', 'id, title, author, annotation');
+        return { db: { library }, glossary: {} };
+    },
+
+    news: async () => {
+        const news = mapNews(await fetchTable('news', 'id, date, title, changes'));
+        return { db: { news }, glossary: {} };
+    },
+
+    sections: async () => {
+        const [articles, glossary] = await Promise.all([
+            fetchTable('articles', 'title, content, discipline_id'),
+            fetchTable('glossary', 'term, definition')
+        ]);
+        return { db: { sections: mapArticles(articles) }, glossary: mapGlossary(glossary) };
+    },
+
+    tickets: async () => {
+        const [tickets, links, library] = await Promise.all([
+            fetchTable('tickets', 'id, number, title, recommend_time, plan, content, discipline_id'),
+            fetchTable('ticket_library', 'ticket_id, book_id'),
+            fetchTable('library', 'id, title, author, annotation')
+        ]);
+        return { db: { tickets: mapTickets(tickets, links, library), library }, glossary: {} };
+    }
+};
+
+async function initApplicationHub() {
+    currentPage = detectPage();
+    const loader = PAGE_LOADERS[currentPage];
+
+    // Страницам без данных (index) сеть не нужна вообще
+    if (!loader) {
+        executePageModuleInitialization();
+        return;
     }
 
-    // Если Supabase CDN не загружен — сразу переходим в оффлайн-режим
+    const cached = readPageCache(currentPage);
+    if (cached) {
+        applyPageData(cached.db, cached.glossary);
+        cacheRendered = true;
+        executePageModuleInitialization();
+        console.log('⚡ Страница отрисована из локального кэша');
+    }
+
     if (!supabaseClient) {
-        console.warn("⚠️ Supabase клиент недоступен. Запуск из локального кэша...");
+        console.warn('⚠️ Supabase клиент недоступен. Запуск из локального кэша...');
         activateLocalDatabaseFallback();
         return;
     }
 
-    // Перехват полного отсутствия интернет-соединения
     if (!navigator.onLine) {
-        console.warn("🔌 Сеть отсутствует. Запуск автономного фолбека...");
+        console.warn('🔌 Сеть отсутствует. Запуск автономного фолбека...');
         activateLocalDatabaseFallback();
         return;
     }
 
     try {
-        // МГНОВЕННЫЙ ЗАПРОС: Скачиваем только текущую версию из Supabase
-        const { data: verData, error: verError } = await supabaseClient
-            .from('version_control')
-            .select('version')
-            .limit(1);
+        if (cacheRendered) {
+            const cloudVersion = await fetchCloudVersion();
+            console.log(`📦 Версия в облаке: ${cloudVersion} | На устройстве: ${cached.version}`);
 
-        if (verError) throw verError;
-
-        const cloudVersion = verData?.[0]?.version || "0.0.0";
-        console.log(`📦 Версия в облаке: ${cloudVersion} | Версия на устройстве: ${localVersion}`);
-
-        // СЦЕНАРИЙ 1: кэш уже отрисован и версии совпали — ничего не делаем
-        if (cacheRendered && localVersion === cloudVersion) {
-            try { sessionStorage.removeItem('hub_reload_' + cloudVersion); } catch (e) { /* ignore */ }
-            return;
-        }
-
-        // СЦЕНАРИЙ 2: первый вход или контент обновился — скачиваем таблицы
-        if (!cacheRendered) {
-            console.log("🔄 Обнаружено обновление контента или пустой кэш. Выкачиваем таблицы...");
-            showLoadingStates();
-        } else {
-            console.log("🔄 Фоновое обновление контента...");
-        }
-
-        let networkSuccess = true;
-        let freshDatabase = { flashcards: [], tickets: [], tests: [], sections: [], library: [], news: [] };
-        let freshGlossary = {};
-
-        // Все таблицы запрашиваем параллельно: при медленном канале это экономит
-        // десятки секунд по сравнению с последовательными запросами.
-        const q = (table, columns) => Promise.resolve(supabaseClient.from(table).select(columns));
-        const pending = {
-            flashcards: q('flashcards', 'term, definition, discipline_id'),
-            tests: q('tests', 'question, options, correct_index, link_url, discipline_id'),
-            library: q('library', 'id, title, author, annotation'),
-            glossary: q('glossary', 'term, definition'),
-            tickets: q('tickets', 'id, number, title, recommend_time, plan, content, discipline_id'),
-            ticketLibrary: q('ticket_library', 'ticket_id, book_id'),
-            articles: q('articles', 'title, content, discipline_id'),
-            news: q('news', 'id, date, title, changes')
-        };
-
-        // 1. Флэш-карточки
-        try {
-            const { data, error } = await pending.flashcards;
-            if (error) throw error;
-            if (data) freshDatabase.flashcards = data.map(c => ({ term: c.term, definition: c.definition, discipline: c.discipline_id }));
-        } catch (e) { networkSuccess = false; }
-
-        // 2. Интерактивные тесты
-        try {
-            const { data, error } = await pending.tests;
-            if (error) throw error;
-            if (data) freshDatabase.tests = data.map(t => ({ question: t.question, options: t.options, correct: t.correct_index, link: t.link_url, discipline: t.discipline_id }));
-        } catch (e) { networkSuccess = false; }
-
-        // 3. Библиотека
-        try {
-            const { data, error } = await pending.library;
-            if (error) throw error;
-            if (data) freshDatabase.library = data;
-        } catch (e) { networkSuccess = false; }
-
-        // 4. Глоссарий
-        try {
-            const { data, error } = await pending.glossary;
-            if (error) throw error;
-            if (data) {
-                data.forEach(g => { freshGlossary[g.term.trim()] = g.definition; });
-            }
-        } catch (e) { networkSuccess = false; }
-
-        // 5. Экзаменационные билеты
-        try {
-            const { data: tk, error: tkError } = await pending.tickets;
-            if (tkError) throw tkError;
-            if (tk) {
-                const groups = {};
-                const { data: links, error: linksError } = await pending.ticketLibrary;
-                if (linksError) throw linksError;
-
-                tk.forEach(t => {
-                    let cleanId = t.discipline_id;
-                    if (cleanId === "general-psych" || cleanId === "general-exam") cleanId = "general-exam";
-                    if (cleanId === "social-psych" || cleanId === "social-exam") cleanId = "social-exam";
-                    if (cleanId === "developmental-psych" || cleanId === "developmental-exam") cleanId = "developmental-exam";
-                    
-                    let titleName = cleanId === "general-exam" ? "Общая психология" : (cleanId === "social-exam" ? "Социальная психология" : "Возрастная психология");
-
-                    let ticketLiterature = [];
-                    if (links && freshDatabase.library.length > 0) {
-                        const boundBookIds = links.filter(l => l.ticket_id == t.id).map(l => l.book_id);
-                        ticketLiterature = freshDatabase.library
-                            .filter(b => boundBookIds.includes(b.id))
-                            .map(b => `${b.author} — ${b.title}`);
-                    }
-
-                    if (!groups[cleanId]) groups[cleanId] = { id: cleanId, title: titleName, questions: [] };
-                    groups[cleanId].questions.push({
-                        number: t.number, title: t.title, time: t.recommend_time, plan: t.plan, content: t.content, literature: ticketLiterature
-                    });
-                });
-
-                Object.keys(groups).forEach(key => {
-                    groups[key].questions.sort((a, b) => parseInt(a.number, 10) - parseInt(b.number, 10));
-                });
-                const folderOrder = ["general-exam", "social-exam", "developmental-exam"];
-                freshDatabase.tickets = folderOrder.filter(id => groups[id]).map(id => groups[id]);
-            }
-        } catch (e) { networkSuccess = false; }
-
-        // 6. Статьи лонгридов
-        try {
-            const { data: art, error: artError } = await pending.articles;
-            if (artError) throw artError;
-            if (art) {
-                const secGroups = {};
-                art.forEach(a => {
-                    let cleanId = a.discipline_id;
-                    if (cleanId.includes("general")) cleanId = "general-psych";
-                    if (cleanId.includes("social")) cleanId = "social-psych";
-                    if (cleanId.includes("developmental") || cleanId.includes("age")) cleanId = "developmental-psych";
-                    
-                    let titleName = cleanId === "general-psych" ? "Общая психология" : (cleanId === "social-psych" ? "Социальная психология" : "Возрастная психология");
-
-                    if (!secGroups[cleanId]) secGroups[cleanId] = { id: cleanId, title: titleName, articles: [] };
-                    secGroups[cleanId].articles.push({ title: a.title, content: a.content });
-                });
-
-                Object.keys(secGroups).forEach(key => {
-                    secGroups[key].articles.sort((a, b) => {
-                        const numA = parseInt(a.title.match(/^\d+/)?.[0] || 0, 10);
-                        const numB = parseInt(b.title.match(/^\d+/)?.[0] || 0, 10);
-                        return numA - numB;
-                    });
-                });
-                const sectionFolderOrder = ["general-psych", "social-psych", "developmental-psych"];
-                freshDatabase.sections = sectionFolderOrder.filter(id => secGroups[id]).map(id => secGroups[id]);
-            }
-        } catch (e) { networkSuccess = false; }
-
-        // 7. Ченджлог новостей
-        try {
-            const { data, error } = await pending.news;
-            if (error) throw error;
-            if (data) {
-                freshDatabase.news = [...data]
-                    .sort((a, b) => parseInt(b.id, 10) - parseInt(a.id, 10))
-                    .map(item => ({ date: item.date, title: item.title, changes: item.changes }));
-            }
-        } catch (e) { networkSuccess = false; }
-
-        // Запись новых данных и фиксация хэша версии
-        if (networkSuccess) {
-            console.log("✅ Все обновленные таблицы успешно скачаны из облака!");
-            appDatabase = freshDatabase;
-            appGlossary = freshGlossary;
-
-            localStorage.setItem('hub_database_snapshot', JSON.stringify(appDatabase));
-            localStorage.setItem('hub_cached_glossary', JSON.stringify(appGlossary));
-            localStorage.setItem('hub_app_version', cloudVersion); // Фиксируем версию на устройстве
-
-            if (cacheRendered) {
-                // Пользователь уже читает старый снимок. Обновляем кэш и
-                // перезагружаем один раз, чтобы не дублировать обработчики.
-                const reloadKey = 'hub_reload_' + cloudVersion;
-                if (sessionStorage.getItem(reloadKey) === '1') {
-                    console.warn('⚠️ Кэш обновлён, но перезагрузка уже была — оставляем текущий экран.');
-                    return;
-                }
-                sessionStorage.setItem(reloadKey, '1');
-                window.location.reload();
+            if (cached.version === cloudVersion) {
+                if (cached.legacy) savePageCache(currentPage, cached.db, cached.glossary, cloudVersion);
+                try { sessionStorage.removeItem('hub_reload_' + cloudVersion); } catch (e) { /* ignore */ }
                 return;
             }
 
-            executePageModuleInitialization();
-        } else {
-            throw new Error("Часть таблиц заблокирована сетевым экраном");
+            console.log('🔄 Фоновое обновление контента...');
+            const payload = await loader();
+            const saved = savePageCache(currentPage, payload.db, payload.glossary, cloudVersion);
+            applyPageData(payload.db, payload.glossary);
+
+            if (!saved) return;
+
+            const reloadKey = 'hub_reload_' + cloudVersion;
+            if (sessionStorage.getItem(reloadKey) === '1') {
+                console.warn('⚠️ Кэш обновлён, но перезагрузка уже была — оставляем экран.');
+                return;
+            }
+            sessionStorage.setItem(reloadKey, '1');
+            window.location.reload();
+            return;
         }
 
-    } catch (globalError) {
-        console.warn("⚠️ Сетевой сбой или блокировка REST API Supabase. Активируем локальный фолбек:", globalError.message);
+        // Первый вход: кэша нет, показываем загрузку и тянем только данные этой страницы
+        console.log('🔄 Первый запуск страницы. Загружаем только её таблицы...');
+        showLoadingStates();
+
+        const [cloudVersion, payload] = await Promise.all([
+            fetchCloudVersion(),
+            loader()
+        ]);
+
+        applyPageData(payload.db, payload.glossary);
+        savePageCache(currentPage, payload.db, payload.glossary, cloudVersion);
+        executePageModuleInitialization();
+    } catch (e) {
+        console.warn('⚠️ Сетевой сбой или блокировка REST API Supabase. Активируем локальный фолбек:', e.message);
         activateLocalDatabaseFallback();
     }
 }
