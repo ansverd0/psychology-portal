@@ -10,7 +10,7 @@
 
 - **Frontend:** Чистый HTML5/CSS3/JS ES6 (без фреймворков)
 - **Backend:** Supabase (PostgreSQL)
-- **Аналитика:** Яндекс.Метрика (с Вебвизором)
+- **Аналитика:** Яндекс.Метрика — только после согласия; Вебвизор не пишет поля ввода
 - **PWA:** Service Worker (sw.js)
 - **Деплой:** GitHub Pages (ветка `gh-pages`, автосинхронизация из `master`), зеркало — Vercel
 - **Сайт:** `https://ansverd0.github.io/psychology-portal/`
@@ -25,21 +25,27 @@ psychology-portal/
 ├── tickets.html            # Экзаменационные билеты
 ├── cards.html              # Тренажёр терминов
 ├── tests.html              # Интерактивные тесты
-├── sections.html           # Разделы психологии (лонтгриды)
+├── sections.html           # Разделы психологии (лонгриды)
 ├── library.html            # Каталог литературы
 ├── news.html               # История изменений
+├── privacy.html            # Политика обработки данных
+├── offline.html            # Офлайн-страница PWA
 ├── style.css               # Глобальные стили
 ├── sw.js                   # Service Worker (PWA кэш)
-├── .gitignore
+├── README.md, docs/RUNBOOK.md
+├── .github/workflows/      # pages.yml, backup.yml, monitor.yml
+├── db/                     # миграции RLS и авто-версии
+├── scripts/                # backup, db-exec, check-permissions, mcp
 └── js/
-    ├── supabase-config.js  # Ядро: клиент Supabase, кэш, оркестратор загрузки
+    ├── supabase-config.js  # Ядро: клиент, PAGE_LOADERS, кэш, SW
+    ├── analytics.js        # Метрика после согласия, защита полей
     ├── auth.js             # Авторизация по анонимным ключам
     ├── flashcards.js       # Тренажёр терминов
     ├── quiz.js             # Интерактивные тесты
     ├── tickets.js          # Экзаменационные билеты
     ├── sections-wiki.js    # Разделы психологии + вики-эффект
     ├── news-library.js     # Новости + библиотека
-    └── bookmarks.js        # НОВЫЙ: система закладок для tickets и sections
+    └── bookmarks.js        # Система закладок для tickets и sections
 ```
 
 ---
@@ -73,7 +79,7 @@ psychology-portal/
 
 ## КРИТИЧЕСКИЕ ИСПРАВЛЕНИЯ (после сбоя ЦОД Яндекса)
 
-1. **Метрика неблокируемая** — инициализация перенесена в `window.load` + `try/catch` (все 7 HTML-файлов). Если `mc.yandex.ru` недоступен — сайт продолжает работу.
+1. **Метрика неблокируемая** — подключается из `js/analytics.js` только после согласия, внутри `try/catch`. Если `mc.yandex.ru` недоступен — сайт продолжает работу.
 2. **Supabase fallback** — `createClient` обернут в `try/catch`. Если CDN `unpkg.com` недоступен — `supabaseClient = null` → `initApplicationHub` сразу уходит в `activateLocalDatabaseFallback()` (localStorage snapshot).
 3. **Auth не блокирует** — модальное окно больше не показывается автоматически. Кнопка «Продолжить как гость» всегда доступна. Если Supabase недоступен — показывается alert, сайт работает без авторизации.
 4. **`js/auth.js` в кэше SW** — добавлен в `sw.js` ASSETS.
@@ -94,7 +100,7 @@ psychology-portal/
 - Генерация ключа: «цвет-объект-число» (например, `зеленый-кедр-77`)
 - Сохранение: `localStorage` + INSERT в `users_profiles` (Supabase)
 - Кросс-девайс: ввод старого ключа → SELECT в Supabase → восстановление в localStorage
-- Яндекс.Метрика: `ym(112398882, 'userParams', { UserID: key })` при авторизации
+- Яндекс.Метрика: `ym(112398882, 'userParams', { UserID: key })` при авторизации (после согласия на аналитику)
 - Режим «гость»: полный доступ к сайту без авторизации
 
 ---
