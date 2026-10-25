@@ -47,7 +47,7 @@ git push --force origin master
 
 - Список кэшируемых файлов — `ASSETS` в `sw.js`.
 - Любое изменение HTML/CSS/JS → `CACHE_NAME = 'psy-hub-vN+1'`.
-- Версия **контента** (`version_control`) обновляется автоматически триггерами при INSERT/UPDATE/DELETE в контентных таблицах (`db/2026-10-26_auto_content_version.sql`). Вручную бампать не нужно; после правок в Table Editor клиенты сами скачают новую версию.
+- Версия **контента** (`version_control`) обновляется автоматически триггерами при INSERT/UPDATE/DELETE в контентных таблицах (`db/2026-10-25_auto_content_version.sql`). Вручную бампать не нужно; после правок в Table Editor клиенты сами скачают новую версию.
 - Обновление у пользователя: вкладка получает новый SW, `controllerchange` перезагружает страницу один раз.
 - Если пользователь видит старую версию: Ctrl+F5; в DevTools → Application → Service Workers → Unregister.
 
