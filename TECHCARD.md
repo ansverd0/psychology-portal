@@ -124,7 +124,7 @@ psychology-portal/
 
 ## SERVICE WORKER
 
-- Версия: `psy-hub-v17`
+- Версия: `psy-hub-v18`
 - Стратегия: cache-first для статики, network-first для навигации с таймаутом 2.5 с
 - Кэширует все HTML, CSS, JS, шрифты; Supabase-запросы исключены
 - В `ASSETS` также `js/vitals.js` (добавлен в v13)
@@ -151,7 +151,7 @@ psychology-portal/
 - `og:image` — `assets/og-image.png`, простой шаблон (Pillow, фон `#1a365d`); можно заменить своим, теги трогать не нужно.
 - `robots.txt` и `sitemap.xml` (8 URL, без `offline.html`) в корне. Для project-сайта GitHub Pages `robots.txt` в подпапке краулеры не читают (нужен корень домена) — sitemap лучше добавить в Search Console вручную.
 - `404.html` автономна: инлайн-стили, абсолютная ссылка на главную. GitHub Pages отдаёт её на любой глубине URL, поэтому относительные пути там не работают — осознанное исключение из правила «только относительные пути».
-- Плитки главного меню — `<a href target="_blank" rel="noopener">` с `:focus-visible`; модалка авторизации — `role="dialog"`, `aria-modal`, крестик, Esc, focus trap и возврат фокуса на кнопку входа (`js/auth.js`).
+- Плитки главного меню — `<a href>` с `:focus-visible` (переход в текущей вкладке); модалка авторизации — `role="dialog"`, `aria-modal`, крестик, Esc, focus trap и возврат фокуса на кнопку входа (`js/auth.js`).
 
 ---
 
