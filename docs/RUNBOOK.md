@@ -220,10 +220,10 @@ curl.exe -H "apikey: <publishable>" -H "Authorization: Bearer <publishable>" `
 
 ### CSP
 
-- Политика задана `<meta http-equiv="Content-Security-Policy">` в `<head>` каждой страницы; менять её нужно синхронно во всех 9 HTML-файлах.
+- Политика задана `<meta http-equiv="Content-Security-Policy">` в `<head>` каждой страницы; менять её нужно синхронно во всех 9 контентных страницах (`404.html` автономна и CSP не использует).
 - Нарушения видны в DevTools → Console как `Refused to load…`; проверять после добавления любого внешнего домена.
 - GitHub Pages не отдаёт HTTP-заголовки, поэтому `X-Content-Type-Options`/HSTS/`frame-ancestors` недоступны — не пытаться «починить» это в HTML.
-- `'unsafe-inline'` в `script-src` нужен из-за `onclick` в разметке; снимается вместе с `U-01`.
+- `'unsafe-inline'` в `script-src` сохраняется: inline-обработчики (`tests.html`) и inline `<script>` в `privacy.html`; плитки в `U-01` уже переведены на ссылки.
 
 ### Web Vitals
 
@@ -242,3 +242,12 @@ node scripts/check-vendor.mjs --update   # после осознанной за�
 ```
 
 После замены библиотеки поднимите `CACHE_NAME` в `sw.js` и проверьте `tickets.html`/`sections.html` (DOMPurify) и загрузку данных (supabase-js).
+
+---
+
+## 13. SEO, 404 и печать
+
+- `robots.txt` и `sitemap.xml` — 200; sitemap содержит 8 URL (без `offline.html`).
+- `404.html` — автономная страница; открыть несуществующий путь (`/psychology-portal/no-such-page`) — статус 404 и текст «Страница не найдена».
+- `canonical`, `og:url`, `og:image` — абсолютные URL `https://ansverd0.github.io/psychology-portal/…`; при переезде на домен обновить их, `sitemap.xml`, `robots.txt` и ссылку в `404.html`.
+- Печать билета: `tickets.html` → выбрать вопрос → Ctrl+P; шапка, меню, закладки и подвал не печатаются.

@@ -21,13 +21,15 @@
 
 ```
 index.html, tickets.html, sections.html, cards.html, tests.html, library.html, news.html, privacy.html, offline.html
+404.html, robots.txt, sitemap.xml
+assets/             # favicon.svg, og-image.png (1200×630)
 style.css
 sw.js
 js/                 # модули страниц + vendor (supabase-js, DOMPurify) + analytics.js + vitals.js
 db/                 # SQL-миграции
 scripts/            # бэкап, выполнение SQL, проверка прав, проверка vendor, MCP-лаунчер
 .github/workflows/  # pages.yml, backup.yml, monitor.yml
-docs/RUNBOOK.md     # эксплуатация и восстановление
+docs/RUNBOOK.md     # эксплуатация, восстановление, SEO/404/печать
 ```
 
 ## Локальный запуск
@@ -86,14 +88,21 @@ GitHub Action `Sync gh-pages` зеркалит `master` в `gh-pages`, Pages п�
 - CSP через `<meta http-equiv>` и `Referrer-Policy` на всех страницах (GitHub Pages не даёт HTTP-заголовки).
 - Версии и sha256 vendor-библиотек зафиксированы в `js/vendor/manifest.json`.
 
+## Доступность и SEO
+
+- Клавиатура: плитки меню — ссылки, модалка закрывается по Esc, focus trap и возврат фокуса; сквозной `:focus-visible`.
+- Контраст текста — WCAG AA; `prefers-reduced-motion` отключает анимации и плавный скролл.
+- На 9 страницах — `meta description`, абсолютный `canonical`, OG/Twitter, favicon; в корне — `robots.txt`, `sitemap.xml` (8 URL), автономная `404.html`; `assets/og-image.png` 1200×630.
+- Печать билета: Ctrl+P на `tickets.html` — без шапки, меню и подвала.
+
 ## Тесты
 
 Автотестов пока нет (задача `A-03`/`A-04` в TECH-ROADMAP). Минимальная ручная проверка:
 
 - 1440 / 1024 / 768 / 390 px — нет горизонтального скролла;
 - билеты, статьи, карточки, тесты, новости и литература отдают контент;
-- вики-термины показывают подсказки;
-- закладки сохраняются после перезагрузки;
-- `node scripts/check-permissions.mjs` — 10/10 PASS;
-- `node scripts/check-vendor.mjs` — sha256 совпадает;
+- вики-термины показывают подсказки, закладки сохраняются после перезагрузки;
+- клавиатура: Tab/Enter по плиткам, Esc и focus trap в модалке;
+- 404: несуществующий путь отдаёт `404.html`; печать: Ctrl+P на `tickets.html`;
+- `node scripts/check-permissions.mjs` — 10/10 PASS; `node scripts/check-vendor.mjs` — sha256 совпадает;
 - в консоли нет ошибок CSP; `hubVitals.latest()` в DevTools показывает LCP/CLS/INP.
