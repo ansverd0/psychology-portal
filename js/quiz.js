@@ -58,10 +58,12 @@ function initQuiz() {
 
         const allTile = document.createElement('button');
         allTile.classList.add('mobile-tile-btn', 'active');
+        allTile.setAttribute('aria-pressed', 'true');
         allTile.innerHTML = `🎲 Все темы`;
         allTile.addEventListener('click', () => {
-            document.querySelectorAll('#quiz-discipline-tiles .mobile-tile-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('#quiz-discipline-tiles .mobile-tile-btn').forEach(b => { b.classList.remove('active'); b.setAttribute('aria-pressed', 'false'); });
             allTile.classList.add('active');
+            allTile.setAttribute('aria-pressed', 'true');
             startQuizMode(allQuestions);
         });
         quizTilesContainer.appendChild(allTile);
@@ -77,13 +79,15 @@ function initQuiz() {
         uniqueQuizDisciplines.forEach(dispId => {
             const tile = document.createElement('button');
             tile.classList.add('mobile-tile-btn');
+            tile.setAttribute('aria-pressed', 'false');
             
             const meta = disciplineMeta[dispId] || { title: "Раздел", icon: "📁" };
             tile.innerHTML = `${meta.icon} ${meta.title}`;
 
             tile.addEventListener('click', () => {
-                document.querySelectorAll('#quiz-discipline-tiles .mobile-tile-btn').forEach(b => b.classList.remove('active'));
+                document.querySelectorAll('#quiz-discipline-tiles .mobile-tile-btn').forEach(b => { b.classList.remove('active'); b.setAttribute('aria-pressed', 'false'); });
                 tile.classList.add('active');
+                tile.setAttribute('aria-pressed', 'true');
                 
                 const filtered = allQuestions.filter(q => q.discipline === dispId);
                 startQuizMode(filtered);
@@ -104,11 +108,11 @@ function initQuiz() {
             if (currentTestIndex < currentActiveQuestions.length) {
                 showQuestion();
                 const qw = document.getElementById('quiz-wrapper');
-                if (qw) qw.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                if (qw) qw.scrollIntoView({ behavior: getScrollBehavior(), block: 'start' });
             } else {
                 showResults();
                 const rw = document.getElementById('result-wrapper');
-                if (rw) rw.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                if (rw) rw.scrollIntoView({ behavior: getScrollBehavior(), block: 'start' });
             }
         });
     }
@@ -197,7 +201,7 @@ function handleAnswer(selectedButton, selectedIndex, correctIndex) {
         }
     }
 
-    allButtons.forEach(btn => btn.classList.add('disabled'));
+    allButtons.forEach(btn => { btn.classList.add('disabled'); btn.setAttribute('aria-disabled', 'true'); });
     if (quizNextBtn) quizNextBtn.style.display = 'block';
 }
 

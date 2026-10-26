@@ -54,7 +54,7 @@
                 </div>
             </div>
             <!-- Плитки выбора дисциплин для тестов -->
-            <div id="quiz-discipline-tiles" class="mobile-only-tiles limited-tiles"></div>
+            <div id="quiz-discipline-tiles" class="mobile-only-tiles limited-tiles" role="group" aria-label="Дисциплины"></div>
         </div>
 
         <!-- ПРАВАЯ КОЛОНКА: Тест -->
@@ -65,10 +65,10 @@
                     <span id="quiz-progress">Вопрос 0 из 0</span>
                 </div>
                 
-                <h2 id="quiz-question">Загрузка вопроса...</h2>
+                <h2 id="quiz-question" aria-live="polite">Загрузка вопроса...</h2>
                 
                 <!-- Сюда JavaScript будет вставлять варианты ответов -->
-                <div id="quiz-options" class="options-container"></div>
+                <div id="quiz-options" class="options-container" role="group" aria-label="Варианты ответа"></div>
                 
                 <div class="quiz-footer">
                     <button id="quiz-next-btn" style="display: none;">Следующий вопрос ➡️</button>
@@ -76,7 +76,7 @@
             </div>
 
             <!-- Контейнер для результатов (изначально скрыт) -->
-            <div id="result-wrapper" class="quiz-card" style="display: none;">
+            <div id="result-wrapper" class="quiz-card" style="display: none;" aria-live="polite">
                 <h2>Тест завершен! 🎉</h2>
                 <p class="result-score">Ваш результат: <span id="score-text">0 из 0</span></p>
                 <p id="result-feedback"></p>

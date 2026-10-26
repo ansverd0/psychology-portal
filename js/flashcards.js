@@ -30,10 +30,12 @@ function initFlashcards() {
 
         const allTile = document.createElement('button');
         allTile.classList.add('mobile-tile-btn', 'active');
+        allTile.setAttribute('aria-pressed', 'true');
         allTile.innerHTML = `🎲<br>Все темы`;
         allTile.addEventListener('click', () => {
-            document.querySelectorAll('#cards-discipline-tiles .mobile-tile-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('#cards-discipline-tiles .mobile-tile-btn').forEach(b => { b.classList.remove('active'); b.setAttribute('aria-pressed', 'false'); });
             allTile.classList.add('active');
+            allTile.setAttribute('aria-pressed', 'true');
             startCardMode(allCards);
         });
         tilesContainer.appendChild(allTile);
@@ -49,13 +51,15 @@ function initFlashcards() {
         uniqueDisciplines.forEach(dispId => {
             const tile = document.createElement('button');
             tile.classList.add('mobile-tile-btn');
+            tile.setAttribute('aria-pressed', 'false');
             
             const meta = disciplineMeta[dispId] || { title: "Раздел", icon: "📁" };
             tile.innerHTML = `${meta.icon} ${meta.title}`;
 
             tile.addEventListener('click', () => {
-                document.querySelectorAll('#cards-discipline-tiles .mobile-tile-btn').forEach(b => b.classList.remove('active'));
+                document.querySelectorAll('#cards-discipline-tiles .mobile-tile-btn').forEach(b => { b.classList.remove('active'); b.setAttribute('aria-pressed', 'false'); });
                 tile.classList.add('active');
+                tile.setAttribute('aria-pressed', 'true');
                 
                 const filtered = allCards.filter(c => c.discipline === dispId);
                 startCardMode(filtered);
@@ -73,8 +77,16 @@ function initFlashcards() {
         
         const activeCard = document.getElementById('myCard');
         if (activeCard) {
-            activeCard.addEventListener('click', () => {
-                activeCard.classList.toggle('flipped');
+            const toggleCard = () => {
+                const flipped = activeCard.classList.toggle('flipped');
+                activeCard.setAttribute('aria-pressed', flipped ? 'true' : 'false');
+            };
+            activeCard.addEventListener('click', toggleCard);
+            activeCard.addEventListener('keydown', (event) => {
+                if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault();
+                    toggleCard();
+                }
             });
         }
     }
@@ -109,7 +121,10 @@ function updateCard() {
     }
 
     const activeCard = document.getElementById('myCard');
-    if (activeCard) activeCard.classList.remove('flipped');
+    if (activeCard) {
+        activeCard.classList.remove('flipped');
+        activeCard.setAttribute('aria-pressed', 'false');
+    }
     
     const currentItem = currentActiveCards[currentCardIndex];
 

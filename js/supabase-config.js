@@ -10,6 +10,11 @@ let appDatabase = {
 let appGlossary = {};
 let cacheRendered = false;
 
+// Плавная прокрутка не должна раздражать тех, кто отключил анимацию в системе
+function getScrollBehavior() {
+    return window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth';
+}
+
 const SUPABASE_URL = "https://lrjszannmammzzqotaro.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_bwLDUQMS1RVwHF2wHE62hg_sODGX5vi";
 
@@ -482,7 +487,7 @@ document.addEventListener('DOMContentLoaded', updateOpenGraphUrl);
 // Плавный скролл к самому началу страницы при клике
 document.addEventListener('click', (e) => {
     if (e.target && e.target.id === 'scroll-top-btn') {
-        window.scrollTo({ top: 0, behavior: 'smooth' });
+        window.scrollTo({ top: 0, behavior: getScrollBehavior() });
     }
 });
 

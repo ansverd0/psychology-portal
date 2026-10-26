@@ -124,7 +124,7 @@ psychology-portal/
 
 ## SERVICE WORKER
 
-- Версия: `psy-hub-v19`
+- Версия: `psy-hub-v20`
 - Стратегия: cache-first для статики, network-first для навигации с таймаутом 2.5 с
 - Кэширует все HTML, CSS, JS, шрифты; Supabase-запросы исключены
 - В `ASSETS` также `js/vitals.js` (добавлен в v13)
@@ -222,6 +222,11 @@ js/
 ### cards.html / tests.html
 - ПК: `.content-with-sidebar` — слева сайдбар дисциплин, справа контент
 - Мобильные: `.limited-tiles` для вертикальной прокрутки
+
+### Доступность (2026-10-26)
+- Контраст WCAG AA: текст ≥ 4.5:1 (крупный ≥ 3:1). Основные кнопки — `#2b6cb0`, вторичный текст — `#4a5568`, иконки VK/TG/почты затемнены (`U-04`).
+- `:focus-visible` — outline 3 px `#2b6cb0` для ссылок, кнопок, полей и `[tabindex]`; `@media (prefers-reduced-motion: reduce)` отключает анимации/переходы, а `getScrollBehavior()` — плавный скролл.
+- ARIA: `role="group"` + `aria-label` у навигации, `aria-current` на активной папке/вопросе, `aria-pressed` на плитках, `aria-live="polite"` у поиска, вопроса теста и результатов; флэш-карточка — `role="button"`, Enter/Space переворачивают (`U-03`).
 
 ### Мобильные и печать (2026-10-26)
 - `viewport-fit=cover` + `env(safe-area-inset-*)` на всех страницах; тап-таргеты кнопок и ссылок — не меньше 44 px (`U-05`).

@@ -39,6 +39,7 @@ function initTickets() {
         examDisciplines.forEach((discipline) => {
             const tile = document.createElement('button');
             tile.classList.add('mobile-tile-btn');
+            tile.setAttribute('aria-pressed', 'false');
             
             let icon = "📝";
             if (discipline.id === "general-exam") icon = "🧠";
@@ -48,8 +49,9 @@ function initTickets() {
             tile.innerHTML = `${icon}<br>${discipline.title.replace(" (Экзамен)", "")}`;
 
             tile.addEventListener('click', () => {
-                document.querySelectorAll('#mobile-tickets-tiles .mobile-tile-btn').forEach(b => b.classList.remove('active'));
+                document.querySelectorAll('#mobile-tickets-tiles .mobile-tile-btn').forEach(b => { b.classList.remove('active'); b.setAttribute('aria-pressed', 'false'); });
                 tile.classList.add('active');
+                tile.setAttribute('aria-pressed', 'true');
                 ticketsActiveFolderId = discipline.id;
 
 
@@ -63,7 +65,7 @@ function initTickets() {
 
                     qBtn.addEventListener('click', () => {
                         showTicketContent(q);
-                        document.querySelector('.ticket-viewer').scrollIntoView({ behavior: 'smooth' });
+                        document.querySelector('.ticket-viewer').scrollIntoView({ behavior: getScrollBehavior() });
                     });
 
                     mobileQuestionsList.appendChild(qBtn);
@@ -161,8 +163,9 @@ function renderQuestionsColumn(questions, container, activeNumber) {
 
         qBtn.addEventListener('click', (e) => {
             e.stopPropagation();
-            document.querySelectorAll('.question-nav-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.question-nav-btn').forEach(btn => { btn.classList.remove('active'); btn.removeAttribute('aria-current'); });
             qBtn.classList.add('active');
+            qBtn.setAttribute('aria-current', 'true');
             showTicketContent(q);
         });
 
@@ -170,6 +173,7 @@ function renderQuestionsColumn(questions, container, activeNumber) {
 
         if (activeNumber !== null && activeNumber !== undefined && q.number == activeNumber) {
             qBtn.classList.add('active');
+            qBtn.setAttribute('aria-current', 'true');
             activeBtn = qBtn;
         }
     });
@@ -188,7 +192,10 @@ function openTicketInNav(discipline, ticket) {
     ticketsActiveFolderId = discipline.id;
 
     foldersCol.querySelectorAll('.folder-nav-btn').forEach(btn => {
-        btn.classList.toggle('active', btn.dataset.disciplineId === discipline.id);
+        const isActive = btn.dataset.disciplineId === discipline.id;
+        btn.classList.toggle('active', isActive);
+        if (isActive) btn.setAttribute('aria-current', 'true');
+        else btn.removeAttribute('aria-current');
     });
 
     if (!target) {
@@ -292,6 +299,6 @@ function renderTicketsBookmarksPanel() {
 
         const ticket = discipline.questions.find(q => q.number == id);
         openTicketInNav(discipline, ticket);
-        document.querySelector('.ticket-viewer').scrollIntoView({ behavior: 'smooth' });
+        document.querySelector('.ticket-viewer').scrollIntoView({ behavior: getScrollBehavior() });
     });
 }

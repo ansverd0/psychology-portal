@@ -45,30 +45,30 @@
     <div class="nav-left">
     
     <!-- 🗂 КОЛОНКА 1: Поиск и папки дисциплин -->
-    <aside class="tickets-sidebar nav-pane">
+    <aside class="tickets-sidebar nav-pane" aria-label="Дисциплины и поиск">
 
         <!-- 1. Строка поиска по вопросам -->
         <div class="mobile-search-wrapper" style="position: relative;">
-            <input type="text" id="mobile-tickets-search" placeholder="🔍 Найти экзаменационный вопрос...">
-            <div id="mobile-tickets-search-results" class="search-results-dropdown" style="display: none;"></div>
+            <input type="text" id="mobile-tickets-search" placeholder="🔍 Найти экзаменационный вопрос..." aria-label="Поиск по экзаменационным вопросам" aria-controls="mobile-tickets-search-results" autocomplete="off">
+            <div id="mobile-tickets-search-results" class="search-results-dropdown" style="display: none;" role="status" aria-live="polite"></div>
         </div>
 
         <!-- 2. Мобильные плитки-дисциплины (скрываются на ПК) -->
-        <div id="mobile-tickets-tiles" class="mobile-only-tiles limited-tiles"></div>
+        <div id="mobile-tickets-tiles" class="mobile-only-tiles limited-tiles" role="group" aria-label="Дисциплины"></div>
 
         <!-- 3. Папки дисциплин -->
-        <div id="tickets-folders-col" class="tickets-folders-column"></div>
+        <div id="tickets-folders-col" class="tickets-folders-column" role="group" aria-label="Дисциплины"></div>
 
     </aside>
 
     <!-- 🗒 КОЛОНКА 2: Содержимое выбранной папки (вопросы) -->
-    <aside class="tickets-contents nav-pane">
+    <aside class="tickets-contents nav-pane" aria-label="Вопросы дисциплины">
 
         <!-- 1. Мобильный список вопросов выбранного экзамена (скрывается на ПК) -->
-        <div id="mobile-questions-list" class="mobile-articles-container limited-articles" style="display: none;"></div>
+        <div id="mobile-questions-list" class="mobile-articles-container limited-articles" style="display: none;" role="group" aria-label="Вопросы дисциплины"></div>
 
         <!-- 2. Список вопросов выбранной дисциплины -->
-        <div id="tickets-questions-col" class="tickets-questions-column">
+        <div id="tickets-questions-col" class="tickets-questions-column" role="group" aria-label="Вопросы дисциплины">
             <div class="questions-placeholder">Выберите дисциплину слева</div>
         </div>
 

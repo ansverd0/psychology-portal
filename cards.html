@@ -42,13 +42,13 @@
     <main class="content-with-sidebar">
         <!-- Плитки выбора дисциплин для карточек -->
         <div class="discipline-sidebar" id="cards-discipline-sidebar">
-            <div id="cards-discipline-tiles" class="mobile-only-tiles limited-tiles"></div>
+            <div id="cards-discipline-tiles" class="mobile-only-tiles limited-tiles" role="group" aria-label="Дисциплины"></div>
         </div>
 
         <!-- Центральная область: Карточка -->
         <div class="content-area">
             <div class="card-perspective">
-                <div class="flash-card" id="myCard">
+                <div class="flash-card" id="myCard" role="button" tabindex="0" aria-label="Перевернуть карточку" aria-pressed="false">
                     <div class="card-side card-front">
                         <h2 id="term-text">Загрузка...</h2>
                         <span class="tap-hint">Кликните, чтобы узнать определение</span>
@@ -61,7 +61,7 @@
 
             <div class="controls">
                 <button id="prev-btn">⬅️ Назад</button>
-                <span id="counter-text">0 / 0</span>
+                <span id="counter-text" aria-live="polite">0 / 0</span>
                 <button id="next-btn">Вперед ➡️</button>
             </div>
         </div>

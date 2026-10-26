@@ -44,30 +44,30 @@
     <div class="nav-left">
     
     <!-- 🗂 КОЛОНКА 1: Поиск и папки разделов -->
-    <aside class="tickets-sidebar nav-pane">
+    <aside class="tickets-sidebar nav-pane" aria-label="Разделы и поиск">
 
     <!-- Мобильный поиск -->
     <div class="mobile-search-wrapper" style="position: relative;">
-        <input type="text" id="mobile-search-input" placeholder="🔍 Поиск темы по названию...">
-        <div id="mobile-search-results" class="search-results-dropdown" style="display: none;"></div>
+        <input type="text" id="mobile-search-input" placeholder="🔍 Поиск темы по названию..." aria-label="Поиск по статьям" aria-controls="mobile-search-results" autocomplete="off">
+        <div id="mobile-search-results" class="search-results-dropdown" style="display: none;" role="status" aria-live="polite"></div>
     </div>
 
     <!-- 📱 Контейнер для мобильных плиток-разделов (карусель/сетка) -->
-    <div id="mobile-sections-tiles" class="mobile-only-tiles limited-tiles"></div>
+    <div id="mobile-sections-tiles" class="mobile-only-tiles limited-tiles" role="group" aria-label="Разделы"></div>
 
     <!-- Папки разделов -->
-    <div id="sections-folders-col" class="tickets-folders-column"></div>
+    <div id="sections-folders-col" class="tickets-folders-column" role="group" aria-label="Разделы"></div>
 
     </aside>
 
     <!-- 🗒 КОЛОНКА 2: Содержимое выбранной папки (статьи) -->
-    <aside class="tickets-contents nav-pane">
+    <aside class="tickets-contents nav-pane" aria-label="Статьи раздела">
 
     <!-- Контейнер для вложенного списка статей (общий для поиска и плиток на мобилке) -->
-    <div id="mobile-articles-list" class="mobile-articles-container limited-articles" style="display: none;"></div>
+    <div id="mobile-articles-list" class="mobile-articles-container limited-articles" style="display: none;" role="group" aria-label="Статьи раздела"></div>
 
     <!-- Список статей выбранного раздела -->
-    <div id="sections-articles-col" class="tickets-questions-column">
+    <div id="sections-articles-col" class="tickets-questions-column" role="group" aria-label="Статьи раздела">
         <div class="questions-placeholder">Выберите раздел слева</div>
     </div>
 

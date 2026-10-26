@@ -43,6 +43,7 @@ function initSections() {
         sections.forEach((section) => {
             const tile = document.createElement('button');
             tile.classList.add('mobile-tile-btn');
+            tile.setAttribute('aria-pressed', 'false');
             tile.id = `mobile-tile-${section.id}`; 
             
             let icon = "📁";
@@ -53,8 +54,9 @@ function initSections() {
             tile.innerHTML = `${icon}<br>${section.title}`;
 
             tile.addEventListener('click', () => {
-                document.querySelectorAll('.mobile-tile-btn').forEach(b => b.classList.remove('active'));
+                document.querySelectorAll('.mobile-tile-btn').forEach(b => { b.classList.remove('active'); b.setAttribute('aria-pressed', 'false'); });
                 tile.classList.add('active');
+                tile.setAttribute('aria-pressed', 'true');
                 sectionsActiveFolderId = section.id;
 
 
@@ -70,7 +72,7 @@ function initSections() {
                         showSectionContent(article);
                         // Автопрокрутка к началу статьи
                         const viewer = document.querySelector('.section-viewer');
-                        if (viewer) viewer.scrollIntoView({ behavior: 'smooth' });
+                        if (viewer) viewer.scrollIntoView({ behavior: getScrollBehavior() });
                     });
                     mobileArticlesList.appendChild(articleBtn);
                 });
@@ -184,8 +186,9 @@ function renderArticlesColumn(articles, container, activeTitle) {
 
         articleBtn.addEventListener('click', (e) => {
             e.stopPropagation();
-            document.querySelectorAll('.question-nav-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.question-nav-btn').forEach(btn => { btn.classList.remove('active'); btn.removeAttribute('aria-current'); });
             articleBtn.classList.add('active');
+            articleBtn.setAttribute('aria-current', 'true');
             showSectionContent(article);
         });
 
@@ -193,6 +196,7 @@ function renderArticlesColumn(articles, container, activeTitle) {
 
         if (activeTitle && article.title === activeTitle) {
             articleBtn.classList.add('active');
+            articleBtn.setAttribute('aria-current', 'true');
             activeBtn = articleBtn;
         }
     });
@@ -211,7 +215,10 @@ function openSectionInNav(section, article) {
     sectionsActiveFolderId = section.id;
 
     foldersCol.querySelectorAll('.folder-nav-btn').forEach(btn => {
-        btn.classList.toggle('active', btn.dataset.sectionId === section.id);
+        const isActive = btn.dataset.sectionId === section.id;
+        btn.classList.toggle('active', isActive);
+        if (isActive) btn.setAttribute('aria-current', 'true');
+        else btn.removeAttribute('aria-current');
     });
 
     if (!target) {
@@ -362,6 +369,6 @@ function renderSectionsBookmarksPanel() {
         openSectionInNav(section, article);
 
         const viewer = document.querySelector('.section-viewer');
-        if (viewer) viewer.scrollIntoView({ behavior: 'smooth' });
+        if (viewer) viewer.scrollIntoView({ behavior: getScrollBehavior() });
     });
 }
