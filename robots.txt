@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://ansverd0.github.io/psychology-portal/sitemap.xml

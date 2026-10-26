@@ -169,6 +169,11 @@ button:hover {
     box-shadow: 0 10px 20px rgba(49, 130, 206, 0.1);
 }
 
+.menu-item:focus-visible {
+    outline: 3px solid #3182ce;
+    outline-offset: 3px;
+}
+
 .menu-item .icon {
     font-size: 36px;
     margin-bottom: 10px;
@@ -1785,6 +1790,37 @@ button:hover {
         width: auto;
         max-width: none;
     }
+}
+
+/* Кнопка закрытия модалки авторизации */
+.modal-close {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    width: 36px;
+    height: 36px;
+    background: transparent;
+    border: none;
+    color: #a0aec0;
+    font-size: 28px;
+    line-height: 1;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 6px;
+    transition: color 0.2s, background 0.2s;
+    padding: 0;
+}
+
+.modal-close:hover {
+    color: #2d3748;
+    background: #f7fafc;
+}
+
+.modal-close:focus-visible {
+    outline: 3px solid #3182ce;
+    outline-offset: 2px;
 }
 
 

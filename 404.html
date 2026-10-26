@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex">
+<title>404 — страница не найдена | Психология образования</title>
+<!--
+  Осознанное исключение из правила «только относительные пути»:
+  GitHub Pages отдаёт этот файл на любой глубине URL (/psychology-portal/a/b/c),
+  поэтому относительные style.css и ссылки разрешились бы от несуществующего
+  каталога. Страница автономна: стили инлайн, ссылка на главную — абсолютный URL.
+-->
+<style>
+  :root { color-scheme: light; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    background: #1a365d;
+    color: #2d3748;
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  .card {
+    width: 100%;
+    max-width: 520px;
+    padding: 40px 32px;
+    background: #fff;
+    border-radius: 20px;
+    text-align: center;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.25);
+  }
+  .code {
+    margin: 0 0 4px;
+    color: #3182ce;
+    font-size: 64px;
+    font-weight: 800;
+    line-height: 1;
+  }
+  h1 {
+    margin: 0 0 12px;
+    color: #1a365d;
+    font-size: 24px;
+  }
+  p {
+    margin: 0 0 28px;
+    color: #4a5568;
+    font-size: 15px;
+    line-height: 1.6;
+  }
+  .btn {
+    display: inline-block;
+    padding: 12px 24px;
+    border-radius: 10px;
+    background: #3182ce;
+    color: #fff;
+    font-size: 15px;
+    font-weight: 600;
+    text-decoration: none;
+    transition: background 0.2s;
+  }
+  .btn:hover { background: #2b6cb0; }
+  .btn:focus-visible {
+    outline: 3px solid #90cdf4;
+    outline-offset: 3px;
+  }
+</style>
+</head>
+<body>
+  <main class="card">
+    <p class="code">404</p>
+    <h1>Страница не найдена</h1>
+    <p>Возможно, страница переехала или адрес введён с опечаткой. Вернитесь на главную — там всё на месте.</p>
+    <a class="btn" href="https://ansverd0.github.io/psychology-portal/">На главную</a>
+  </main>
+</body>
+</html>

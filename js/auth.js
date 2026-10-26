@@ -10,6 +10,76 @@ function generateResearchKey() {
     return `${randomColor}-${randomObject}-${number}`;
 }
 
+// ========== Модалка авторизации: доступность (U-02) ==========
+let _authModalRestoreFocus = null;
+let _authModalKeydownHandler = null;
+
+function openAuthModal() {
+    const authModal = document.getElementById('research-auth-box');
+    if (!authModal) return;
+    _authModalRestoreFocus = document.activeElement;
+    authModal.style.display = 'flex';
+    const closeBtn = document.getElementById('btn-close-auth');
+    if (closeBtn) closeBtn.focus();
+    _setupAuthModalKeydown();
+}
+
+function closeAuthModal(restoreFocus = true) {
+    const authModal = document.getElementById('research-auth-box');
+    if (!authModal) return;
+    authModal.style.display = 'none';
+    if (_authModalKeydownHandler) {
+        document.removeEventListener('keydown', _authModalKeydownHandler);
+        _authModalKeydownHandler = null;
+    }
+    if (restoreFocus) {
+        const trigger = document.getElementById('btn-open-auth-modal');
+        if (trigger && trigger.offsetParent !== null) {
+            trigger.focus();
+        } else if (_authModalRestoreFocus) {
+            _authModalRestoreFocus.focus();
+        }
+        _authModalRestoreFocus = null;
+    }
+}
+
+function _setupAuthModalKeydown() {
+    if (_authModalKeydownHandler) {
+        document.removeEventListener('keydown', _authModalKeydownHandler);
+    }
+    _authModalKeydownHandler = function (e) {
+        if (e.key === 'Escape') {
+            closeAuthModal(true);
+            return;
+        }
+        if (e.key !== 'Tab') return;
+        const authModal = document.getElementById('research-auth-box');
+        if (!authModal || authModal.style.display === 'none') return;
+        const whitePanel = document.getElementById('research-auth-panel');
+        if (!whitePanel) return;
+        const focusable = whitePanel.querySelectorAll(
+            'button:not([disabled]), input:not([disabled]), a[href], [tabindex]:not([tabindex="-1"])'
+        );
+        if (focusable.length === 0) return;
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+        if (e.shiftKey) {
+            if (document.activeElement === first) {
+                e.preventDefault();
+                last.focus();
+            }
+        } else {
+            if (document.activeElement === last) {
+                e.preventDefault();
+                first.focus();
+            }
+        }
+    };
+    document.addEventListener('keydown', _authModalKeydownHandler);
+}
+
+// ========== Основная логика авторизации ==========
+
 async function proceedResearchAuth() {
     const authModal = document.getElementById('research-auth-box');
     const guestBlock = document.getElementById('auth-status-guest');
@@ -53,8 +123,16 @@ async function proceedResearchAuth() {
     // Ручное открытие модального окна по кнопке из шапки
     if (openModalBtn) {
         openModalBtn.onclick = () => {
-            if (authModal) authModal.style.display = 'flex';
+            openAuthModal();
         };
+    }
+
+    // Кнопка закрытия модалки (крестик)
+    const closeBtn = document.getElementById('btn-close-auth');
+    if (closeBtn) {
+        closeBtn.addEventListener('click', () => {
+            closeAuthModal(true);
+        });
     }
 
     // Логика генерации ID
@@ -97,6 +175,7 @@ async function proceedResearchAuth() {
             if (isSaved) {
                 localStorage.setItem('research_user_key', targetKey);
                 updateAuthInterface(targetKey);
+                closeAuthModal(false);
             } else {
                 alert("Ошибка соединения. Обновите страницу.");
                 generateBtn.disabled = false;
@@ -106,13 +185,14 @@ async function proceedResearchAuth() {
     }
 
     // Войти как гость — сайт работает без авторизации (для чтения библиотеки и новостей)
-function continueAsGuest() {
-    if (authModal) authModal.style.display = 'none';
-    if (guestBlock) guestBlock.style.display = 'block';
-    if (loggedBlock) loggedBlock.style.display = 'none';
-    // Сохраняем пустой ключ — сайт будет работать в режиме только чтения
-    localStorage.removeItem('research_user_key');
-}
+    function continueAsGuest() {
+        closeAuthModal(true);
+        if (guestBlock) guestBlock.style.display = 'block';
+        if (loggedBlock) loggedBlock.style.display = 'none';
+        // Сохраняем пустой ключ — сайт будет работать в режиме только чтения
+        localStorage.removeItem('research_user_key');
+    }
+
     if (restoreBtn && inputKey) {
         restoreBtn.onclick = async () => {
             if (consentCheckbox && !consentCheckbox.checked) {
@@ -142,6 +222,7 @@ function continueAsGuest() {
                 if (data) {
                     localStorage.setItem('research_user_key', data.user_key);
                     updateAuthInterface(data.user_key);
+                    closeAuthModal(false);
                 } else {
                     alert("Указанный ID не найден.");
                 }

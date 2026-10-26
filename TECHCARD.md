@@ -30,6 +30,10 @@ psychology-portal/
 ├── news.html               # История изменений
 ├── privacy.html            # Политика обработки данных
 ├── offline.html            # Офлайн-страница PWA
+├── 404.html                # Автономная страница ошибки (GitHub Pages)
+├── robots.txt              # Индексация
+├── sitemap.xml             # 8 URL
+├── assets/                 # favicon.svg, og-image.png (1200×630)
 ├── style.css               # Глобальные стили
 ├── sw.js                   # Service Worker (PWA кэш)
 ├── README.md, docs/RUNBOOK.md
@@ -120,7 +124,7 @@ psychology-portal/
 
 ## SERVICE WORKER
 
-- Версия: `psy-hub-v16`
+- Версия: `psy-hub-v17`
 - Стратегия: cache-first для статики, network-first для навигации с таймаутом 2.5 с
 - Кэширует все HTML, CSS, JS, шрифты; Supabase-запросы исключены
 - В `ASSETS` также `js/vitals.js` (добавлен в v13)
@@ -141,12 +145,22 @@ psychology-portal/
 
 ---
 
+## SEO И ШАРИНГ
+
+- На всех 9 страницах: `meta description`, абсолютный `canonical`, favicon (`assets/favicon.svg`), OG-теги (`og:type`, `og:locale=ru_RU`, `og:site_name`, `og:image` 1200×630, `og:image:width/height/alt`) и `twitter:card=summary_large_image`.
+- `og:image` — `assets/og-image.png`, простой шаблон (Pillow, фон `#1a365d`); можно заменить своим, теги трогать не нужно.
+- `robots.txt` и `sitemap.xml` (8 URL, без `offline.html`) в корне. Для project-сайта GitHub Pages `robots.txt` в подпапке краулеры не читают (нужен корень домена) — sitemap лучше добавить в Search Console вручную.
+- `404.html` автономна: инлайн-стили, абсолютная ссылка на главную. GitHub Pages отдаёт её на любой глубине URL, поэтому относительные пути там не работают — осознанное исключение из правила «только относительные пути».
+- Плитки главного меню — `<a href target="_blank" rel="noopener">` с `:focus-visible`; модалка авторизации — `role="dialog"`, `aria-modal`, крестик, Esc, focus trap и возврат фокуса на кнопку входа (`js/auth.js`).
+
+---
+
 ## БЕЗОПАСНОСТЬ: CSP
 
 - На всех 9 страницах `<meta http-equiv="Content-Security-Policy">` сразу после `viewport`.
 - Политика: `default-src 'self'`; скрипты — `'self' 'unsafe-inline'` + `https://mc.yandex.ru`; стили — `'self' 'unsafe-inline'` (inline-атрибуты в HTML); изображения — `'self' data: https://mc.yandex.ru`; `connect-src` — Supabase и Метрика; `object-src 'none'`, `base-uri 'self'`, `form-action 'self'`.
 - `Referrer-Policy` — `<meta name="referrer" content="strict-origin-when-cross-origin">`.
-- Ограничение: GitHub Pages не отдаёт HTTP-заголовки, поэтому `X-Content-Type-Options`, `frame-ancestors` и HSTS задать нельзя; `'unsafe-inline'` нужен из-за inline-обработчиков `onclick` (снять в `U-01`).
+- Ограничение: GitHub Pages не отдаёт HTTP-заголовки, поэтому `X-Content-Type-Options`, `frame-ancestors` и HSTS задать нельзя; `'unsafe-inline'` сохраняется: после `U-01` плитки стали ссылками, но inline-обработчики (`tests.html`) и inline `<script>` в `privacy.html` остаются.
 - Проверено в Chrome: CSP-нарушений нет на 1440/1024/768/390 px; Метрика после согласия грузится без блокировок.
 
 ---

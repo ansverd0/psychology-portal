@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Психология образования">
+  <rect width="64" height="64" rx="14" fill="#1a365d"/>
+  <path d="M18 46V22h9.5c6.3 0 10.5 3.4 10.5 9s-4.2 9-10.5 9H24v6z" fill="#ffffff"/>
+  <circle cx="45" cy="41" r="5" fill="#63b3ed"/>
+</svg>
