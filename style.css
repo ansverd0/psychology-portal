@@ -646,6 +646,10 @@ button:hover {
 @media screen and (max-width: 768px) {
     body {
         padding: 10px !important;
+        padding-top: max(10px, env(safe-area-inset-top)) !important;
+        padding-left: max(10px, env(safe-area-inset-left)) !important;
+        padding-right: max(10px, env(safe-area-inset-right)) !important;
+        padding-bottom: max(10px, env(safe-area-inset-bottom)) !important;
     }
     .ticket-viewer, .section-viewer {
         width: 100% !important;
@@ -1823,8 +1827,126 @@ button:hover {
     outline-offset: 2px;
 }
 
+/* ==========================================================================
+   U-05: мобильные safe-area, динамический viewport и тап-таргеты ≥ 44 px
+   ========================================================================== */
+body {
+    padding-left: max(20px, env(safe-area-inset-left));
+    padding-right: max(20px, env(safe-area-inset-right));
+    padding-bottom: max(20px, env(safe-area-inset-bottom));
+}
 
+@supports (padding: env(safe-area-inset-top)) {
+    body { padding-top: max(20px, env(safe-area-inset-top)); }
+    .consent-banner { left: max(16px, env(safe-area-inset-left)); right: max(16px, env(safe-area-inset-right)); bottom: max(16px, env(safe-area-inset-bottom)); }
+    .update-banner { top: max(12px, env(safe-area-inset-top)); }
+    #scroll-top-btn { right: max(30px, env(safe-area-inset-right)); bottom: max(30px, env(safe-area-inset-bottom)); }
+}
 
+button,
+input[type="text"],
+input[type="search"],
+select,
+.capsule-back-btn,
+.contact-chip,
+.ticket-nav-btn,
+.site-footer__nav a {
+    min-height: 44px;
+}
 
+.site-footer__nav a {
+    display: inline-flex;
+    align-items: center;
+}
 
+.modal-close {
+    width: 44px;
+    height: 44px;
+    top: 8px;
+    right: 8px;
+}
 
+/* ==========================================================================
+   U-09: печатная версия билета (Ctrl+P на tickets.html)
+   ========================================================================== */
+@media print {
+    @page { margin: 15mm; }
+
+    body[data-page="tickets"] {
+        display: block;
+        padding: 0;
+        background: #fff !important;
+        color: #000;
+    }
+
+    body[data-page="tickets"] header,
+    body[data-page="tickets"] .nav-left,
+    body[data-page="tickets"] .bookmarks-panel,
+    body[data-page="tickets"] .site-footer,
+    body[data-page="tickets"] #scroll-top-btn,
+    body[data-page="tickets"] #consent-banner,
+    body[data-page="tickets"] #update-banner,
+    body[data-page="tickets"] .bookmark-star-btn {
+        display: none !important;
+    }
+
+    body[data-page="tickets"] main.tri-column-layout {
+        display: block !important;
+        width: auto;
+        max-width: none;
+        margin: 0;
+        padding: 0;
+    }
+
+    body[data-page="tickets"] .ticket-viewer {
+        padding: 0;
+        border: 0;
+        border-radius: 0;
+        box-shadow: none;
+        background: #fff;
+        min-height: 0;
+    }
+
+    body[data-page="tickets"] .ticket-viewer h2 {
+        margin: 0 0 8px;
+        padding-bottom: 6px;
+        border-bottom: 1px solid #999;
+        color: #000;
+        font-size: 16pt;
+        text-align: left;
+    }
+
+    body[data-page="tickets"] .content-text {
+        margin-bottom: 14px;
+        color: #000;
+        font-size: 11.5pt;
+        line-height: 1.45;
+        text-align: left;
+    }
+
+    body[data-page="tickets"] .content-text h3,
+    body[data-page="tickets"] .content-text h4,
+    body[data-page="tickets"] .literature-box h3 {
+        break-after: avoid;
+    }
+
+    body[data-page="tickets"] .content-text p,
+    body[data-page="tickets"] .content-text li {
+        orphans: 3;
+        widows: 3;
+    }
+
+    body[data-page="tickets"] .literature-box {
+        margin-top: 14px;
+        padding: 8px 0 0;
+        background: none;
+        border: 0;
+        border-top: 1px solid #999;
+        border-radius: 0;
+    }
+
+    body[data-page="tickets"] .literature-box h3 { font-size: 12pt; color: #000; }
+    body[data-page="tickets"] .literature-box ul { color: #000; font-size: 10.5pt; }
+    body[data-page="tickets"] a { color: #000; text-decoration: none; }
+    body[data-page="tickets"] .empty-state { height: auto; }
+}
