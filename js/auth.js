@@ -10,6 +10,33 @@ function generateResearchKey() {
     return `${randomColor}-${randomObject}-${number}`;
 }
 
+// ========== Кастомные уведомления вместо alert() (UI-12) ==========
+
+/** Тост из js/ui-notify.js; если модуль не загрузился — не роняем сценарий */
+function notify(message, type) {
+    if (typeof window.showToast === 'function') {
+        window.showToast(message, { type: type || 'error' });
+    } else {
+        console.warn('⚠️', message);
+    }
+}
+
+/** Инлайн-ошибка под чекбоксом согласия: видно, что именно не отмечено */
+function setConsentError(text) {
+    const box = document.getElementById('consent-error');
+    const chk = document.getElementById('chk-consent');
+
+    if (box) {
+        box.textContent = text || '';
+        box.hidden = !text;
+    }
+
+    if (chk) {
+        if (text) chk.setAttribute('aria-invalid', 'true');
+        else chk.removeAttribute('aria-invalid');
+    }
+}
+
 // ========== Модалка авторизации: доступность (U-02) ==========
 let _authModalRestoreFocus = null;
 let _authModalKeydownHandler = null;
@@ -135,19 +162,44 @@ async function proceedResearchAuth() {
         });
     }
 
+    // Ошибка согласия снимается, как только галочку поставили
+    if (consentCheckbox) {
+        consentCheckbox.addEventListener('change', () => {
+            if (consentCheckbox.checked) setConsentError(null);
+        });
+    }
+
+    // Выход из профиля (UI-13): ключ удаляем, локальные закладки и кэш не трогаем
+    const logoutBtn = document.getElementById('btn-logout');
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', () => {
+            localStorage.removeItem('research_user_key');
+            updateAuthInterface(null);
+
+            if (typeof ym === "function") {
+                ym(112398882, 'userParams', { UserID: null });
+            }
+
+            notify('Вы вышли из профиля. Закладки и прогресс остались в этом браузере.', 'success');
+        });
+    }
+
     // Логика генерации ID
     if (generateBtn) {
         generateBtn.onclick = async () => {
             if (consentCheckbox && !consentCheckbox.checked) {
-                alert("Для работы с платформой необходимо подтвердить согласие на сохранение локального кэша.");
+                setConsentError('Отметьте галочку — без согласия на обработку данных профиль не создаётся.');
+                notify('Для работы с платформой нужно согласие на обработку данных.');
+                consentCheckbox.focus();
                 return;
             }
+            setConsentError(null);
 
             generateBtn.disabled = true;
             generateBtn.innerText = "Создание профиля...";
 
             if (!supabaseClient) {
-                alert("Сервер временно недоступен. Попробуйте позже или продолжите как гость.");
+                notify("Сервер временно недоступен. Попробуйте позже или продолжите как гость.");
                 generateBtn.disabled = false;
                 generateBtn.innerText = "🎲 Сгенерировать новый личный ID";
                 return;
@@ -177,7 +229,7 @@ async function proceedResearchAuth() {
                 updateAuthInterface(targetKey);
                 closeAuthModal(false);
             } else {
-                alert("Ошибка соединения. Обновите страницу.");
+                notify("Ошибка соединения. Обновите страницу.");
                 generateBtn.disabled = false;
                 generateBtn.innerText = "🎲 Сгенерировать новый личный ID";
             }
@@ -196,15 +248,18 @@ async function proceedResearchAuth() {
     if (restoreBtn && inputKey) {
         restoreBtn.onclick = async () => {
             if (consentCheckbox && !consentCheckbox.checked) {
-                alert("Необходимо подтвердить согласие на обработку данных.");
+                setConsentError('Отметьте галочку — без согласия на обработку данных войти нельзя.');
+                notify('Подтвердите согласие на обработку данных.');
+                consentCheckbox.focus();
                 return;
             }
+            setConsentError(null);
 
             const enteredKey = inputKey.value.trim().toLowerCase();
             if (!enteredKey) return;
 
             if (!supabaseClient) {
-                alert("Сервер временно недоступен. Попробуйте позже или продолжите как гость.");
+                notify("Сервер временно недоступен. Попробуйте позже или продолжите как гость.");
                 return;
             }
 
@@ -224,10 +279,10 @@ async function proceedResearchAuth() {
                     updateAuthInterface(data.user_key);
                     closeAuthModal(false);
                 } else {
-                    alert("Указанный ID не найден.");
+                    notify("Указанный ID не найден. Проверьте написание или создайте новый.", 'error');
                 }
             } catch (err) {
-                alert("Ошибка верификации.");
+                notify("Ошибка верификации. Проверьте соединение и попробуйте ещё раз.");
             } finally {
                 restoreBtn.disabled = false;
             }

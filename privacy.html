@@ -175,11 +175,21 @@
         </div>
     </footer>
 
+    <script src="js/ui-notify.js"></script>
     <script>
         document.getElementById('revoke-consent').addEventListener('click', function () {
             try { localStorage.removeItem('analytics_consent'); } catch (e) { /* ignore */ }
-            alert('Согласие на аналитику отозвано. Страница будет перезагружена.');
-            location.reload();
+
+            // Кастомное уведомление вместо alert(): тост, затем перезагрузка — см. UI-12
+            if (typeof window.showToast === 'function') {
+                window.showToast('Согласие на аналитику отозвано. Перезагружаем страницу…', {
+                    type: 'success',
+                    timeout: 1500
+                });
+                setTimeout(function () { location.reload(); }, 1300);
+            } else {
+                location.reload();
+            }
         });
     </script>
 </body>

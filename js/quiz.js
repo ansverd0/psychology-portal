@@ -160,11 +160,14 @@ function showQuestion() {
     }
 }
 
-/** Разрешаем только http/https-ссылки: javascript: и data: из БД не должны попадать в href */
+/** Разрешаем только http/https-ссылки: javascript: и data: из БД не должны попадать в href.
+ *  База строится от текущего документа (document.baseURI), а не от корня домена:
+ *  на GitHub Pages сайт живёт в /psychology-portal/, и ссылки вида
+ *  "sections.html?discipline=..." иначе уезжали в корень и давали 404 — см. UI-01 */
 function getSafeReviewLink(rawLink) {
     if (!rawLink) return null;
     try {
-        const url = new URL(String(rawLink), window.location.origin);
+        const url = new URL(String(rawLink), document.baseURI);
         return (url.protocol === 'http:' || url.protocol === 'https:') ? url.href : null;
     } catch (e) {
         return null;

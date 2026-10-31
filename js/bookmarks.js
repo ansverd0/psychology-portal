@@ -25,6 +25,8 @@ function saveBookmarks(bookmarks) {
     } catch (e) {
         console.warn('⚠️ Ошибка сохранения закладок:', e);
     }
+    // Счётчик на кнопке-звёздочке (мобилка) должен обновляться сразу
+    if (typeof refreshBookmarksFab === 'function') refreshBookmarksFab();
 }
 
 /** Добавить закладку
@@ -89,13 +91,15 @@ function getBookmarkLabel(bookmark) {
 
 // --- РЕНДЕР ПАНЕЛИ ЗАКЛАДОК ---
 
-/** Отрендерить панель закладок в контейнер */
-function renderBookmarksPanel(container, type, onItemClick) {
+/** Отрендерить панель закладок в контейнер.
+ *  options.showHeading=false — когда заголовок уже есть (модалка на телефоне) */
+function renderBookmarksPanel(container, type, onItemClick, options) {
     if (!container) return;
     
     const bookmarks = getBookmarks().filter(b => b.type === type);
+    const showHeading = !options || options.showHeading !== false;
     
-    let html = `<h3>⭐ Закладки</h3>`;
+    let html = showHeading ? `<h3>⭐ Закладки</h3>` : '';
     
     if (bookmarks.length === 0) {
         html += `<div class="bookmarks-empty">Нет сохранённых закладок</div>`;
@@ -178,4 +182,136 @@ function escapeHtml(text) {
     const div = document.createElement('div');
     div.appendChild(document.createTextNode(text));
     return div.innerHTML;
+}
+
+// ==========================================================================
+// ЗАКЛАДКИ НА ТЕЛЕФОНЕ: кнопка-звёздочка и модалка со списком (UI-02)
+// На ПК список и так виден в правой колонке, там кнопка скрыта стилями.
+// ==========================================================================
+
+/** Обработчики открытия закладки для конкретной страницы: type → fn(id, bookmark) */
+const BOOKMARK_OPEN_HANDLERS = {};
+
+function setBookmarkOpenHandler(type, fn) {
+    BOOKMARK_OPEN_HANDLERS[type] = fn;
+}
+
+/** Тип закладок текущей страницы: tickets → 'ticket', sections → 'article' */
+function getPageBookmarkType() {
+    const fab = document.getElementById('bookmarks-fab');
+    if (fab && fab.dataset.bookmarkType) return fab.dataset.bookmarkType;
+
+    const page = document.body && document.body.dataset.page;
+    return page === 'sections' ? 'article' : 'ticket';
+}
+
+function countBookmarks(type) {
+    return getBookmarks().filter(b => b.type === type).length;
+}
+
+/** Обновляет счётчик на плавающей кнопке */
+function refreshBookmarksFab() {
+    const fab = document.getElementById('bookmarks-fab');
+    if (!fab) return;
+
+    const n = countBookmarks(getPageBookmarkType());
+    const badge = fab.querySelector('.bookmarks-fab__count');
+
+    if (badge) {
+        badge.textContent = String(n);
+        badge.hidden = n === 0;
+    }
+
+    fab.classList.toggle('is-empty', n === 0);
+    fab.setAttribute('aria-label', n > 0 ? `Мои закладки: ${n}` : 'Мои закладки: пусто');
+}
+
+let bookmarksModalEl = null;
+let bookmarksModalReturnFocus = null;
+
+function openBookmarksModal() {
+    if (!bookmarksModalEl) return;
+
+    const type = getPageBookmarkType();
+    const body = bookmarksModalEl.querySelector('#bookmarks-modal-body');
+
+    if (body) {
+        renderBookmarksPanel(body, type, (id, bookmark) => {
+            closeBookmarksModal();
+            const handler = BOOKMARK_OPEN_HANDLERS[type];
+            if (typeof handler === 'function') handler(id, bookmark);
+        }, { showHeading: false });
+    }
+
+    bookmarksModalReturnFocus = document.activeElement;
+    bookmarksModalEl.hidden = false;
+    document.body.classList.add('bookmarks-modal-open');
+
+    const closeBtn = bookmarksModalEl.querySelector('.bookmarks-modal__close');
+    if (closeBtn) closeBtn.focus();
+}
+
+function closeBookmarksModal() {
+    if (!bookmarksModalEl || bookmarksModalEl.hidden) return;
+
+    bookmarksModalEl.hidden = true;
+    document.body.classList.remove('bookmarks-modal-open');
+
+    if (bookmarksModalReturnFocus && typeof bookmarksModalReturnFocus.focus === 'function') {
+        bookmarksModalReturnFocus.focus();
+    }
+    refreshBookmarksFab();
+}
+
+/** Создаёт кнопку и модалку. Только для страниц, где есть закладки. */
+function buildBookmarksUi() {
+    const page = document.body && document.body.dataset.page;
+    if (page !== 'tickets' && page !== 'sections') return;
+    if (document.getElementById('bookmarks-fab')) return;
+
+    const fab = document.createElement('button');
+    fab.id = 'bookmarks-fab';
+    fab.type = 'button';
+    fab.className = 'bookmarks-fab';
+    fab.dataset.bookmarkType = page === 'sections' ? 'article' : 'ticket';
+    fab.setAttribute('aria-haspopup', 'dialog');
+    fab.innerHTML = '<span class="bookmarks-fab__icon" aria-hidden="true">⭐</span>' +
+        '<span class="bookmarks-fab__count" hidden>0</span>';
+    fab.addEventListener('click', openBookmarksModal);
+    document.body.appendChild(fab);
+
+    const modal = document.createElement('div');
+    modal.id = 'bookmarks-modal';
+    modal.className = 'bookmarks-modal';
+    modal.hidden = true;
+    modal.setAttribute('role', 'dialog');
+    modal.setAttribute('aria-modal', 'true');
+    modal.setAttribute('aria-labelledby', 'bookmarks-modal-title');
+    modal.innerHTML = `
+        <div class="bookmarks-modal__panel">
+            <div class="bookmarks-modal__head">
+                <h3 id="bookmarks-modal-title">⭐ Закладки</h3>
+                <button type="button" class="bookmarks-modal__close" aria-label="Закрыть список закладок">×</button>
+            </div>
+            <div class="bookmarks-modal__body" id="bookmarks-modal-body"></div>
+        </div>
+    `;
+    document.body.appendChild(modal);
+    bookmarksModalEl = modal;
+
+    modal.querySelector('.bookmarks-modal__close').addEventListener('click', closeBookmarksModal);
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) closeBookmarksModal();
+    });
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && !modal.hidden) closeBookmarksModal();
+    });
+
+    refreshBookmarksFab();
+}
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', buildBookmarksUi);
+} else {
+    buildBookmarksUi();
 }

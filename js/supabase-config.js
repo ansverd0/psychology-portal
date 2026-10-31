@@ -69,12 +69,30 @@ function showLoadingStates() {
 }
 
 // Отображение оффлайн-плашки в верхней части интерфейса
+// Плашка стоит в потоке страницы, а не поверх неё: во-первых, не вылезает
+// за экран на телефоне (box-sizing), во-вторых, не закрывает «Главное меню» — см. UI-06
 function showOfflineNotification() {
     let notify = document.getElementById('offline-hub-notification');
     if (!notify) {
         notify = document.createElement('div');
         notify.id = 'offline-hub-notification';
-        notify.style.cssText = "position: fixed; top: 0; left: 0; width: 100%; background: #feeee6; color: #d64d11; text-align: center; padding: 10px; font-size: 14px; font-weight: 600; z-index: 9999; border-bottom: 2px solid #fad9cc; box-shadow: 0 2px 5px rgba(0,0,0,0.05);";
+        notify.setAttribute('role', 'status');
+        notify.style.cssText = [
+            'position: relative',
+            'box-sizing: border-box',
+            'width: 100%',
+            'margin: 0 auto 16px auto',
+            'background: #feeee6',
+            'color: #d64d11',
+            'text-align: center',
+            'padding: 10px 16px',
+            'font-size: 14px',
+            'font-weight: 600',
+            'line-height: 1.4',
+            'border: 1px solid #fad9cc',
+            'border-radius: 12px',
+            'box-shadow: 0 2px 5px rgba(0,0,0,0.05)'
+        ].join('; ');
         notify.innerHTML = "📡 Работаем в автономном режиме. Доступны ранее сохраненные лекции, билеты и глоссарий.";
         document.body.prepend(notify);
     }

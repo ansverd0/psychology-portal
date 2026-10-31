@@ -314,6 +314,9 @@ button:hover {
     box-sizing: border-box;
     min-height: 400px;
     min-width: 0; /* Колонка не должна растягивать сетку страницы */
+    /* Подсказки .wiki-term — абсолютные и шириной 250px: у правого края они
+       растягивают документ. Обрезаем только по горизонтали, вертикаль не трогаем */
+    overflow-x: clip;
 }
 
 /* Длинные слова (термины, номера билетов) переносим, а не выпускаем за колонку */
@@ -323,15 +326,18 @@ button:hover {
     overflow-wrap: anywhere;
 }
 
-.ticket-viewer, .section-viewer h2 {
+/* Заголовок внутри просмотрщика: линию под ним рисует обёртка в JS
+   (tickets.js / sections-wiki.js), иначе рамка дублируется — см. UI-05 */
+.ticket-viewer h2, .section-viewer h2 {
     margin: 0 0 20px 0;
     color: #1a365d;
     font-size: 24px;
-    border-bottom: 2px solid #edf2f7;
-    padding-bottom: 15px;
+    line-height: 1.3;
 }
 
-.ticket-viewer, .section-viewer .content-text, .content-text, #news-timeline ul li, .menu-item p {
+/* Текст конспекта: выравнивание по ширине только у текста, а не у всей карточки.
+   Раньше `.ticket-viewer` стоял в этом списке и растягивал заголовки по ширине — см. UI-05 */
+.ticket-viewer .content-text, .section-viewer .content-text, .content-text, #news-timeline ul li, .menu-item p {
     font-size: 16px;
     line-height: 1.8;
     color: #2d3748;
@@ -775,22 +781,30 @@ button:hover {
 /* Общий контейнер для лимита тестов */
 .quiz-limit-wrapper {
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
-    gap: 12px;
+    gap: 8px 12px;
     margin-bottom: 25px;
     background: white;
     padding: 12px 20px;
     border-radius: 12px;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.02);
     border: 2px solid #e2e8f0;
-    width: fit-content;
+    width: 100%;
     max-width: 100%;
     box-sizing: border-box;
 }
 
-.quiz-limit-wrapper .custom-select-container,
+/* Селект сжимается вместе с карточкой, а не вылезает за её рамку — см. UI-10 */
+.quiz-limit-wrapper .custom-select-container {
+    flex: 1 1 140px;
+    min-width: 0;
+}
+
 .quiz-limit-wrapper .custom-select-container select {
+    width: 100%;
     max-width: 100%;
+    box-sizing: border-box;
 }
 
 .quiz-limit-wrapper label {
@@ -1001,9 +1015,9 @@ button:hover {
     flex-direction: row;
     justify-content: center;
     align-items: flex-start;
-    gap: 24px;
+    gap: 20px;
     width: 100%;
-    max-width: 1600px;
+    max-width: 1640px;
     margin: 20px auto 0;
     padding: 0 20px;
     box-sizing: border-box;
@@ -1035,9 +1049,32 @@ button:hover {
     max-height: 46vh;
 }
 
+/* ПК: две колонки навигации — папки слева, вопросы справа (UI-04) */
+@media screen and (min-width: 769px) {
+    .nav-left {
+        display: grid;
+        grid-template-columns: 190px 240px;
+        gap: 12px;
+        flex: 0 0 auto;
+        width: auto;
+        align-items: start;
+        justify-content: center;
+    }
+
+    .nav-left .nav-pane {
+        width: 100%;
+    }
+
+    /* Колонки скроллятся независимо, высота общая — не выше экрана */
+    .nav-left .tickets-questions-column,
+    .nav-left .tickets-folders-column {
+        max-height: calc(100vh - 220px);
+    }
+}
+
 .tri-column-layout > .ticket-viewer,
 .tri-column-layout > .section-viewer {
-    flex: 1 1 780px;
+    flex: 1 1 700px;
     max-width: 780px;
     min-width: 0;
 }
@@ -1049,9 +1086,9 @@ button:hover {
 }
 
 .bookmarks-panel {
-    flex: 0 0 280px;
-    width: 280px;
-    max-width: 280px;
+    flex: 0 0 240px;
+    width: 240px;
+    max-width: 240px;
     display: flex;
     flex-direction: column;
     background: white;
@@ -1128,6 +1165,132 @@ button:hover {
     padding: 20px 0;
 }
 
+/* --- ЗАКЛАДКИ НА ТЕЛЕФОНЕ (UI-02): плавающая кнопка и модалка со списком --- */
+.bookmarks-fab {
+    display: none; /* на ПК список виден в правой колонке */
+}
+
+.bookmarks-modal[hidden] {
+    display: none;
+}
+
+.bookmarks-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 100002;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    background: rgba(26, 32, 44, 0.55);
+    -webkit-backdrop-filter: blur(2px);
+    backdrop-filter: blur(2px);
+}
+
+.bookmarks-modal__panel {
+    width: 100%;
+    max-width: 520px;
+    max-height: 80vh;
+    display: flex;
+    flex-direction: column;
+    background: #ffffff;
+    border-radius: 18px 18px 0 0;
+    padding: 18px 18px max(18px, env(safe-area-inset-bottom));
+    box-sizing: border-box;
+    box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.18);
+}
+
+@media screen and (min-width: 769px) {
+    .bookmarks-modal {
+        align-items: center;
+        padding: 24px;
+    }
+
+    .bookmarks-modal__panel {
+        border-radius: 18px;
+    }
+}
+
+.bookmarks-modal__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 12px;
+}
+
+.bookmarks-modal__head h3 {
+    margin: 0;
+    font-size: 17px;
+    color: #1a365d;
+}
+
+.bookmarks-modal__close {
+    background: none;
+    border: none;
+    font-size: 26px;
+    line-height: 1;
+    color: #4a5568;
+    cursor: pointer;
+    padding: 0 4px;
+}
+
+.bookmarks-modal__body {
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+/* Фон не прокручивается, пока открыт список */
+body.bookmarks-modal-open {
+    overflow: hidden;
+}
+
+@media screen and (max-width: 768px) {
+    .bookmarks-fab {
+        position: fixed;
+        left: max(16px, env(safe-area-inset-left));
+        bottom: max(16px, env(safe-area-inset-bottom));
+        z-index: 9998;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        min-width: 52px;
+        height: 52px;
+        padding: 0 14px;
+        border: none;
+        border-radius: 26px;
+        background: #2b6cb0;
+        color: #ffffff;
+        font-size: 22px;
+        line-height: 1;
+        box-shadow: 0 6px 18px rgba(43, 108, 176, 0.35);
+        cursor: pointer;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    /* Пока закладок нет — кнопка не отвлекает цветом */
+    .bookmarks-fab.is-empty {
+        background: #4a5568;
+        box-shadow: 0 6px 18px rgba(45, 55, 72, 0.28);
+    }
+
+    .bookmarks-fab:active {
+        transform: scale(0.96);
+    }
+
+    .bookmarks-fab__count {
+        font-size: 14px;
+        font-weight: 700;
+        background: rgba(255, 255, 255, 0.22);
+        border-radius: 999px;
+        padding: 2px 8px;
+    }
+
+    .bookmarks-fab__count[hidden] {
+        display: none;
+    }
+}
+
 /* --- КНОПКА ЗАКЛАДКИ (звёздочка) --- */
 .bookmark-star-btn {
     background: none;
@@ -1138,10 +1301,16 @@ button:hover {
     transition: all 0.2s ease;
     display: inline-block;
     line-height: 1;
+    flex: 0 0 auto;
+    margin-left: 8px;
 }
 
-.bookmark-star-btn:hover {
-    transform: scale(1.2);
+/* Увеличение только там, где есть настоящий курсор: на тач-экране :hover
+   «залипает» после тапа и звезда наезжает на заголовок — см. UI-07 */
+@media (hover: hover) and (pointer: fine) {
+    .bookmark-star-btn:hover {
+        transform: scale(1.15);
+    }
 }
 
 .bookmark-star-btn.active {
@@ -1177,6 +1346,15 @@ button:hover {
     font-size: 13px;
     text-align: center;
     padding: 20px 8px;
+}
+
+/* Элементы списков не сжимаются: иначе при max-height у колонки
+   текст вылезает за пределы кнопки и заголовки накладываются — см. UI-03 */
+.tickets-questions-column > *,
+.tickets-folders-column > *,
+.mobile-articles-container > *,
+.limited-tiles > * {
+    flex: 0 0 auto;
 }
 
 /* Кнопки-папки в навигации */
@@ -1305,17 +1483,22 @@ button:hover {
         max-height: 250px;
     }
 
-    /* 5 вопросов билетов (высокие кнопки) и 5 статей (низкие) */
+    /* Список вопросов билетов не должен занимать пол-экрана:
+       высота как у списка статей в sections.html — см. UI-08 */
     #mobile-questions-list {
-        max-height: 384px;
+        max-height: 240px;
     }
 
     #mobile-articles-list {
         max-height: 224px;
     }
 
-    /* На узком экране выключенный по ширине текст даёт «реки» — читаем по левому краю */
+    /* На узком экране выключенный по ширине текст даёт «реки» — читаем по левому краю.
+       Селекторы повторяют специфичность правила на строке 337, иначе проигрывают ему */
+    .ticket-viewer .content-text,
+    .section-viewer .content-text,
     .content-text,
+    .menu-item p,
     #news-timeline ul li {
         text-align: left;
     }
@@ -1337,12 +1520,33 @@ button:hover {
         padding: 12px;
         font-size: 14px;
     }
+
+    /* «Все темы» — отдельная строка во всю ширину, остальные плитки как были — см. UI-09 */
+    #cards-discipline-tiles .mobile-tile-btn:first-child,
+    #quiz-discipline-tiles .mobile-tile-btn:first-child {
+        flex: 0 0 100%;
+        width: 100%;
+        text-align: center;
+    }
 }
 
 /* --- АДАПТИВНОСТЬ: ПЛАНШЕТЫ (769–1024px) --- */
 @media screen and (min-width: 769px) and (max-width: 1024px) {
     .content-with-sidebar {
         grid-template-columns: 200px 1fr;
+    }
+}
+
+/* --- АДАПТИВНОСТЬ: СРЕДНИЕ ЭКРАНЫ ПК (769–1499px) ---
+   Колонки навигации уже, поля конспекта меньше: 4 колонки должны помещаться */
+@media screen and (min-width: 769px) and (max-width: 1499px) {
+    .nav-left {
+        grid-template-columns: 160px 210px;
+    }
+
+    .ticket-viewer,
+    .section-viewer {
+        padding: 28px;
     }
 }
 
@@ -1360,11 +1564,6 @@ button:hover {
     .tri-column-layout > .ticket-viewer,
     .tri-column-layout > .section-viewer {
         max-width: none;
-    }
-
-    .nav-left {
-        flex: 0 0 260px;
-        width: 260px;
     }
 }
 
@@ -1405,8 +1604,7 @@ button:hover {
     }
 
     .nav-left {
-        flex: 0 0 220px;
-        width: 220px;
+        grid-template-columns: 145px 190px;
     }
 }
 
@@ -1486,7 +1684,8 @@ button:hover {
     width: 100%;
     max-width: 1000px;
     margin: 40px auto 0;
-    padding: 28px 30px 20px;
+    /* 18px + 2px рамки = 20px, как padding у .menu-grid: края совпадают — см. UI-11 */
+    padding: 28px 18px 20px;
     background: #ffffff;
     border: 2px solid #e2e8f0;
     border-radius: 20px;
@@ -1973,4 +2172,165 @@ textarea:focus-visible,
     body[data-page="tickets"] .literature-box ul { color: #000; font-size: 10.5pt; }
     body[data-page="tickets"] a { color: #000; text-decoration: none; }
     body[data-page="tickets"] .empty-state { height: auto; }
+}
+
+/* ==========================================================================
+   УВЕДОМЛЕНИЯ И ПРОФИЛЬ (UI-12, UI-13)
+   ========================================================================== */
+
+/* --- Всплывающие уведомления вместо alert() --- */
+.toast-layer {
+    position: fixed;
+    top: max(16px, env(safe-area-inset-top));
+    right: max(16px, env(safe-area-inset-right));
+    z-index: 100003;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    width: min(380px, calc(100vw - 32px));
+    pointer-events: none;
+}
+
+.toast {
+    pointer-events: auto;
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 12px 14px;
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-left: 4px solid #e53e3e;
+    border-radius: 12px;
+    box-shadow: 0 10px 24px rgba(26, 54, 93, 0.14);
+    color: #2d3748;
+    font-size: 14px;
+    line-height: 1.45;
+    opacity: 0;
+    transform: translateY(-8px);
+    transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.toast.is-visible {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.toast--error { border-left-color: #e53e3e; }
+.toast--info { border-left-color: #3182ce; }
+.toast--success { border-left-color: #38a169; }
+
+.toast__icon {
+    flex: 0 0 auto;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    font-weight: 800;
+    color: #ffffff;
+    background: #e53e3e;
+    margin-top: 1px;
+}
+
+.toast--info .toast__icon { background: #3182ce; }
+.toast--success .toast__icon { background: #38a169; }
+
+.toast__text { flex: 1 1 auto; }
+
+.toast__close {
+    flex: 0 0 auto;
+    background: none;
+    border: none;
+    padding: 0 2px;
+    min-height: 0;
+    font-size: 20px;
+    line-height: 1;
+    color: #718096;
+    cursor: pointer;
+}
+
+.toast__close:hover { color: #2d3748; }
+
+/* На телефоне тосты идут во всю ширину под строкой состояния */
+@media screen and (max-width: 768px) {
+    .toast-layer {
+        left: max(10px, env(safe-area-inset-left));
+        right: max(10px, env(safe-area-inset-right));
+        width: auto;
+    }
+}
+
+/* --- Инлайн-ошибка согласия на обработку данных --- */
+.consent-error {
+    margin: 8px 0 0;
+    color: #c53030;
+    font-size: 12px;
+    line-height: 1.4;
+}
+
+.consent-error[hidden] { display: none; }
+
+/* --- Виджет профиля: ID + выход (UI-13) --- */
+.auth-widget {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 6px 6px 6px 18px;
+    background: #e6fffa;
+    border: 1px solid #b2f5ea;
+    border-radius: 20px;
+    color: #006d5b;
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+    box-shadow: 0 2px 4px rgba(0, 109, 91, 0.04);
+}
+
+.auth-widget__key {
+    color: #004d39;
+    margin-left: 2px;
+}
+
+.auth-widget__logout {
+    flex: 0 0 auto;
+    min-height: 32px;
+    padding: 6px 14px;
+    background: #ffffff;
+    color: #006d5b;
+    border: 1px solid #b2f5ea;
+    border-radius: 14px;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+}
+
+.auth-widget__logout:hover {
+    background: #006d5b;
+    border-color: #006d5b;
+    color: #ffffff;
+}
+
+/* На телефоне шапка переносит виджет на отдельную строку — иначе он не влезает */
+@media screen and (max-width: 768px) {
+    body[data-page="index"] header {
+        flex-wrap: wrap;
+        gap: 14px;
+    }
+
+    body[data-page="index"] #platform-user-widget {
+        width: 100%;
+    }
+
+    .auth-widget {
+        width: 100%;
+        justify-content: space-between;
+        box-sizing: border-box;
+    }
+
+    .auth-widget__logout {
+        min-height: 44px;
+    }
 }

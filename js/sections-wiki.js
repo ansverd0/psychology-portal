@@ -87,13 +87,9 @@ function initSections() {
     const targetDiscipline = urlParams.get('discipline');
 
     if (targetDiscipline) {
-        setTimeout(() => {
-            const pcBtn = document.getElementById(`branch-btn-${targetDiscipline}`);
-            if (pcBtn && window.innerWidth > 768) pcBtn.click();
-            
-            const mobileTile = document.getElementById(`mobile-tile-${targetDiscipline}`);
-            if (mobileTile && window.innerWidth <= 768) mobileTile.click();
-        }, 150); 
+        // Данные и плитки могут появиться позже первого кадра — пробуем несколько раз,
+        // а не один раз через фиксированную задержку
+        openDeepLinkedDiscipline(targetDiscipline);
     }
 
     // 4. ЖИВОЙ ПОИСК СТАТЕЙ (для sections.html)
@@ -306,6 +302,23 @@ function applyWikiTerms(root, glossary) {
     });
 }
 
+/** Открывает раздел по deeplink (?discipline=...).
+ *  Папки и плитки рендерятся асинхронно, поэтому пробуем несколько раз,
+ *  а не один раз через фиксированную задержку — см. UI-01 */
+function openDeepLinkedDiscipline(id, attempt = 0) {
+    const isMobile = window.innerWidth <= 768;
+    const target = document.getElementById(isMobile ? `mobile-tile-${id}` : `branch-btn-${id}`);
+
+    if (target) {
+        target.click();
+        return;
+    }
+
+    if (attempt < 25) {
+        setTimeout(() => openDeepLinkedDiscipline(id, attempt + 1), 100);
+    }
+}
+
 function showSectionContent(section) {
     const contentContainer = document.querySelector('.section-viewer');
     if (!contentContainer || !section) return;
@@ -345,30 +358,37 @@ function showSectionContent(section) {
     }
 }
 
+/** Открывает статью из закладки: ищет её в сохранённом разделе, затем везде */
+function openBookmarkedArticle(title, bookmark) {
+    const sections = appDatabase.sections;
+    if (!sections) return;
+
+    // Сначала ищем в том же разделе, где закладку создали
+    let section = bookmark && bookmark.folder
+        ? sections.find(s => s.id === bookmark.folder)
+        : null;
+
+    if (!section || !section.articles.some(a => a.title === title)) {
+        section = sections.find(s => s.articles.some(a => a.title === title));
+    }
+    if (!section) return;
+
+    const article = section.articles.find(a => a.title === title);
+    openSectionInNav(section, article);
+
+    const viewer = document.querySelector('.section-viewer');
+    if (viewer) viewer.scrollIntoView({ behavior: getScrollBehavior() });
+}
+
 /** Рендер панели закладок для sections.html */
 function renderSectionsBookmarksPanel() {
+    // Модалка на телефоне открывает статью тем же обработчиком
+    setBookmarkOpenHandler('article', openBookmarkedArticle);
+
     const panel = document.getElementById('bookmarks-panel');
-    if (!panel) return;
-    
-    renderBookmarksPanel(panel, 'article', (title, bookmark) => {
-        // При клике на закладку — открываем статью и подсвечиваем её в навигации
-        const sections = appDatabase.sections;
-        if (!sections) return;
+    if (panel) {
+        renderBookmarksPanel(panel, 'article', openBookmarkedArticle);
+    }
 
-        // Сначала ищем в том же разделе, где закладку создали
-        let section = bookmark && bookmark.folder
-            ? sections.find(s => s.id === bookmark.folder)
-            : null;
-
-        if (!section || !section.articles.some(a => a.title === title)) {
-            section = sections.find(s => s.articles.some(a => a.title === title));
-        }
-        if (!section) return;
-
-        const article = section.articles.find(a => a.title === title);
-        openSectionInNav(section, article);
-
-        const viewer = document.querySelector('.section-viewer');
-        if (viewer) viewer.scrollIntoView({ behavior: getScrollBehavior() });
-    });
+    refreshBookmarksFab();
 }

@@ -276,29 +276,38 @@ function showTicketContent(ticket) {
     }
 }
 
+/** Открывает билет из закладки: ищет его в сохранённой дисциплине, затем везде */
+function openBookmarkedTicket(id, bookmark) {
+    const examDisciplines = appDatabase.tickets;
+    if (!examDisciplines) return;
+
+    // Сначала ищем в той же дисциплине, где закладку создали
+    // (номера вопросов между дисциплинами повторяются)
+    let discipline = bookmark && bookmark.folder
+        ? examDisciplines.find(d => d.id === bookmark.folder)
+        : null;
+
+    if (!discipline || !discipline.questions.some(q => q.number == id)) {
+        discipline = examDisciplines.find(d => d.questions.some(q => q.number == id));
+    }
+    if (!discipline) return;
+
+    const ticket = discipline.questions.find(q => q.number == id);
+    openTicketInNav(discipline, ticket);
+
+    const viewer = document.querySelector('.ticket-viewer');
+    if (viewer) viewer.scrollIntoView({ behavior: getScrollBehavior() });
+}
+
 /** Рендер панели закладок для tickets.html */
 function renderTicketsBookmarksPanel() {
+    // Модалка на телефоне открывает билет тем же обработчиком
+    setBookmarkOpenHandler('ticket', openBookmarkedTicket);
+
     const panel = document.getElementById('bookmarks-panel');
-    if (!panel) return;
-    
-    renderBookmarksPanel(panel, 'ticket', (id, bookmark) => {
-        // При клике на закладку — открываем билет и подсвечиваем его в навигации
-        const examDisciplines = appDatabase.tickets;
-        if (!examDisciplines) return;
+    if (panel) {
+        renderBookmarksPanel(panel, 'ticket', openBookmarkedTicket);
+    }
 
-        // Сначала ищем в той же дисциплине, где закладку создали
-        // (номера вопросов между дисциплинами повторяются)
-        let discipline = bookmark && bookmark.folder
-            ? examDisciplines.find(d => d.id === bookmark.folder)
-            : null;
-
-        if (!discipline || !discipline.questions.some(q => q.number == id)) {
-            discipline = examDisciplines.find(d => d.questions.some(q => q.number == id));
-        }
-        if (!discipline) return;
-
-        const ticket = discipline.questions.find(q => q.number == id);
-        openTicketInNav(discipline, ticket);
-        document.querySelector('.ticket-viewer').scrollIntoView({ behavior: getScrollBehavior() });
-    });
+    refreshBookmarksFab();
 }

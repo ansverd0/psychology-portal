@@ -40,8 +40,9 @@
         
         <!-- Правая часть: только чистый зеленый закругленный элемент ID -->
         <div id="platform-user-widget">
-            <div id="auth-status-logged" style="display: none; background: #e6fffa; border: 1px solid #b2f5ea; padding: 8px 18px; border-radius: 20px; color: #006d5b; font-size: 14px; font-weight: 700; letter-spacing: 0.3px; box-shadow: 0 2px 4px rgba(0,109,91,0.04);">
-                Ваш ID: <span id="research-key-output" style="color: #004d39; margin-left: 2px;">...</span>
+            <div id="auth-status-logged" class="auth-widget" style="display: none;">
+                <span class="auth-widget__label">Ваш ID: <span id="research-key-output" class="auth-widget__key">...</span></span>
+                <button type="button" id="btn-logout" class="auth-widget__logout">Выйти</button>
             </div>
             <div id="auth-status-guest" style="display: block;">
                 <button id="btn-open-auth-modal" style="background: #2b6cb0; color: white; border: none; padding: 10px 20px; border-radius: 20px; font-size: 13px; font-weight: 600; cursor: pointer; transition: background 0.2s;">🔑 Войти / Создать ID</button>
@@ -66,7 +67,7 @@
             <span class="badge new">Обновление</span>
         </div>
         <p>Последние изменения на платформе. Кликните, чтобы прочитать патчноут.</p>
-        <div class="update-date">Дата обновления: <strong>26.10.2026</strong></div>
+        <div class="update-date">Дата обновления: <strong>31.10.2026</strong></div>
     </a>
 
     <!-- Блок 2: Экзаменационные билеты -->
@@ -116,8 +117,8 @@
 </div>
 
     <!-- ПОЛНОЭКРАННОЕ МОДАЛЬНОЕ ОКНО АВТОРИЗАЦИИ (Для новых пользователей) -->
-    <div id="research-auth-box" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100vh; height: 100dvh; background: rgba(26, 32, 44, 0.6); backdrop-filter: blur(4px); z-index: 99999; justify-content: center; align-items: center; font-family: system-ui, sans-serif;" role="dialog" aria-modal="true" aria-labelledby="research-auth-title">
-        <div id="research-auth-panel" style="background: white; width: 100%; max-width: 500px; padding: 35px; border-radius: 20px; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1); position: relative; margin: 20px; text-align: left;">
+    <div id="research-auth-box" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100vh; height: 100dvh; background: rgba(26, 32, 44, 0.6); backdrop-filter: blur(4px); z-index: 100001; justify-content: center; align-items: flex-start; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 20px 12px; box-sizing: border-box; font-family: system-ui, sans-serif;" role="dialog" aria-modal="true" aria-labelledby="research-auth-title">
+        <div id="research-auth-panel" style="background: white; width: 100%; max-width: 500px; box-sizing: border-box; padding: 35px; border-radius: 20px; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1); position: relative; margin: 20px auto; text-align: left; flex: 0 0 auto;">
             <button type="button" id="btn-close-auth" class="modal-close" aria-label="Закрыть окно">×</button>
             <h3 id="research-auth-title" style="margin: 0 0 12px 0; color: #1a365d; font-size: 20px; font-weight: 800;">🔑 Активация учебного профиля</h3>
             <p style="margin: 0 0 20px 0; font-size: 14px; color: #4a5568; line-height: 1.5;">
@@ -139,12 +140,14 @@
 
             <!-- БЛОК ЕДИНОГО СОГЛАСИЯ НА ОБРАБОТКУ И КУКИ -->
             <label style="display: flex; align-items: flex-start; gap: 10px; cursor: pointer; user-select: none;">
-                <input type="checkbox" id="chk-consent" style="margin-top: 3px; width: 16px; height: 16px; accent-color: #2b6cb0;">
+                <input type="checkbox" id="chk-consent" aria-describedby="consent-error" style="margin-top: 3px; width: 16px; height: 16px; accent-color: #2b6cb0;">
                 <span style="font-size: 12px; color: #718096; line-height: 1.4;">
                     Я ознакомлен(а) с <a href="privacy.html" target="_blank" rel="noopener" style="color: #2b6cb0;">политикой обработки данных</a>
                     и даю согласие на сохранение локальных файлов кэша, куки, фиксацию метрик прогресса тестов и результатов итоговых эссе.
                 </span>
             </label>
+            <!-- Ошибка согласия: показывается вместо системного alert -->
+            <p id="consent-error" class="consent-error" role="alert" hidden></p>
         </div>
     </div>
     <!-- Общий подвал сайта: контакты и навигация -->
@@ -195,6 +198,7 @@
     </footer>
 
     <script src="js/supabase-config.js"></script>
+<script src="js/ui-notify.js"></script>
 <script src="js/auth.js"></script> <!-- Наш новый изолированный подмодуль -->
 
 </body>
