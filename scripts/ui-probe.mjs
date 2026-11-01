@@ -719,7 +719,7 @@ const scenarios = {
     })()`);
     c.ok(navGap >= 12 && navGap <= 30, '1440: «Главное меню» ближе к нижнему краю, но не на нём', navGap);
 
-    // Плавающие кнопки не ложатся на подвал (раунд 4)
+    // Кнопка закладок не ложится на подвал, «наверх» стоит на своём месте (раунд 4)
     await setViewport(cdp, 390, 844, true);
     await goto(cdp, base, 'tickets.html', 3000);
     await waitFor(cdp, 'document.querySelectorAll(".mobile-tile-btn").length > 0');
@@ -729,11 +729,21 @@ const scenarios = {
       const f = document.querySelector('.site-footer');
       const border = parseFloat(getComputedStyle(f).borderTopWidth) || 0;
       const darkTop = Math.round(f.getBoundingClientRect().top + border);
-      const box = (sel) => { const el = document.querySelector(sel); if (!el || getComputedStyle(el).display === 'none') return null; return Math.round(el.getBoundingClientRect().bottom); };
-      return { darkTop, fab: box('#bookmarks-fab'), top: box('#scroll-top-btn') };
+      const box = (sel) => { const el = document.querySelector(sel); if (!el || getComputedStyle(el).display === 'none') return null; const r = el.getBoundingClientRect(); return { top: Math.round(r.top), bottom: Math.round(r.bottom) }; };
+      const fab = box('#bookmarks-fab');
+      const top = box('#scroll-top-btn');
+      return {
+        darkTop,
+        vh: innerHeight,
+        fab: fab && fab.bottom,
+        fabTop: fab && fab.top,
+        top: top && top.bottom,
+        scrollTopGap: top ? Math.round(innerHeight - top.bottom) : null
+      };
     })()`);
     c.ok(aboveFooter.fab !== null && aboveFooter.fab <= aboveFooter.darkTop, '390: закладки не лежат на подвале', aboveFooter);
-    c.ok(aboveFooter.top !== null && aboveFooter.top <= aboveFooter.darkTop, '390: «наверх» не лежит на подвале', aboveFooter);
+    c.ok(aboveFooter.top !== null && Math.abs(aboveFooter.scrollTopGap - 16) <= 1, '390: «наверх» остаётся у нижнего края (подъём только у закладок)', aboveFooter);
+    c.ok(aboveFooter.fab !== null && aboveFooter.top !== null && aboveFooter.fab < aboveFooter.top, '390: закладки выше «наверх»', aboveFooter);
 
     // Кнопки справа, навигация подвала слева — не пересекаются
     await cdp.eval(`window.scrollTo(0, document.body.scrollHeight)`);

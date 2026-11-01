@@ -654,10 +654,11 @@ window.addEventListener('scroll', () => {
     }
 });
 
-/** Плавающие кнопки («закладки» и «наверх») не должны лежать на подвале:
- *  пока подвал виден, поднимаем их на его видимую высоту + 12 px зазора.
- *  Высота считается в CSS через --fab-lift (раунд 4). */
-function updateFloatingButtonsLift() {
+/** Кнопка закладок не должна лежать на подвале: пока подвал виден, поднимаем
+ *  её на его видимую высоту + 12 px зазора. Высота считается в CSS через
+ *  --fab-lift, которую читает только `.bookmarks-fab` — кнопка «наверх»
+ *  остаётся у нижнего края (раунд 4, правка автора). */
+function updateBookmarksFabLift() {
     const footer = document.querySelector('.site-footer');
     if (!footer) return;
     const overlap = window.innerHeight - footer.getBoundingClientRect().top;
@@ -667,7 +668,7 @@ function updateFloatingButtonsLift() {
     if (current !== next) document.body.style.setProperty('--fab-lift', next);
 }
 
-(function initFloatingButtonsLift() {
+(function initBookmarksFabLift() {
     if (typeof window === 'undefined') return;
     let scheduled = false;
     const schedule = () => {
@@ -675,7 +676,7 @@ function updateFloatingButtonsLift() {
         scheduled = true;
         requestAnimationFrame(() => {
             scheduled = false;
-            updateFloatingButtonsLift();
+            updateBookmarksFabLift();
         });
     };
     window.addEventListener('scroll', schedule, { passive: true });
