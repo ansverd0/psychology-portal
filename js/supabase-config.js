@@ -585,6 +585,9 @@ function executePageModuleInitialization(force) {
     if (modulesInitialized && !force) return;
     modulesInitialized = true;
 
+    // Успешный ретрай не должен оставлять на экране карточку прошлой ошибки
+    document.querySelectorAll('[data-load-error]').forEach((node) => node.remove());
+
     // Мягкий безопасный вызов авторизации Этапа 1 (если функция загрузилась в глобальную видимость)
     if (typeof proceedResearchAuth === 'function') {
         proceedResearchAuth();

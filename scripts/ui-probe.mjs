@@ -481,6 +481,28 @@ const scenarios = {
       errorCard: Boolean(document.querySelector('[data-load-error]'))
     })`);
     c.ok(retried.items > 0 && !retried.errorCard, 'повтор загрузил данные без перезагрузки', retried);
+
+    // 4. Страница без «просмотрщика» (cards): ошибка не ломает вёрстку и уходит после ретрая.
+    await setViewport(cdp, 390, 844, true);
+    await cdp.eval('localStorage.clear()');
+    await cdp.send('Network.setBlockedURLs', { urls: ['*supabase.co*'] });
+    await goto(cdp, base, 'cards.html', 3000);
+    await waitFor(cdp, 'document.querySelector("[data-load-error]")', 15000);
+    const cardsBroken = await cdp.eval(`({
+      errorCard: Boolean(document.querySelector('[data-load-error]')),
+      retry: Boolean(document.querySelector('[data-load-retry]')),
+      card: Boolean(document.getElementById('myCard'))
+    })`);
+    c.ok(cardsBroken.errorCard && cardsBroken.retry && cardsBroken.card, 'cards: ошибка показана, карточка на месте', cardsBroken);
+
+    await cdp.send('Network.setBlockedURLs', { urls: [] });
+    await cdp.eval(`document.querySelector('[data-load-retry]').click()`);
+    await waitFor(cdp, 'document.querySelectorAll("#cards-discipline-tiles .mobile-tile-btn").length > 0', 20000);
+    const cardsFixed = await cdp.eval(`({
+      tiles: document.querySelectorAll('#cards-discipline-tiles .mobile-tile-btn').length,
+      errorCard: Boolean(document.querySelector('[data-load-error]'))
+    })`);
+    c.ok(cardsFixed.tiles > 1 && !cardsFixed.errorCard, 'cards: ретрай вернул тренажёр и убрал ошибку', cardsFixed);
   },
 
   // Подвал: есть на всех страницах, во всю ширину.

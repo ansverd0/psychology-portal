@@ -191,7 +191,7 @@ psychology-portal/
 
 - `Get-ChildItem js\*.js | ForEach-Object { node --check $_.FullName }` — синтаксис.
 - `node scripts/check-permissions.mjs` — 10/10 прав anon; `node scripts/check-vendor.mjs` — sha256 vendor.
-- `npm run check:ui` — headless Chrome: раскладка 390–1920, закладки, поиск, мобильная навигация, офлайн/ретрай, подвал, диагностика опроса. 8 сценариев, ~50 проверок; код возврата 1 при падении.
+- `npm run check:ui` — headless Chrome: раскладка 390–1920, закладки, поиск, мобильная навигация, офлайн/ретрай, подвал, диагностика опроса. 8 сценариев, 52 проверки; код возврата 1 при падении.
 - `git diff --check` — пробелы/конфликты; `git status` — нет секретов и мусора.
 - Браузер (локальный `python -m http.server 8767`): 1440/1024/768/390 px, консоль без CSP-ошибок; Tab/Enter по плиткам; Esc и focus trap в модалке; 404 на несуществующий путь; Ctrl+P на `tickets.html`.
 - После пуша: `sw.js` с новым `CACHE_NAME`; `robots.txt` и `sitemap.xml` — 200.
