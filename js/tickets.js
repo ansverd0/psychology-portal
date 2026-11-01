@@ -78,65 +78,22 @@ function initTickets() {
         });
     }
 
-    // 3. ЖИВОЙ ПОИСК БИЛЕТОВ (МОБИЛЬНАЯ ВЕРСИЯ)
-    const searchInput = document.getElementById('mobile-tickets-search');
-    const resultsContainer = document.getElementById('mobile-tickets-search-results');
-
-    if (searchInput && resultsContainer) {
-        searchInput.addEventListener('input', (e) => {
-            const searchText = e.target.value.toLowerCase().trim();
-            resultsContainer.innerHTML = '';
-
-            if (searchText === '') {
-                resultsContainer.style.display = 'none';
-                searchInput.classList.remove('open-dropdown');
-                return;
-            }
-
-            let matchesFound = false;
-
-            examDisciplines.forEach(discipline => {
-                discipline.questions.forEach(q => {
-                    if (q.title.toLowerCase().includes(searchText)) {
-                        matchesFound = true;
-
-                        const button = document.createElement('button');
-                        button.classList.add('search-suggest-item');
-                        button.innerHTML = `
-                            <span class="search-suggest-category">${discipline.title}</span>
-                            <strong>№${q.number}. ${q.title}</strong>
-                        `;
-
-                        button.addEventListener('click', () => {
-                            ticketsActiveFolderId = discipline.id;
-                            showTicketContent(q);
-                            searchInput.value = q.title; 
-                            resultsContainer.style.display = 'none';
-                            searchInput.classList.remove('open-dropdown');
-                        });
-
-                        resultsContainer.appendChild(button);
-                    }
-                });
-            });
-
-            if (matchesFound) {
-                resultsContainer.style.display = 'block';
-                searchInput.classList.add('open-dropdown');
-            } else {
-                resultsContainer.innerHTML = '<div style="padding: 15px; color: #718096; text-align:center; font-size:14px;">Ничего не найдено 😕</div>';
-                resultsContainer.style.display = 'block';
-                searchInput.classList.add('open-dropdown');
-            }
-        });
-
-        document.addEventListener('click', (e) => {
-            if (!searchInput.contains(e.target) && !resultsContainer.contains(e.target)) {
-                resultsContainer.style.display = 'none';
-                searchInput.classList.remove('open-dropdown');
-            }
-        });
-    }
+    // 3. ЖИВОЙ ПОИСК ПО НАЗВАНИЯМ (U2-07)
+    attachLiveSearch({
+        inputId: 'mobile-tickets-search',
+        resultsId: 'mobile-tickets-search-results',
+        source: () => (appDatabase.tickets || []).flatMap((discipline) => discipline.questions.map((q) => ({
+            title: q.title,
+            label: `№${q.number}. ${q.title}`,
+            category: discipline.title,
+            payload: { discipline, question: q }
+        }))),
+        onPick: (item) => {
+            openTicketInNav(item.payload.discipline, item.payload.question);
+            const viewer = document.querySelector('.ticket-viewer');
+            if (viewer) viewer.scrollIntoView({ behavior: getScrollBehavior() });
+        }
+    });
 
     window.addEventListener('resize', () => {
         if (window.innerWidth > 768 && mobileQuestionsList) {
@@ -261,7 +218,7 @@ function showTicketContent(ticket) {
                 <h2 style="margin: 0; font-size: 24px; color: #1a365d; line-height: 1.3;">№${escapeHtml(ticket.number)}. ${escapeHtml(ticket.title)}</h2>
                 ${timeHTML}
             </div>
-            <button class="bookmark-star-btn ${bookmarkActive}" id="ticket-bookmark-star" title="В закладки">${bookmarkIcon}</button>
+            <button class="bookmark-star-btn ${bookmarkActive}" id="ticket-bookmark-star" data-bookmark-id="${escapeHtml(ticket.number)}" data-bookmark-type="ticket" aria-pressed="${bookmarkActive ? 'true' : 'false'}" title="${bookmarkActive ? 'Убрать из закладок' : 'В закладки'}">${bookmarkIcon}</button>
         </div>
         ${planHTML}
         <div class="content-text">${safeContent}</div>
@@ -271,14 +228,15 @@ function showTicketContent(ticket) {
         </div>
     `;
     
-    // Обработчик закладки в просмотрщике
+    // Обработчик закладки в просмотрщике: панель, модалка и звезда
+    // перерисовываются по событию bookmarks:changed (U2-03)
     const starBtn = document.getElementById('ticket-bookmark-star');
     if (starBtn) {
         starBtn.addEventListener('click', () => {
-            const meta = { number: ticket.number, folder: ticketsActiveFolderId };
-            const added = toggleBookmark(ticket.number, ticket.title, 'ticket', meta);
-            updateBookmarkStar(starBtn, ticket.number, 'ticket');
-            renderTicketsBookmarksPanel();
+            toggleBookmark(ticket.number, ticket.title, 'ticket', {
+                number: ticket.number,
+                folder: ticketsActiveFolderId
+            });
         });
     }
 }
@@ -310,6 +268,8 @@ function openBookmarkedTicket(id, bookmark) {
 function renderTicketsBookmarksPanel() {
     // Модалка на телефоне открывает билет тем же обработчиком
     setBookmarkOpenHandler('ticket', openBookmarkedTicket);
+    // Панель перерисовывается по bookmarks:changed, а не только по клику на звезду
+    registerBookmarksPanelRenderer('ticket', renderTicketsBookmarksPanel);
 
     const panel = document.getElementById('bookmarks-panel');
     if (panel) {

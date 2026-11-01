@@ -43,15 +43,17 @@
     <main class="tri-column-layout">
 
     <div class="nav-left">
-    
-    <!-- 🗂 КОЛОНКА 1: Поиск и папки дисциплин -->
-    <aside class="tickets-sidebar nav-pane" aria-label="Дисциплины и поиск">
 
-        <!-- 1. Строка поиска по вопросам -->
-        <div class="mobile-search-wrapper" style="position: relative;">
+    <!-- 🔍 Поиск: на всю ширину колонки навигации (U2-07) -->
+    <div class="nav-search">
+        <div class="mobile-search-wrapper">
             <input type="text" id="mobile-tickets-search" placeholder="🔍 Найти экзаменационный вопрос..." aria-label="Поиск по экзаменационным вопросам" aria-controls="mobile-tickets-search-results" autocomplete="off">
-            <div id="mobile-tickets-search-results" class="search-results-dropdown" style="display: none;" role="status" aria-live="polite"></div>
+            <div id="mobile-tickets-search-results" class="search-results-dropdown" role="status" aria-live="polite"></div>
         </div>
+    </div>
+
+    <!-- 🗂 КОЛОНКА 1: папки дисциплин -->
+    <aside class="tickets-sidebar nav-pane" aria-label="Дисциплины">
 
         <!-- 2. Мобильные плитки-дисциплины (скрываются на ПК) -->
         <div id="mobile-tickets-tiles" class="mobile-only-tiles limited-tiles" role="group" aria-label="Дисциплины"></div>
@@ -69,7 +71,7 @@
 
         <!-- 2. Список вопросов выбранной дисциплины -->
         <div id="tickets-questions-col" class="tickets-questions-column" role="group" aria-label="Вопросы дисциплины">
-            <div class="questions-placeholder">Выберите дисциплину слева</div>
+            <div class="questions-placeholder">Выберите дисциплину</div>
         </div>
 
     </aside>
@@ -79,7 +81,9 @@
     <!-- 📄 ЦЕНТРАЛЬНАЯ КОЛОНКА: Интерактивное окно просмотра конспекта -->
     <div class="ticket-viewer">
         <div class="empty-state">
-            <p>📋 Выберите экзаменационную дисциплину слева, чтобы открыть список вопросов и конспекты ответов.</p>
+            <div class="empty-state__icon" aria-hidden="true">📋</div>
+            <h3>Выберите дисциплину</h3>
+            <p>Откроем список вопросов и конспекты ответов. На телефоне дисциплины — плитками выше, на компьютере — в колонке слева.</p>
         </div>
     </div>
 
@@ -93,9 +97,11 @@
     <script src="js/supabase-config.js"></script>
     <script src="js/tracker.js"></script>
 <script src="js/bookmarks.js"></script>
+<script src="js/live-search.js"></script>
 <script src="js/tickets.js"></script>
     <!-- Общий подвал сайта: контакты и навигация -->
     <footer class="site-footer">
+        <div class="site-footer__inner">
         <div class="site-footer__top">
             <div class="site-footer__brand">
                 <span class="site-footer__logo" aria-hidden="true">🧠</span>
@@ -139,6 +145,7 @@
                 <a href="privacy.html">Политика данных</a>
             </nav>
         </div>
+    </div>
     </footer>
 
     <!-- Кнопка быстрой прокрутки наверх -->

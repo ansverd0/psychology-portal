@@ -27,6 +27,8 @@ function saveBookmarks(bookmarks) {
     }
     // Счётчик на кнопке-звёздочке (мобилка) должен обновляться сразу
     if (typeof refreshBookmarksFab === 'function') refreshBookmarksFab();
+    // Одно состояние на все точки: панель, модалка и звезда в статье (U2-03)
+    document.dispatchEvent(new CustomEvent('bookmarks:changed'));
 }
 
 /** Добавить закладку
@@ -136,8 +138,8 @@ function renderBookmarksPanel(container, type, onItemClick, options) {
         btn.addEventListener('click', (e) => {
             e.stopPropagation();
             const id = btn.getAttribute('data-remove-id');
+            // Панель и модалка перерисуются по событию bookmarks:changed
             removeBookmark(id, type);
-            renderBookmarksPanel(container, type, onItemClick);
         });
     });
 }
@@ -149,7 +151,35 @@ function updateBookmarkStar(button, id, type) {
     const bookmarked = isBookmarked(id, type);
     button.classList.toggle('active', bookmarked);
     button.innerHTML = bookmarked ? '★' : '☆';
+    button.setAttribute('aria-pressed', bookmarked ? 'true' : 'false');
+    button.setAttribute('title', bookmarked ? 'Убрать из закладок' : 'В закладки');
 }
+
+/** Пересчитать все звёздочки на странице: удаление в панели/модалке гасит
+ *  звезду в статье, даже если её никто не трогал (U2-03) */
+function syncBookmarkStars() {
+    document.querySelectorAll('.bookmark-star-btn[data-bookmark-id]').forEach((btn) => {
+        updateBookmarkStar(btn, btn.dataset.bookmarkId, btn.dataset.bookmarkType);
+    });
+}
+
+/** Рендереры панелей по типу страницы: регистрируются из tickets.js/sections-wiki.js */
+const BOOKMARK_PANEL_RENDERERS = {};
+
+function registerBookmarksPanelRenderer(type, fn) {
+    BOOKMARK_PANEL_RENDERERS[type] = fn;
+}
+
+document.addEventListener('bookmarks:changed', () => {
+    syncBookmarkStars();
+    Object.keys(BOOKMARK_PANEL_RENDERERS).forEach((type) => {
+        try {
+            BOOKMARK_PANEL_RENDERERS[type]();
+        } catch (e) {
+            console.warn('⚠️ Панель закладок не перерисовалась:', e);
+        }
+    });
+});
 
 /** Обработчик клика на кнопку звёздочки */
 function createBookmarkStarHandler(button, id, title, type, onChange) {
@@ -229,19 +259,24 @@ function refreshBookmarksFab() {
 let bookmarksModalEl = null;
 let bookmarksModalReturnFocus = null;
 
-function openBookmarksModal() {
+function renderBookmarksModalBody() {
     if (!bookmarksModalEl) return;
 
     const type = getPageBookmarkType();
     const body = bookmarksModalEl.querySelector('#bookmarks-modal-body');
+    if (!body) return;
 
-    if (body) {
-        renderBookmarksPanel(body, type, (id, bookmark) => {
-            closeBookmarksModal();
-            const handler = BOOKMARK_OPEN_HANDLERS[type];
-            if (typeof handler === 'function') handler(id, bookmark);
-        }, { showHeading: false });
-    }
+    renderBookmarksPanel(body, type, (id, bookmark) => {
+        closeBookmarksModal();
+        const handler = BOOKMARK_OPEN_HANDLERS[type];
+        if (typeof handler === 'function') handler(id, bookmark);
+    }, { showHeading: false });
+}
+
+function openBookmarksModal() {
+    if (!bookmarksModalEl) return;
+
+    renderBookmarksModalBody();
 
     bookmarksModalReturnFocus = document.activeElement;
     bookmarksModalEl.hidden = false;
@@ -305,6 +340,10 @@ function buildBookmarksUi() {
     });
     document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape' && !modal.hidden) closeBookmarksModal();
+    });
+    // Удаление внутри модалки не должно оставлять второй заголовок (U2-03)
+    document.addEventListener('bookmarks:changed', () => {
+        if (!modal.hidden) renderBookmarksModalBody();
     });
 
     refreshBookmarksFab();

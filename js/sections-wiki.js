@@ -92,65 +92,22 @@ function initSections() {
         openDeepLinkedDiscipline(targetDiscipline);
     }
 
-    // 4. ЖИВОЙ ПОИСК СТАТЕЙ (для sections.html)
-    const searchInput = document.getElementById('mobile-search-input');
-    const resultsContainer = document.getElementById('mobile-search-results');
-
-    if (searchInput && resultsContainer) {
-        searchInput.addEventListener('input', (e) => {
-            const searchText = e.target.value.toLowerCase().trim();
-            resultsContainer.innerHTML = '';
-
-            if (searchText === '') {
-                resultsContainer.style.display = 'none';
-                searchInput.classList.remove('open-dropdown');
-                return;
-            }
-
-            let matchesFound = false;
-
-            sections.forEach(section => {
-                section.articles.forEach(article => {
-                    if (article.title.toLowerCase().includes(searchText)) {
-                        matchesFound = true;
-
-                        const button = document.createElement('button');
-                        button.classList.add('search-suggest-item');
-                        button.innerHTML = `
-                            <span class="search-suggest-category">${section.title}</span>
-                            <strong>${article.title}</strong>
-                        `;
-
-                        button.addEventListener('click', () => {
-                            sectionsActiveFolderId = section.id;
-                            showSectionContent(article);
-                            searchInput.value = article.title;
-                            resultsContainer.style.display = 'none';
-                            searchInput.classList.remove('open-dropdown');
-                        });
-
-                        resultsContainer.appendChild(button);
-                    }
-                });
-            });
-
-            if (matchesFound) {
-                resultsContainer.style.display = 'block';
-                searchInput.classList.add('open-dropdown');
-            } else {
-                resultsContainer.innerHTML = '<div style="padding: 15px; color: #718096; text-align:center; font-size:14px;">Ничего не найдено 😕</div>';
-                resultsContainer.style.display = 'block';
-                searchInput.classList.add('open-dropdown');
-            }
-        });
-
-        document.addEventListener('click', (e) => {
-            if (!searchInput.contains(e.target) && !resultsContainer.contains(e.target)) {
-                resultsContainer.style.display = 'none';
-                searchInput.classList.remove('open-dropdown');
-            }
-        });
-    }
+    // 4. ЖИВОЙ ПОИСК ПО НАЗВАНИЯМ СТАТЕЙ (U2-07)
+    attachLiveSearch({
+        inputId: 'mobile-search-input',
+        resultsId: 'mobile-search-results',
+        source: () => (appDatabase.sections || []).flatMap((section) => section.articles.map((article) => ({
+            title: article.title,
+            label: article.title,
+            category: section.title,
+            payload: { section, article }
+        }))),
+        onPick: (item) => {
+            openSectionInNav(item.payload.section, item.payload.article);
+            const viewer = document.querySelector('.section-viewer');
+            if (viewer) viewer.scrollIntoView({ behavior: getScrollBehavior() });
+        }
+    });
 
     // Рендер панели закладок при инициализации
     renderSectionsBookmarksPanel();
@@ -343,7 +300,7 @@ function showSectionContent(section) {
     const headerWithBookmark = `
         <div style="display: flex; justify-content: space-between; align-items: flex-start; margin: 0 0 20px 0; padding-bottom: 15px; border-bottom: 2px solid #edf2f7;">
             <h2 style="margin: 0; font-size: 24px; color: #1a365d; line-height: 1.3; flex: 1;">${escapeHtml(section.title)}</h2>
-            <button class="bookmark-star-btn ${bookmarkActive}" id="section-bookmark-star" title="В закладки" style="margin-left: 15px; flex-shrink: 0;">${bookmarkIcon}</button>
+            <button class="bookmark-star-btn ${bookmarkActive}" id="section-bookmark-star" data-bookmark-id="${escapeHtml(section.title)}" data-bookmark-type="article" aria-pressed="${bookmarkActive ? 'true' : 'false'}" title="${bookmarkActive ? 'Убрать из закладок' : 'В закладки'}" style="margin-left: 15px; flex-shrink: 0;">${bookmarkIcon}</button>
         </div>
     `;
 
@@ -353,14 +310,11 @@ function showSectionContent(section) {
     const contentText = contentContainer.querySelector('.content-text');
     applyWikiTerms(contentText, appGlossary);
 
-    // 4. Обработчик закладки в просмотрщике
+    // 4. Обработчик закладки: панель и звезда синхронизируются событием
     const starBtn = document.getElementById('section-bookmark-star');
     if (starBtn) {
         starBtn.addEventListener('click', () => {
-            const meta = { folder: sectionsActiveFolderId };
-            const added = toggleBookmark(section.title, section.title, 'article', meta);
-            updateBookmarkStar(starBtn, section.title, 'article');
-            renderSectionsBookmarksPanel();
+            toggleBookmark(section.title, section.title, 'article', { folder: sectionsActiveFolderId });
         });
     }
 }
@@ -391,6 +345,8 @@ function openBookmarkedArticle(title, bookmark) {
 function renderSectionsBookmarksPanel() {
     // Модалка на телефоне открывает статью тем же обработчиком
     setBookmarkOpenHandler('article', openBookmarkedArticle);
+    // Перерисовка по bookmarks:changed, а не только по клику на звезду (U2-03)
+    registerBookmarksPanelRenderer('article', renderSectionsBookmarksPanel);
 
     const panel = document.getElementById('bookmarks-panel');
     if (panel) {

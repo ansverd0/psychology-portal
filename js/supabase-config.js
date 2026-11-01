@@ -20,7 +20,17 @@ const SUPABASE_ANON_KEY = "sb_publishable_bwLDUQMS1RVwHF2wHE62hg_sODGX5vi";
 
 // Таймаут сетевых запросов к Supabase: при медленном/заблокированном канале
 // приложение должно быстро уйти в офлайн-кэш, а не «висеть» минутами.
-const SUPABASE_TIMEOUT_MS = 12000;
+const SUPABASE_TIMEOUT_MS = 8000;
+
+function logClient(type, msg, extra) {
+    if (window.hubLog && typeof window.hubLog.add === 'function') {
+        window.hubLog.add(type, msg, extra);
+    } else if (type === 'error') {
+        console.error('[hub]', type, msg, extra || '');
+    } else {
+        console.log('[hub]', type, msg, extra || '');
+    }
+}
 
 function fetchWithTimeout(input, init) {
     if (init && init.signal) return window.fetch(input, init);
@@ -168,21 +178,158 @@ function applyPageData(db, glossary) {
     appGlossary = glossary || {};
 }
 
-// Активация локального оффлайн-фолбека из localStorage
-function activateLocalDatabaseFallback() {
-    if (!cacheRendered) {
-        const cached = readPageCache(currentPage);
-        if (cached) {
-            applyPageData(cached.db, cached.glossary);
-            cacheRendered = true;
-            executePageModuleInitialization();
-        }
+// --- СОСТОЯНИЯ ЗАГРУЗКИ: СКЕЛЕТОН, ОШИБКА, РЕТРАЙ (U2-02) ---------------
+
+const PAGE_VIEWER = {
+    tickets: '.ticket-viewer',
+    sections: '.section-viewer',
+    news: '#news-timeline',
+    library: '#books-container'
+};
+
+function currentViewer() {
+    const selector = PAGE_VIEWER[currentPage];
+    return selector ? document.querySelector(selector) : null;
+}
+
+function escapePlain(text) {
+    return String(text === null || text === undefined ? '' : text)
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+function showDataSkeleton() {
+    const target = currentViewer();
+    if (!target) return;
+    target.innerHTML =
+        '<div class="data-skeleton" aria-busy="true" aria-label="Загрузка материалов">' +
+        '<div class="data-skeleton__line data-skeleton__line--title"></div>' +
+        '<div class="data-skeleton__line w95"></div>' +
+        '<div class="data-skeleton__line w85"></div>' +
+        '<div class="data-skeleton__line w70"></div>' +
+        '<div class="data-skeleton__line w90"></div>' +
+        '</div>';
+}
+
+function renderLoadFailure(message) {
+    const offline = navigator.onLine === false;
+    const title = offline ? 'Нет подключения к интернету' : 'Не удалось загрузить материалы';
+    const text = message || (offline
+        ? 'Включите Wi-Fi или мобильные данные и повторите попытку.'
+        : 'Сервис данных не ответил. Проверьте подключение и попробуйте ещё раз.');
+
+    const markup =
+        '<div class="load-error" data-load-error role="alert">' +
+        '<div class="load-error__icon" aria-hidden="true">' + (offline ? '📡' : '⚠️') + '</div>' +
+        '<h3>' + escapePlain(title) + '</h3>' +
+        '<p>' + escapePlain(text) + '</p>' +
+        '<div class="load-error__actions">' +
+        '<button type="button" class="load-error__retry" data-load-retry>Повторить</button>' +
+        '<a class="load-error__home" href="index.html">Главное меню</a>' +
+        '</div>' +
+        '</div>';
+
+    const target = currentViewer();
+    if (target) {
+        target.innerHTML = markup;
+    } else {
+        // cards/tests: своего «просмотрщика» нет — карточку ставим перед main,
+        // ничего не выкидывая из вёрстки
+        const main = document.querySelector('main');
+        if (!main) return;
+        main.insertAdjacentHTML('beforebegin', markup);
     }
 
-    showOfflineNotification();
+    const retryBtn = document.querySelector('[data-load-retry]');
+    if (retryBtn) retryBtn.addEventListener('click', retryPageLoad);
 
-    if (!cacheRendered) {
-        executePageModuleInitialization();
+    // Навигация не должна выглядеть живой, если данных нет
+    if (currentPage === 'tickets') {
+        const nav = document.getElementById('tickets-questions-col');
+        if (nav) nav.innerHTML = '<div class="questions-placeholder">Нет данных</div>';
+    }
+    if (currentPage === 'sections') {
+        const nav = document.getElementById('sections-articles-col');
+        if (nav) nav.innerHTML = '<div class="questions-placeholder">Нет данных</div>';
+    }
+}
+
+// «Сеть есть, облако недоступно» — это не офлайн. Тихая строка с обновлением.
+function showCloudNotice(text) {
+    let notice = document.getElementById('cloud-stale-notice');
+    if (!notice) {
+        notice = document.createElement('div');
+        notice.id = 'cloud-stale-notice';
+        notice.className = 'cloud-notice';
+        notice.setAttribute('data-cloud-notice', '');
+        notice.setAttribute('role', 'status');
+        notice.innerHTML =
+            '<span class="cloud-notice__text"></span>' +
+            '<button type="button" class="cloud-notice__retry">Обновить</button>' +
+            '<button type="button" class="cloud-notice__close" aria-label="Скрыть сообщение">×</button>';
+        notice.querySelector('.cloud-notice__retry').addEventListener('click', retryPageLoad);
+        notice.querySelector('.cloud-notice__close').addEventListener('click', () => notice.remove());
+        document.body.prepend(notice);
+    }
+    notice.querySelector('.cloud-notice__text').textContent = text;
+}
+
+function hideCloudNotice() {
+    const notice = document.getElementById('cloud-stale-notice');
+    if (notice) notice.remove();
+}
+
+function hideOfflineNotification() {
+    const notify = document.getElementById('offline-hub-notification');
+    if (notify) notify.remove();
+}
+
+/** Облако недоступно: с кэшем — тихое уведомление, без кэша — карточка ошибки. */
+function handleCloudFailure(error, hasCache) {
+    logClient('cloud', 'загрузка не удалась', {
+        msg: String((error && error.message) || error || '').slice(0, 160),
+        page: currentPage,
+        cached: Boolean(hasCache)
+    });
+
+    if (hasCache || cacheRendered) {
+        showCloudNotice('Не удалось обновить материалы — показаны сохранённые.');
+        return;
+    }
+
+    renderLoadFailure(navigator.onLine === false
+        ? 'Включите Wi-Fi или мобильные данные и повторите попытку.'
+        : 'Сервис данных не ответил. Проверьте подключение и попробуйте ещё раз.');
+}
+
+let retryBusy = false;
+
+/** Повторная загрузка без перезагрузки страницы. */
+async function retryPageLoad() {
+    if (retryBusy) return;
+    const loader = PAGE_LOADERS[currentPage];
+    if (!loader) {
+        window.location.reload();
+        return;
+    }
+
+    retryBusy = true;
+    showDataSkeleton();
+    try {
+        const [cloudVersion, payload] = await Promise.all([fetchCloudVersion(), loader()]);
+        applyPageData(payload.db, payload.glossary);
+        savePageCache(currentPage, payload.db, payload.glossary, cloudVersion);
+        cacheRendered = true;
+        hideCloudNotice();
+        hideOfflineNotification();
+        executePageModuleInitialization(true);
+        logClient('retry', 'данные загружены', { page: currentPage });
+    } catch (e) {
+        logClient('retry', 'повтор не удался', { msg: String(e && e.message).slice(0, 160) });
+        renderLoadFailure('Повторить не удалось. ' + (navigator.onLine === false
+            ? 'Нет подключения к интернету.'
+            : 'Сервис данных не отвечает.'));
+    } finally {
+        retryBusy = false;
     }
 }
 
@@ -363,25 +510,29 @@ async function initApplicationHub() {
         applyPageData(cached.db, cached.glossary);
         cacheRendered = true;
         executePageModuleInitialization();
-        console.log('⚡ Страница отрисована из локального кэша');
+        logClient('cache', 'страница отрисована из кэша', { page: currentPage });
     }
 
     if (!supabaseClient) {
-        console.warn('⚠️ Supabase клиент недоступен. Запуск из локального кэша...');
-        activateLocalDatabaseFallback();
+        logClient('cloud', 'supabase-js не загрузился');
+        handleCloudFailure(new Error('supabase-js не загрузился'), Boolean(cached));
         return;
     }
 
+    // Сети нет — это настоящий офлайн, его и показываем
     if (!navigator.onLine) {
-        console.warn('🔌 Сеть отсутствует. Запуск автономного фолбека...');
-        activateLocalDatabaseFallback();
+        logClient('net', 'браузер без сети');
+        showOfflineNotification();
+        if (!cacheRendered) {
+            renderLoadFailure('Включите Wi-Fi или мобильные данные и повторите попытку.');
+        }
         return;
     }
 
     try {
-        if (cacheRendered) {
+        if (cached) {
             const cloudVersion = await fetchCloudVersion();
-            console.log(`📦 Версия в облаке: ${cloudVersion} | На устройстве: ${cached.version}`);
+            logClient('cloud', 'версия получена', { cloud: cloudVersion, local: cached.version });
 
             if (cached.version === cloudVersion) {
                 if (cached.legacy) savePageCache(currentPage, cached.db, cached.glossary, cloudVersion);
@@ -389,7 +540,7 @@ async function initApplicationHub() {
                 return;
             }
 
-            console.log('🔄 Фоновое обновление контента...');
+            logClient('cloud', 'фоновое обновление контента');
             const payload = await loader();
             const saved = savePageCache(currentPage, payload.db, payload.glossary, cloudVersion);
             applyPageData(payload.db, payload.glossary);
@@ -398,7 +549,7 @@ async function initApplicationHub() {
 
             const reloadKey = 'hub_reload_' + cloudVersion;
             if (sessionStorage.getItem(reloadKey) === '1') {
-                console.warn('⚠️ Кэш обновлён, но перезагрузка уже была — оставляем экран.');
+                logClient('cloud', 'кэш обновлён, перезагрузка уже была');
                 return;
             }
             sessionStorage.setItem(reloadKey, '1');
@@ -406,9 +557,10 @@ async function initApplicationHub() {
             return;
         }
 
-        // Первый вход: кэша нет, показываем загрузку и тянем только данные этой страницы
-        console.log('🔄 Первый запуск страницы. Загружаем только её таблицы...');
+        // Первый вход: кэша нет, показываем скелетон и тянем только таблицы страницы
+        logClient('cloud', 'первый запуск страницы');
         showLoadingStates();
+        showDataSkeleton();
 
         const [cloudVersion, payload] = await Promise.all([
             fetchCloudVersion(),
@@ -417,16 +569,22 @@ async function initApplicationHub() {
 
         applyPageData(payload.db, payload.glossary);
         savePageCache(currentPage, payload.db, payload.glossary, cloudVersion);
+        cacheRendered = true;
         executePageModuleInitialization();
+        logClient('cloud', 'данные загружены', { page: currentPage, version: cloudVersion });
     } catch (e) {
-        console.warn('⚠️ Сетевой сбой или блокировка REST API Supabase. Активируем локальный фолбек:', e.message);
-        activateLocalDatabaseFallback();
+        handleCloudFailure(e, Boolean(cached));
     }
 }
 
 
 // Запуск инициализации интерфейса в зависимости от текущей страницы DOM
-function executePageModuleInitialization() {
+let modulesInitialized = false;
+
+function executePageModuleInitialization(force) {
+    if (modulesInitialized && !force) return;
+    modulesInitialized = true;
+
     // Мягкий безопасный вызов авторизации Этапа 1 (если функция загрузилась в глобальную видимость)
     if (typeof proceedResearchAuth === 'function') {
         proceedResearchAuth();
