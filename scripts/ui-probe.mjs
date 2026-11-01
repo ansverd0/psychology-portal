@@ -282,14 +282,55 @@ const scenarios = {
     })()`);
     c.atLeast(wide.tile, wide.grid - 41, '1440: плитка «Опрос» во всю ширину сетки', wide);
 
-    // sections: инструкция осталась только в блоке контента, в шапке её нет
+    // sections: под названием страницы снова есть подпись и короткая инструкция (раунд 4)
     await goto(cdp, base, 'sections.html');
-    await waitFor(cdp, 'document.querySelector(".section-viewer")');
-    const secHead = await cdp.eval(`({
-      headerH2: Boolean(document.querySelector('header h2')),
-      viewerText: (document.querySelector('.section-viewer').innerText || '').slice(0, 80)
-    })`);
-    c.ok(!secHead.headerH2, 'sections: в шапке нет второй инструкции', secHead);
+    await waitFor(cdp, 'document.querySelector(".section-viewer .content-text")');
+    const secHead = await cdp.eval(`(() => {
+      const p = document.querySelector('header p');
+      const h2 = document.querySelector('header h2');
+      return {
+        caption: p ? p.innerText.trim() : null,
+        instruction: h2 ? h2.innerText.trim() : null,
+        viewerText: (document.querySelector('.section-viewer').innerText || '').slice(0, 40)
+      };
+    })()`);
+    c.ok(secHead.caption && secHead.caption.length > 10, 'sections: под названием есть подпись', secHead);
+    c.ok(secHead.instruction && secHead.instruction.length < 130, 'sections: короткая инструкция осталась', secHead);
+
+    // Вторая колонка навигации шире: названия вопросов читаются без переносов (раунд 4)
+    await setViewport(cdp, 1440, 900, false);
+    await goto(cdp, base, 'tickets.html');
+    await waitFor(cdp, 'document.querySelectorAll(".question-nav-btn").length > 0');
+    const navCol = await cdp.eval(`(() => {
+      const q = document.querySelector('.question-nav-btn');
+      return { q: Math.round(q.getBoundingClientRect().width), cols: getComputedStyle(document.querySelector('.nav-left')).gridTemplateColumns };
+    })()`);
+    c.atLeast(navCol.q, 220, '1440: вторая колонка навигации ≥ 220 px', navCol);
+
+    // Прокрутка к конспекту на телефоне оставляет зазор сверху (раунд 4)
+    await setViewport(cdp, 390, 844, true);
+    await goto(cdp, base, 'tickets.html');
+    await waitFor(cdp, 'document.querySelectorAll("#mobile-tickets-tiles .mobile-tile-btn").length > 0');
+    await cdp.eval(`document.querySelector('#mobile-tickets-tiles .mobile-tile-btn').click()`);
+    await sleep(500);
+    await cdp.eval(`document.querySelector('#mobile-questions-list .ticket-nav-btn').click()`);
+    await sleep(1200);
+    const ceilGap = await cdp.eval(`Math.round(document.querySelector('.ticket-viewer').getBoundingClientRect().top)`);
+    c.ok(ceilGap >= 8 && ceilGap <= 28, '390: верх конспекта не упирается в «потолок»', ceilGap);
+
+    // Выключка по ширине на телефоне такая же, как на ПК (раунд 4)
+    for (const [page, sel, label] of [
+      ['tickets.html', '.ticket-viewer .content-text p', 'tickets'],
+      ['sections.html', '.section-viewer .content-text p', 'sections']
+    ]) {
+      await goto(cdp, base, page);
+      await waitFor(cdp, `document.querySelector('${sel}')`);
+      const align = await cdp.eval(`getComputedStyle(document.querySelector('${sel}')).textAlign`);
+      c.ok(align === 'justify', `390 ${label}: текст выровнен по ширине`, align);
+    }
+
+    // Ниже идут проверки для ПК — возвращаем широкий экран
+    await setViewport(cdp, 1440, 900, false);
 
     // tests: верх сайдбара и карточки теста — на одной линии
     await goto(cdp, base, 'tests.html');
@@ -644,9 +685,57 @@ const scenarios = {
     const tap = await cdp.eval(`getComputedStyle(document.querySelector('.menu-item')).webkitTapHighlightColor`);
     c.ok(/^rgba?\(0, 0, 0, 0\)$/.test(tap), 'тап-хайлайт прозрачный', tap);
 
-    // Кнопки справа, навигация подвала слева — не пересекаются
+    // Зазор между контентом и подвалом: блоки не прилипают к тёмной плашке (раунд 4)
+    for (const [page, sel] of [
+      ['index.html', '.menu-item--full'],
+      ['cards.html', '.controls'],
+      ['tickets.html', '.ticket-viewer'],
+      ['sections.html', '.section-viewer']
+    ]) {
+      await setViewport(cdp, 1440, 900, false);
+      await goto(cdp, base, page, 2500);
+      const gap = await cdp.eval(`(() => {
+        const f = document.querySelector('.site-footer');
+        const el = document.querySelector('${sel}');
+        if (!f || !el) return null;
+        const border = parseFloat(getComputedStyle(f).borderTopWidth) || 0;
+        const darkTop = f.getBoundingClientRect().top + window.scrollY + border;
+        const contentBottom = el.getBoundingClientRect().bottom + window.scrollY;
+        return { gap: Math.round(darkTop - contentBottom), border };
+      })()`);
+      c.ok(gap && gap.gap >= 18, `${page}: контент не прилипает к подвалу (≥ 18 px)`, gap);
+    }
+
+    // «Главное меню» в подвале ближе к нижнему краю, но не на нём (раунд 4)
+    await goto(cdp, base, 'index.html', 1500);
+    await cdp.eval('window.scrollTo(0, document.body.scrollHeight)');
+    await sleep(400);
+    const navGap = await cdp.eval(`(() => {
+      const a = document.querySelector('.site-footer__nav a');
+      const r = a.getBoundingClientRect();
+      const cs = getComputedStyle(a);
+      const lh = parseFloat(cs.lineHeight) || parseFloat(cs.fontSize) * 1.2;
+      return Math.round(innerHeight - (r.bottom - (r.height - lh) / 2));
+    })()`);
+    c.ok(navGap >= 12 && navGap <= 30, '1440: «Главное меню» ближе к нижнему краю, но не на нём', navGap);
+
+    // Плавающие кнопки не ложатся на подвал (раунд 4)
+    await setViewport(cdp, 390, 844, true);
     await goto(cdp, base, 'tickets.html', 3000);
     await waitFor(cdp, 'document.querySelectorAll(".mobile-tile-btn").length > 0');
+    await cdp.eval('window.scrollTo(0, document.body.scrollHeight)');
+    await sleep(900);
+    const aboveFooter = await cdp.eval(`(() => {
+      const f = document.querySelector('.site-footer');
+      const border = parseFloat(getComputedStyle(f).borderTopWidth) || 0;
+      const darkTop = Math.round(f.getBoundingClientRect().top + border);
+      const box = (sel) => { const el = document.querySelector(sel); if (!el || getComputedStyle(el).display === 'none') return null; return Math.round(el.getBoundingClientRect().bottom); };
+      return { darkTop, fab: box('#bookmarks-fab'), top: box('#scroll-top-btn') };
+    })()`);
+    c.ok(aboveFooter.fab !== null && aboveFooter.fab <= aboveFooter.darkTop, '390: закладки не лежат на подвале', aboveFooter);
+    c.ok(aboveFooter.top !== null && aboveFooter.top <= aboveFooter.darkTop, '390: «наверх» не лежит на подвале', aboveFooter);
+
+    // Кнопки справа, навигация подвала слева — не пересекаются
     await cdp.eval(`window.scrollTo(0, document.body.scrollHeight)`);
     await sleep(600);
     const bottom = await cdp.eval(`(() => {
@@ -659,6 +748,62 @@ const scenarios = {
       && bottom.fab.left < bottom.nav.right && bottom.fab.right > bottom.nav.left
       && bottom.fab.top < bottom.nav.bottom && bottom.fab.bottom > bottom.nav.top;
     c.ok(bottom.nav && !intersects, '390: кнопки не перекрывают навигацию подвала', bottom);
+  },
+
+  // Вики-подсказка у края карточки не обрезается (раунд 4)
+  async wiki(cdp, base, c) {
+    await setViewport(cdp, 1440, 900, false);
+    await goto(cdp, base, 'sections.html', 2500);
+    await waitFor(cdp, 'document.querySelector(".wiki-term")');
+    const pt = await cdp.eval(`(() => {
+      const viewer = document.querySelector('.section-viewer').getBoundingClientRect();
+      const t = [...document.querySelectorAll('.wiki-term')]
+        .find((el) => el.getBoundingClientRect().left < viewer.left + 140);
+      if (!t) return null;
+      const r = t.getBoundingClientRect();
+      return { x: Math.round(r.left + 8), y: Math.round(r.top + r.height / 2) };
+    })()`);
+    c.ok(Boolean(pt), 'есть термин у левого края карточки', pt);
+    if (pt) {
+      await cdp.send('Input.dispatchMouseEvent', { type: 'mouseMoved', x: pt.x, y: pt.y, button: 'none' });
+      await sleep(500);
+    }
+    const state = await cdp.eval(`(() => {
+      const viewer = document.querySelector('.section-viewer');
+      const el = document.elementFromPoint(${pt ? pt.x : 0}, ${pt ? pt.y : 0});
+      const opacity = el ? getComputedStyle(el, '::after').opacity : null;
+      const overflowX = getComputedStyle(viewer).overflowX;
+      const noScrollbar = window.innerHeight === document.documentElement.clientHeight;
+      return { overflowX, opacity, noScrollbar };
+    })()`);
+    c.ok(state.overflowX !== 'clip' && state.overflowX !== 'hidden', 'карточка не обрезает подсказку', state);
+    c.ok(state.opacity === '1', 'подсказка раскрывается при наведении', state);
+    c.ok(state.noScrollbar, 'подсказка не рождает горизонтальную прокрутку', state);
+  },
+
+  // Опрос: группы по направлениям, внутри — по курсу (раунд 4)
+  async surveyGroups(cdp, base, c) {
+    await setViewport(cdp, 1440, 900, false);
+    // Без ключа страница показывает экран ввода ключа — сеем известный ключ,
+    // иначе списка групп на странице нет
+    const seed = await cdp.send('Page.addScriptToEvaluateOnNewDocument', {
+      source: `try { localStorage.setItem('research_user_key', 'белый-кедр-73'); } catch (e) {}`
+    });
+    await goto(cdp, base, 'survey.html', 3000);
+    await cdp.send('Page.removeScriptToEvaluateOnNewDocument', { identifier: seed.identifier });
+    await waitFor(cdp, 'document.getElementById("sv-group")', 20000);
+    const res = await cdp.eval(`(() => {
+      const sel = document.getElementById('sv-group');
+      const groups = [...sel.querySelectorAll('optgroup')].map((g) => ({
+        label: g.label,
+        codes: [...g.querySelectorAll('option')].map((o) => o.value)
+      }));
+      return { groups, options: sel.querySelectorAll('option').length, values: [...sel.querySelectorAll('option')].map((o) => o.value) };
+    })()`);
+    c.ok(res.groups.length === 3, 'опрос: три направления в списке групп', res.groups);
+    const byProgram = res.groups.map((g) => g.codes.join(','));
+    c.ok(byProgram.join('|') === '821,831,841|822,832,842|823,833,843', 'опрос: направления → курс (821, 831, 841…)', byProgram);
+    c.ok(res.options === 10 && res.values[0] === '', 'опрос: 9 групп и пустой пункт', res);
   },
 
   async visual(cdp, base, c) {

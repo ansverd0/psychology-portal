@@ -15,6 +15,25 @@ const SURVEY_GROUPS = [
     { code: '843', course: 4, program: 'Психология служебной деятельности' }
 ];
 
+/** Группы, сгруппированные по направлению и отсортированные по курсу.
+ *  Нужно для списка выбора: плоский список 821, 822, 823… читался как каша,
+ *  а сравнение идёт по направлениям и курсам (раунд 4).
+ *  @returns {Array<{name: string, groups: Array<{code: string, course: number, program: string}>}>} */
+function groupOptionsByProgram(groups) {
+    const source = Array.isArray(groups) ? groups : SURVEY_GROUPS;
+    const byProgram = new Map();
+    source.forEach((g) => {
+        if (!byProgram.has(g.program)) byProgram.set(g.program, []);
+        byProgram.get(g.program).push(g);
+    });
+    return [...byProgram.keys()]
+        .sort((a, b) => a.localeCompare(b, 'ru'))
+        .map((name) => ({
+            name,
+            groups: byProgram.get(name).slice().sort((a, b) => a.course - b.course || a.code.localeCompare(b.code))
+        }));
+}
+
 const SHAM_OPTIONS = [
     { value: 1, short: '1', label: 'совсем не соответствует' },
     { value: 2, short: '2', label: 'скорее не соответствует' },

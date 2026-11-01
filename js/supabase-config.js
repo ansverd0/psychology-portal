@@ -654,6 +654,47 @@ window.addEventListener('scroll', () => {
     }
 });
 
+/** Плавающие кнопки («закладки» и «наверх») не должны лежать на подвале:
+ *  пока подвал виден, поднимаем их на его видимую высоту + 12 px зазора.
+ *  Высота считается в CSS через --fab-lift (раунд 4). */
+function updateFloatingButtonsLift() {
+    const footer = document.querySelector('.site-footer');
+    if (!footer) return;
+    const overlap = window.innerHeight - footer.getBoundingClientRect().top;
+    const lift = overlap > 0 ? Math.round(overlap + 12) : 0;
+    const current = document.body.style.getPropertyValue('--fab-lift');
+    const next = lift + 'px';
+    if (current !== next) document.body.style.setProperty('--fab-lift', next);
+}
+
+(function initFloatingButtonsLift() {
+    if (typeof window === 'undefined') return;
+    let scheduled = false;
+    const schedule = () => {
+        if (scheduled) return;
+        scheduled = true;
+        requestAnimationFrame(() => {
+            scheduled = false;
+            updateFloatingButtonsLift();
+        });
+    };
+    window.addEventListener('scroll', schedule, { passive: true });
+    window.addEventListener('resize', schedule);
+    document.addEventListener('DOMContentLoaded', schedule);
+    window.addEventListener('load', schedule);
+    // Подвал мог измениться после отрисовки данных — пересчитываем ещё раз
+    setTimeout(schedule, 1200);
+})();
+
+/** Прокрутка к блоку контента с запасом сверху: верхняя граница карточки
+ *  не упирается в «потолок» окна (раунд 4). */
+function scrollBlockIntoView(element, offset) {
+    if (!element) return;
+    const gap = typeof offset === 'number' ? offset : 16;
+    const top = element.getBoundingClientRect().top + window.scrollY - gap;
+    window.scrollTo({ top: Math.max(0, top), behavior: getScrollBehavior() });
+}
+
 // Автоматическая установка og:url в реальном домене
 function updateOpenGraphUrl() {
     const ogUrl = document.querySelector('meta[property="og:url"]');

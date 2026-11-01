@@ -70,9 +70,8 @@ function initSections() {
 
                     articleBtn.addEventListener('click', () => {
                         showSectionContent(article);
-                        // Автопрокрутка к началу статьи
-                        const viewer = document.querySelector('.section-viewer');
-                        if (viewer) viewer.scrollIntoView({ behavior: getScrollBehavior() });
+                        // Автопрокрутка к началу статьи с зазором сверху (раунд 4)
+                        scrollBlockIntoView(document.querySelector('.section-viewer'), 16);
                     });
                     mobileArticlesList.appendChild(articleBtn);
                 });
@@ -104,8 +103,7 @@ function initSections() {
         }))),
         onPick: (item) => {
             openSectionInNav(item.payload.section, item.payload.article);
-            const viewer = document.querySelector('.section-viewer');
-            if (viewer) viewer.scrollIntoView({ behavior: getScrollBehavior() });
+            scrollBlockIntoView(document.querySelector('.section-viewer'), 16);
         }
     });
 
@@ -342,8 +340,7 @@ function openBookmarkedArticle(title, bookmark) {
     const article = section.articles.find(a => a.title === title);
     openSectionInNav(section, article);
 
-    const viewer = document.querySelector('.section-viewer');
-    if (viewer) viewer.scrollIntoView({ behavior: getScrollBehavior() });
+    scrollBlockIntoView(document.querySelector('.section-viewer'), 16);
 }
 
 /** Рендер панели закладок для sections.html */

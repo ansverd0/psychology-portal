@@ -12,6 +12,9 @@ body {
     align-items: center;
     min-height: 100vh;
     box-sizing: border-box;
+    /* Вики-подсказки шире карточки: clip (а не hidden) гасит горизонтальный
+       вылет, не создавая скролл-контейнер, — position: sticky у навигации цел */
+    overflow-x: clip;
 }
 
 /* На телефоне системный «квадрат» вокруг кнопки при тапе выглядит как
@@ -345,9 +348,8 @@ button:hover {
     box-sizing: border-box;
     min-height: 400px;
     min-width: 0; /* Колонка не должна растягивать сетку страницы */
-    /* Подсказки .wiki-term — абсолютные и шириной 250px: у правого края они
-       растягивают документ. Обрезаем только по горизонтали, вертикаль не трогаем */
-    overflow-x: clip;
+    /* Раунд 4: overflow здесь больше не режем — иначе обрезается вики-подсказка
+       у края карточки. Горизонтальный вылет гасит body { overflow-x: clip } */
 }
 
 /* Длинные слова (термины, номера билетов) переносим, а не выпускаем за колонку */
@@ -1040,11 +1042,13 @@ button:hover {
     box-shadow: 0 6px 12px rgba(49, 130, 206, 0.2);
 }
 
-/* Универсальная плавающая кнопка быстрой прокрутки наверх (ПК + Мобильные) */
+/* Универсальная плавающая кнопка быстрой прокрутки наверх (ПК + Мобильные).
+   --fab-lift поднимает обе плавающие кнопки над подвалом, когда он на экране
+   (считается в js/supabase-config.js) — раунд 4 */
 #scroll-top-btn {
     display: none;
     position: fixed;
-    bottom: max(16px, env(safe-area-inset-bottom));
+    bottom: calc(16px + var(--fab-lift, 0px) + env(safe-area-inset-bottom));
     right: max(16px, env(safe-area-inset-right));
     background: #2b6cb0;
     color: white;
@@ -1165,11 +1169,12 @@ button:hover {
     max-height: 46vh;
 }
 
-/* ПК: две колонки навигации — папки слева, вопросы справа (UI-04) */
+/* ПК: две колонки навигации — папки слева, вопросы справа (UI-04).
+   Раунд 4: вторая колонка ещё шире — названия вопросов читаются без переносов */
 @media screen and (min-width: 769px) {
     .nav-left {
         display: grid;
-        grid-template-columns: 170px 240px;
+        grid-template-columns: 160px 285px;
         gap: 12px;
         flex: 0 0 auto;
         width: auto;
@@ -1205,13 +1210,13 @@ button:hover {
 
 @media screen and (min-width: 769px) and (max-width: 1199px) {
     .nav-left {
-        grid-template-columns: 160px 230px;
+        grid-template-columns: 155px 245px;
     }
 }
 
 @media screen and (min-width: 1600px) {
     .nav-left {
-        grid-template-columns: 190px 260px;
+        grid-template-columns: 200px 300px;
     }
 }
 
@@ -1404,7 +1409,7 @@ body.bookmarks-modal-open {
     .bookmarks-fab {
         position: fixed;
         right: max(16px, env(safe-area-inset-right));
-        bottom: calc(80px + env(safe-area-inset-bottom));
+        bottom: calc(80px + var(--fab-lift, 0px) + env(safe-area-inset-bottom));
         z-index: 9998;
         display: inline-flex;
         align-items: center;
@@ -1700,11 +1705,17 @@ body.bookmarks-modal-open {
         max-height: 224px;
     }
 
-    /* На узком экране выключенный по ширине текст даёт «реки» — читаем по левому краю.
-       Селекторы повторяют специфичность правила на строке 337, иначе проигрывают ему */
+    /* Текст статей и конспектов на телефоне выравнивается по ширине так же,
+       как на ПК (раунд 4). По левому краю оставлены только подписи плиток */
     .ticket-viewer .content-text,
     .section-viewer .content-text,
-    .content-text,
+    .content-text {
+        text-align: justify;
+        /* Переносы слов гасят «реки» выключки на узком экране */
+        hyphens: auto;
+        -webkit-hyphens: auto;
+    }
+
     .menu-item p {
         text-align: left;
     }
@@ -1806,7 +1817,7 @@ body.bookmarks-modal-open {
     }
 
     .nav-left {
-        grid-template-columns: 145px 190px;
+        grid-template-columns: 150px 205px;
     }
 }
 
@@ -1889,10 +1900,19 @@ body.bookmarks-modal-open {
     /* auto прижимает подвал к низу коротких страниц, отрицательный низ
        убирает светлую полосу под ним (раунд 3) */
     margin: auto -20px -20px;
-    padding: 40px 0 20px;
-    background: #1a202c;
+    /* Светлая полоса-зазор между контентом и подвалом (раунд 4): border-top
+       прозрачный и фон обрезан по padding-box, поэтому сверху видно фон страницы,
+       а не тёмную плашку. Так контент не упирается в подвал на всех страницах. */
+    border-top: 25px solid transparent;
+    background-clip: padding-box;
+    /* Нижний отступ уменьшен на 14 px: кнопка «Главное меню» ближе к нижнему краю,
+       но не лежит на нём (раунд 4) */
+    padding: 40px 0 6px;
+    background-color: #1a202c;
     color: #e2e8f0;
-    border: 0;
+    border-right: 0;
+    border-bottom: 0;
+    border-left: 0;
     border-radius: 0;
     box-shadow: none;
     box-sizing: border-box;
@@ -2138,7 +2158,9 @@ body.bookmarks-modal-open {
     .site-footer {
         width: calc(100% + 20px);
         margin: auto -10px -10px;
-        padding: 28px 0 18px;
+        border-top-width: 20px;
+        /* нижний отступ уменьшен на 14 px — см. комментарий выше (раунд 4) */
+        padding: 28px 0 4px;
         border-radius: 0;
     }
 
@@ -2305,7 +2327,7 @@ body {
     body { padding-top: max(20px, env(safe-area-inset-top)); }
     .consent-banner { left: max(16px, env(safe-area-inset-left)); right: max(16px, env(safe-area-inset-right)); bottom: max(16px, env(safe-area-inset-bottom)); }
     .update-banner { top: max(12px, env(safe-area-inset-top)); }
-    #scroll-top-btn { right: max(16px, env(safe-area-inset-right)); bottom: max(16px, env(safe-area-inset-bottom)); }
+    #scroll-top-btn { right: max(16px, env(safe-area-inset-right)); bottom: calc(16px + var(--fab-lift, 0px) + env(safe-area-inset-bottom)); }
 }
 
 button,
@@ -2598,16 +2620,13 @@ textarea:focus-visible,
     }
 
     .auth-widget {
-        width: 100%;
+        /* Зелёная «капсула» на телефоне остаётся (раунд 4): она выходит на 19 px
+           влево — ровно на свой левый отступ и рамку, поэтому подпись ID, заголовок
+           и подзаголовок начинаются от одной вертикали */
+        width: calc(100% + 19px);
+        margin-left: -19px;
         justify-content: space-between;
         box-sizing: border-box;
-        /* На телефоне убираем «капсулу»: подпись ID встаёт в одну линию
-           с заголовком и подзаголовком (раунд 3) */
-        background: none;
-        border: 0;
-        box-shadow: none;
-        border-radius: 0;
-        padding: 0;
     }
 
     .auth-widget__key {

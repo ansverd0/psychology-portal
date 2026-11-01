@@ -65,7 +65,9 @@ function initTickets() {
 
                     qBtn.addEventListener('click', () => {
                         showTicketContent(q);
-                        document.querySelector('.ticket-viewer').scrollIntoView({ behavior: getScrollBehavior() });
+                        // Зазор сверху, чтобы верхняя граница конспекта не упиралась
+                        // в «потолок» окна (раунд 4)
+                        scrollBlockIntoView(document.querySelector('.ticket-viewer'), 16);
                     });
 
                     mobileQuestionsList.appendChild(qBtn);
@@ -90,8 +92,7 @@ function initTickets() {
         }))),
         onPick: (item) => {
             openTicketInNav(item.payload.discipline, item.payload.question);
-            const viewer = document.querySelector('.ticket-viewer');
-            if (viewer) viewer.scrollIntoView({ behavior: getScrollBehavior() });
+            scrollBlockIntoView(document.querySelector('.ticket-viewer'), 16);
         }
     });
 
@@ -265,8 +266,7 @@ function openBookmarkedTicket(id, bookmark) {
     const ticket = discipline.questions.find(q => q.number == id);
     openTicketInNav(discipline, ticket);
 
-    const viewer = document.querySelector('.ticket-viewer');
-    if (viewer) viewer.scrollIntoView({ behavior: getScrollBehavior() });
+    scrollBlockIntoView(document.querySelector('.ticket-viewer'), 16);
 }
 
 /** Рендер панели закладок для tickets.html */

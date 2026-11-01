@@ -130,7 +130,9 @@ async function proceedResearchAuth() {
     function updateAuthInterface(key) {
         if (key) {
             if (guestBlock) guestBlock.style.display = 'none';
-            if (loggedBlock) loggedBlock.style.display = 'block';
+            // flex, а не block: виджет — флекс-контейнер (капсула + кнопка «Выйти»),
+            // иначе кнопка встаёт вплотную к подписи и строка выглядит рваной (раунд 4)
+            if (loggedBlock) loggedBlock.style.display = 'flex';
             if (keyDisplay) keyDisplay.innerText = key;
             // Не показываем модалку автоматически при наличии ключа
             if (authModal) authModal.style.display = 'none';

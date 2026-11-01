@@ -358,8 +358,15 @@
         var select = document.createElement('select');
         select.id = 'sv-group';
         select.appendChild(new Option('Выберите группу', ''));
-        SURVEY_GROUPS.forEach(function (g) {
-            select.appendChild(new Option(g.code + ' — ' + g.course + ' курс, ' + g.program, g.code));
+        // Сортировка по направлениям, внутри — по курсу: психология → 821, 831, 841
+        // (раунд 4). Список плоский по коду 821, 822, 823… читался как каша.
+        groupOptionsByProgram().forEach(function (program) {
+            var optgroup = document.createElement('optgroup');
+            optgroup.label = program.name;
+            program.groups.forEach(function (g) {
+                optgroup.appendChild(new Option(g.code + ' — ' + g.course + ' курс, ' + g.program, g.code));
+            });
+            select.appendChild(optgroup);
         });
         if (state.group) select.value = state.group;
         groupBlock.appendChild(label);
