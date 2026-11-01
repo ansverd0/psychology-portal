@@ -57,6 +57,9 @@ try {
   r = await req('POST', 'rpc/set_course', { body: { p_key: key, p_course: 2 } });
   check('set_course', r.status, (s) => s === 204 || s === 200, r.text.slice(0, 100));
 
+  r = await req('POST', 'rpc/set_group', { body: { p_key: key, p_group: '2-П-1' } });
+  check('set_group', r.status, (s) => s === 204 || s === 200, r.text.slice(0, 100));
+
   // 2. ШАМ: все ответы «3» → каждая шкала 12
   r = await req('POST', 'rpc/submit_instrument', {
     body: { p_key: key, p_instrument: 'sham', p_answers: answerSet(28, 3), p_duration_ms: 300000 },
@@ -133,9 +136,10 @@ try {
   check('эссе ровно одно', r.json?.length, (n) => n === 1);
 
   // 8. Флаги профиля
-  r = await req('GET', `users_profiles?user_key=eq.${key}&select=course,survey_done,essay_done,tests_completed_count`, { token: service });
+  r = await req('GET', `users_profiles?user_key=eq.${key}&select=course,group_code,survey_done,essay_done,tests_completed_count`, { token: service });
   const p = r.json?.[0];
   check('курс записан', p?.course, (v) => v === 2);
+  check('группа записана', p?.group_code, (v) => v === '2-П-1');
   check('survey_done', p?.survey_done, (v) => v === true);
   check('essay_done', p?.essay_done, (v) => v === true);
   check('счётчик тестов = 1', p?.tests_completed_count, (v) => v === 1);

@@ -62,7 +62,7 @@ psychology-portal/
 
 | Таблица | Назначение | Ключевые поля |
 |---------|------------|---------------|
-| `users_profiles` | Анонимные ключи | `user_key` (UNIQUE), `created_at`; поля прогресса — в R-05 |
+| `users_profiles` | Анонимные ключи | `user_key` (UNIQUE), `created_at`, `course`, `group_code`, `survey_done`, `essay_done`, `tests_completed_count` |
 | `flashcards` | Карточки терминов | `term`, `definition`, `discipline_id` |
 | `tests` | Вопросы тестов | `question`, `options` (массив), `correct_index`, `link_url`, `discipline_id` |
 | `tickets` | Экзаменационные билеты | `number`, `title`, `recommend_time`, `plan`, `content`, `discipline_id` |
@@ -72,6 +72,10 @@ psychology-portal/
 | `news` | Ченджлог | `id`, `date`, `title`, `changes` (массив) |
 | `ticket_library` | Билеты → литература | `ticket_id`, `book_id` |
 | `version_control` | Автоверсия контента (триггеры на контентных таблицах) | `version` |
+| `instrument_keys` | Ключи методик: пункт → шкала, знак | `instrument`, `scale`, `item_no`, `sign` |
+| `instrument_responses` | Ответы ШАМ и ССПМ + посчитанные сервером шкалы | `user_key`, `instrument`, `answers`, `scales`, `duration_ms` |
+| `events` | Журнал поведения (цифровой след) | `user_key`, `session_id`, `page`, `event`, `ts`, `dwell_ms`, `scroll_pct` |
+| `deadlines` | Даты зачётов и экзаменов по группам | `course`, `group_code`, `discipline_id`, `kind`, `due_at` |
 
 ---
 
@@ -192,7 +196,7 @@ psychology-portal/
 
 - HTTP-заголовки безопасности (`X-Content-Type-Options`, HSTS, `frame-ancestors`) на GitHub Pages недоступны — работает только meta-CSP (`S-04`);
 - нет unit/E2E-тестов и проверок в CI (`A-03`–`A-05`);
-- исследовательский модуль (события, срез, эссе, выгрузка) не реализован — ждёт `R-01` (`R-*`);
+- исследовательский бэкенд готов: таблицы, RLS, 6 RPC, 31 проверка (`scripts/check-research.mjs`); клиент (страница опросников ШАМ+ССПМ и трекер) ещё не написан;
 - нет админки, контент правится через Table Editor (`O-01`);
 - из этапа 3 остались `U-10` (копирование ключа/QR) и `A-07` (закладки по id).
 
