@@ -1,4 +1,4 @@
-﻿// UI-регрессия портала: headless Chrome + CDP, без внешних зависимостей.
+// UI-регрессия портала: headless Chrome + CDP, без внешних зависимостей.
 //
 //   node scripts/ui-probe.mjs                 — все сценарии
 //   node scripts/ui-probe.mjs --only=layout   — один сценарий (можно через запятую)
@@ -457,7 +457,7 @@ const scenarios = {
     const card = await cdp.eval(`document.querySelector('[data-survey-offline]').innerText`);
 
     c.ok(elapsed < 10000, 'опрос: ошибка зависшей сети появляется быстрее 10 с', elapsed);
-    c.ok(/VPN/i.test(card) && /6 секунд/i.test(card), 'опрос: сообщение называет причину и VPN', card.slice(0, 140));
+    c.ok(/VPN/i.test(card) && /DNS/i.test(card) && /6 секунд/i.test(card), 'опрос: сообщение называет причину, DNS и VPN', card.slice(0, 160));
 
     // Снимаем блокировку и повторяем: страница должна ожить (для неизвестного ключа — экран ввода ключа)
     await cdp.send('Fetch.disable');
@@ -465,9 +465,11 @@ const scenarios = {
     await waitFor(cdp, '!document.querySelector("[data-survey-offline]") && /ключ|Учебная мотивация|Спасибо/i.test(document.getElementById("survey-app").innerText || "")', 15000);
     const after = await cdp.eval(`({
       text: document.getElementById('survey-app').innerText.slice(0, 80),
+      full: document.getElementById('survey-app').innerText,
       offline: Boolean(document.querySelector('[data-survey-offline]'))
     })`);
-    c.ok(!after.offline && /ключ|Учебная мотивация|Спасибо/i.test(after.text), 'опрос: после снятия блокировки страница оживает', after);
+    c.ok(!after.offline && /ключ|Учебная мотивация|Спасибо/i.test(after.text), 'опрос: после снятия блокировки страница оживает', after.text);
+    c.ok(/приватный DNS/i.test(after.full), 'опрос: на экране ключа есть подсказка про DNS', after.full.slice(-160));
 
     await cdp.send('Page.removeScriptToEvaluateOnNewDocument', { identifier: seed.identifier });
   },
