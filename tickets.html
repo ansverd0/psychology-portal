@@ -50,6 +50,10 @@
             <input type="text" id="mobile-tickets-search" placeholder="🔍 Найти экзаменационный вопрос..." aria-label="Поиск по экзаменационным вопросам" aria-controls="mobile-tickets-search-results" autocomplete="off">
             <div id="mobile-tickets-search-results" class="search-results-dropdown" role="status" aria-live="polite"></div>
         </div>
+        <button type="button" class="nav-bookmarks-btn" id="nav-bookmarks-btn" aria-haspopup="dialog" aria-label="Мои закладки" title="Мои закладки">
+            <span aria-hidden="true">⭐</span>
+            <span class="nav-bookmarks-btn__count" hidden>0</span>
+        </button>
     </div>
 
     <!-- 🗂 КОЛОНКА 1: папки дисциплин -->
@@ -83,7 +87,7 @@
         <div class="empty-state">
             <div class="empty-state__icon" aria-hidden="true">📋</div>
             <h3>Выберите дисциплину</h3>
-            <p>Откроем список вопросов и конспекты ответов. На телефоне дисциплины — плитками выше, на компьютере — в колонке слева.</p>
+            <p>Откроем список вопросов и конспекты ответов к ним.</p>
         </div>
     </div>
 

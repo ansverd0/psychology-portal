@@ -246,14 +246,8 @@
 
     function mount() {
         if (document.body.dataset.page !== 'survey') return;
-        if (!document.getElementById('diag-toggle')) {
-            const btn = el('button', 'diag-toggle', 'Диагностика');
-            btn.id = 'diag-toggle';
-            btn.type = 'button';
-            btn.setAttribute('aria-haspopup', 'dialog');
-            btn.addEventListener('click', () => show());
-            document.body.appendChild(btn);
-        }
+        // Кнопку «Диагностика» в интерфейсе не показываем: журнал доступен
+        // через window.hubLog и открывается сам, если опрос не отрисовался
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape' && panel && !panel.hidden) close();
         });

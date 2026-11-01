@@ -281,10 +281,15 @@ function showSectionContent(section) {
     if (!contentContainer || !section) return;
 
     if (window.PsyTracker) {
-        PsyTracker.event('article_open', {
-            title: String(section.title || '').slice(0, 80),
-            discipline: section.discipline_id || ''
-        });
+        // Журнал поведения не должен мешать открытию статьи
+        try {
+            PsyTracker.event('article_open', {
+                title: String(section.title || '').slice(0, 80),
+                discipline: section.discipline_id || ''
+            });
+        } catch (e) {
+            console.warn('⚠️ Трекер: article_open не записан:', e);
+        }
     }
 
     // 1. Сначала санитизируем сырой контент статьи (убираем опасные теги/скрипты)

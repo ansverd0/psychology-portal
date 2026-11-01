@@ -2,6 +2,15 @@ let currentActiveQuestions = [];
 let currentTestIndex = 0;
 let score = 0;
 
+/** Прокрутка к блоку теста: на ПК оставляем запас сверху, чтобы не улетать
+ *  в начало страницы, на телефоне — на 8 px выше, чем при block:'start' (раунд 3). */
+function scrollQuizIntoView(element) {
+    if (!element) return;
+    const offset = window.innerWidth <= 768 ? 8 : 90;
+    const top = element.getBoundingClientRect().top + window.scrollY - offset;
+    window.scrollTo({ top: Math.max(0, top), behavior: getScrollBehavior() });
+}
+
 function initQuiz() {
     const allQuestions = appDatabase.tests;
     if (!allQuestions || allQuestions.length === 0) return;
@@ -107,12 +116,10 @@ function initQuiz() {
             currentTestIndex++;
             if (currentTestIndex < currentActiveQuestions.length) {
                 showQuestion();
-                const qw = document.getElementById('quiz-wrapper');
-                if (qw) qw.scrollIntoView({ behavior: getScrollBehavior(), block: 'start' });
+                scrollQuizIntoView(document.getElementById('quiz-wrapper'));
             } else {
                 showResults();
-                const rw = document.getElementById('result-wrapper');
-                if (rw) rw.scrollIntoView({ behavior: getScrollBehavior(), block: 'start' });
+                scrollQuizIntoView(document.getElementById('result-wrapper'));
             }
         });
     }

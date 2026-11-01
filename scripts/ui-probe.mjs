@@ -281,8 +281,56 @@ const scenarios = {
       return { grid: Math.round(grid.width), tile: Math.round(last.width), top: Math.round(last.top) };
     })()`);
     c.atLeast(wide.tile, wide.grid - 41, '1440: плитка «Опрос» во всю ширину сетки', wide);
+
+    // sections: инструкция осталась только в блоке контента, в шапке её нет
+    await goto(cdp, base, 'sections.html');
+    await waitFor(cdp, 'document.querySelector(".section-viewer")');
+    const secHead = await cdp.eval(`({
+      headerH2: Boolean(document.querySelector('header h2')),
+      viewerText: (document.querySelector('.section-viewer').innerText || '').slice(0, 80)
+    })`);
+    c.ok(!secHead.headerH2, 'sections: в шапке нет второй инструкции', secHead);
+
+    // tests: верх сайдбара и карточки теста — на одной линии
+    await goto(cdp, base, 'tests.html');
+    await waitFor(cdp, 'document.querySelector("#quiz-question")?.textContent.length > 10');
+    const tops = await cdp.eval(`(() => {
+      const a = document.querySelector('.discipline-sidebar').getBoundingClientRect();
+      const b = document.querySelector('.quiz-card').getBoundingClientRect();
+      return { sidebar: Math.round(a.top), card: Math.round(b.top) };
+    })()`);
+    c.near(tops.card, tops.sidebar, 1, 'tests: сайдбар и тест начинаются на одной высоте', tops);
+
+    // tests: после ответа и «Следующий вопрос» карточка не улетает под шапку
+    await cdp.eval(`document.querySelector('#quiz-options button')?.click()`);
+    await sleep(300);
+    await cdp.eval(`document.querySelector('#quiz-next-btn')?.click()`);
+    await sleep(900);
+    const afterNext = await cdp.eval(`Math.round(document.querySelector('.quiz-card').getBoundingClientRect().top)`);
+    c.near(afterNext, 90, 12, 'tests: прокрутка к следующему вопросу с запасом сверху', afterNext);
+
+    // news: на телефоне текст выровнен по ширине
+    await setViewport(cdp, 390, 844, true);
+    await goto(cdp, base, 'news.html');
+    await waitFor(cdp, 'document.querySelector("#news-timeline li")');
+    const newsAlign = await cdp.eval(`getComputedStyle(document.querySelector('#news-timeline li')).textAlign`);
+    c.ok(newsAlign === 'justify', '390: новости выровнены по ширине', newsAlign);
+
+    // Профиль на телефоне: подпись ID в одну линию с заголовком и подзаголовком
+    const seedAuth = await cdp.send('Page.addScriptToEvaluateOnNewDocument', {
+      source: `try { localStorage.setItem('research_user_key', 'белый-кедр-73'); } catch (e) {}`
+    });
+    await goto(cdp, base, 'index.html');
+    await waitFor(cdp, 'getComputedStyle(document.getElementById("auth-status-logged")).display !== "none"');
+    const auth = await cdp.eval(`(() => {
+      const left = (sel) => Math.round(document.querySelector(sel).getBoundingClientRect().left);
+      return { h1: left('header h1'), label: left('.auth-widget__label') };
+    })()`);
+    c.near(auth.label, auth.h1, 2, '390: подпись «Ваш ID» выровнена с заголовком', auth);
+    await cdp.send('Page.removeScriptToEvaluateOnNewDocument', { identifier: seedAuth.identifier });
   },
 
+  // Временная диагностика: состояние tickets после сценария layout
   // Закладки: единое состояние, дубль заголовка, счётчик.
   async bookmarks(cdp, base, c) {
     await setViewport(cdp, 390, 844, true);
@@ -418,7 +466,7 @@ const scenarios = {
     c.ok(sec.viewer.length > 20, '390 sections: статья открыта', sec.viewer);
   },
 
-  // Диагностика опроса: журнал пишется и открывается
+  // Диагностика опроса: журнал пишется, панель открывается программно
   async diag(cdp, base, c) {
     await setViewport(cdp, 390, 844, true);
     await goto(cdp, base, 'survey.html', 3000);
@@ -428,17 +476,18 @@ const scenarios = {
       entries: typeof hubLog === 'object' ? hubLog.dump().length : 0,
       dumpHead: typeof hubLog === 'object' ? hubLog.dump().split('\\n')[0] : ''
     })`);
-    c.ok(state.api === 'object' && state.toggle, 'опрос: есть кнопка «Диагностика» и API журнала', state);
+    c.ok(state.api === 'object', 'опрос: API журнала доступен', state);
+    c.ok(!state.toggle, 'опрос: кнопки «Диагностика» в интерфейсе нет', state.toggle);
     c.atLeast(state.entries, 200, 'опрос: журнал содержит окружение и события', state.entries);
     c.ok(/Диагностика портала/.test(state.dumpHead), 'опрос: заголовок журнала на месте', state.dumpHead);
 
-    await cdp.eval(`document.getElementById('diag-toggle').click()`);
+    await cdp.eval(`hubLog.show()`);
     await sleep(300);
     const panel = await cdp.eval(`(() => {
       const p = document.getElementById('diag-panel');
       return { open: Boolean(p && !p.hidden), text: (p?.querySelector('.diag-panel__log')?.textContent || '').slice(0, 60) };
     })()`);
-    c.ok(panel.open && panel.text.length > 40, 'опрос: панель журнала открывается', panel);
+    c.ok(panel.open && panel.text.length > 40, 'опрос: панель журнала открывается программно', panel);
   },
 
   // Зависшая сеть на опросе: понятная ошибка за ~6 с, оживление после снятия блокировки
@@ -543,13 +592,43 @@ const scenarios = {
     await setViewport(cdp, 1440, 900, false);
     for (const page of ['index.html', 'survey.html', 'tickets.html']) {
       await goto(cdp, base, page, 1500);
+      await cdp.eval('window.scrollTo(0, document.body.scrollHeight)');
+      await sleep(300);
       const box = await cdp.eval(`(() => {
         const el = document.querySelector('.site-footer');
         if (!el) return null;
         const r = el.getBoundingClientRect();
-        return { x: Math.round(r.x), w: Math.round(r.width), client: document.documentElement.clientWidth };
+        return {
+          x: Math.round(r.x),
+          w: Math.round(r.width),
+          client: document.documentElement.clientWidth,
+          bottom: Math.round(r.bottom),
+          vh: innerHeight,
+          bg: getComputedStyle(el).backgroundColor
+        };
       })()`);
       c.ok(box && box.x <= 1 && Math.abs(box.w - box.client) <= 1, `${page}: подвал во всю ширину`, box);
+      c.ok(box && box.bg === 'rgb(26, 32, 44)', `${page}: подвал тёмный`, box && box.bg);
+      c.ok(box && Math.abs(box.bottom - box.vh) <= 1, `${page}: подвал прижат к низу, без светлой полосы`, box);
+    }
+
+    // Кнопка «Закладки» рядом с поиском открывает список без правой панели
+    await goto(cdp, base, 'tickets.html', 2500);
+    await waitFor(cdp, 'document.querySelectorAll(".question-nav-btn").length > 0');
+    const navBtn = await cdp.eval(`(() => {
+      const b = document.getElementById('nav-bookmarks-btn');
+      return { exists: Boolean(b), display: b ? getComputedStyle(b).display : null };
+    })()`);
+    c.ok(navBtn.exists && navBtn.display !== 'none', '1440: кнопка «Закладки» рядом с поиском видна', navBtn);
+    if (navBtn.exists) {
+      await cdp.eval(`document.getElementById('nav-bookmarks-btn').click()`);
+      await sleep(300);
+      const modal = await cdp.eval(`(() => {
+        const m = document.getElementById('bookmarks-modal');
+        return { open: Boolean(m && !m.hidden) };
+      })()`);
+      c.ok(modal.open, '1440: кнопка «Закладки» открывает список', modal);
+      await cdp.eval(`document.querySelector('.bookmarks-modal__close')?.click()`);
     }
 
     await setViewport(cdp, 390, 844, true);
@@ -557,15 +636,15 @@ const scenarios = {
     const mob = await cdp.eval(`(() => {
       const el = document.querySelector('.site-footer');
       const r = el.getBoundingClientRect();
-      return { x: Math.round(r.x), w: Math.round(r.width), client: document.documentElement.clientWidth };
+      return { x: Math.round(r.x), w: Math.round(r.width), client: document.documentElement.clientWidth, bg: getComputedStyle(el).backgroundColor };
     })()`);
     c.ok(mob.x <= 1 && Math.abs(mob.w - mob.client) <= 1, '390: подвал во всю ширину', mob);
+    c.ok(mob.bg === 'rgb(26, 32, 44)', '390: подвал тёмный', mob.bg);
 
     const tap = await cdp.eval(`getComputedStyle(document.querySelector('.menu-item')).webkitTapHighlightColor`);
     c.ok(/^rgba?\(0, 0, 0, 0\)$/.test(tap), 'тап-хайлайт прозрачный', tap);
 
-    // Кнопки не накрывают навигацию подвала и стоят на одной линии.
-    await setViewport(cdp, 390, 844, true);
+    // Кнопки справа, навигация подвала слева — не пересекаются
     await goto(cdp, base, 'tickets.html', 3000);
     await waitFor(cdp, 'document.querySelectorAll(".mobile-tile-btn").length > 0');
     await cdp.eval(`window.scrollTo(0, document.body.scrollHeight)`);
@@ -574,8 +653,12 @@ const scenarios = {
       const r = (sel) => { const el = document.querySelector(sel); if (!el) return null; const b = el.getBoundingClientRect(); return { left: Math.round(b.left), top: Math.round(b.top), right: Math.round(b.right), bottom: Math.round(b.bottom) }; };
       return { fab: r('#bookmarks-fab'), top: r('#scroll-top-btn'), nav: r('.site-footer__nav a') };
     })()`);
-    c.ok(bottom.fab && bottom.top && Math.abs(bottom.fab.bottom - bottom.top.bottom) <= 1, '390: кнопки закладок и «наверх» на одной высоте', bottom);
-    c.ok(bottom.nav && bottom.nav.bottom <= bottom.fab.top, '390: подвал не перекрыт кнопками', bottom);
+    c.ok(bottom.fab && bottom.top && Math.abs(bottom.fab.right - bottom.top.right) <= 1, '390: закладки и «наверх» прижаты вправо', bottom);
+    c.ok(bottom.fab && bottom.top && bottom.fab.bottom < bottom.top.top, '390: закладки стоят над «наверх»', bottom);
+    const intersects = bottom.fab && bottom.nav
+      && bottom.fab.left < bottom.nav.right && bottom.fab.right > bottom.nav.left
+      && bottom.fab.top < bottom.nav.bottom && bottom.fab.bottom > bottom.nav.top;
+    c.ok(bottom.nav && !intersects, '390: кнопки не перекрывают навигацию подвала', bottom);
   },
 
   async visual(cdp, base, c) {
@@ -598,6 +681,26 @@ const scenarios = {
       await goto(cdp, base, page, 3000);
       await shot(cdp, name);
     }
+
+    // Поиск на ПК: кнопка закладок рядом и список поверх колонок
+    await setViewport(cdp, 1440, 900, false);
+    await goto(cdp, base, 'tickets.html', 3000);
+    await waitFor(cdp, 'document.querySelectorAll(".question-nav-btn").length > 0');
+    await cdp.eval(`(() => {
+      const inp = document.getElementById('mobile-tickets-search');
+      inp.focus();
+      inp.value = 'психо';
+      inp.dispatchEvent(new Event('input', { bubbles: true }));
+    })()`);
+    await sleep(600);
+    await shot(cdp, 'v-search-1440.png');
+    await cdp.eval(`document.getElementById('mobile-tickets-search').dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))`);
+
+    // Подвал на ПК: тёмный и прижат к низу
+    await goto(cdp, base, 'index.html', 1500);
+    await cdp.eval('window.scrollTo(0, document.body.scrollHeight)');
+    await sleep(500);
+    await shot(cdp, 'v-index-1440-bottom.png');
 
     // Низ мобильной страницы: кнопки не должны накрывать подвал
     await setViewport(cdp, 390, 844, true);

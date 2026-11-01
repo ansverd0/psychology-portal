@@ -51,6 +51,9 @@
     }
 
     function touchSession() {
+        // Сессия может быть ещё не создана: initTickets с кэшем успевает
+        // вызвать PsyTracker.event до DOMContentLoaded-обработчика трекера
+        if (!session) session = readSession();
         session.last = Date.now();
         try { localStorage.setItem(SESSION_STORE, JSON.stringify(session)); } catch (e) { /* ignore */ }
     }
@@ -85,15 +88,22 @@
     }
 
     function push(event, meta, dwell, scroll) {
-        var item = { page: PAGE, event: event, ts: nowIso() };
-        if (dwell != null) item.dwell_ms = Math.round(dwell);
-        if (scroll != null) item.scroll_pct = Math.max(0, Math.min(100, Math.round(scroll)));
-        if (meta && typeof meta === 'object') item.meta = meta;
-        queue.push(item);
-        mirrorGoal(event);
-        touchSession();
-        if (queue.length >= 20) flush(false);
-        scheduleFlush();
+        // Трекер не должен ломать интерфейс: любая ошибка журнала гасится здесь,
+        // иначе страница остаётся без навигации (раунд 3)
+        try {
+            if (!session) session = readSession();
+            var item = { page: PAGE, event: event, ts: nowIso() };
+            if (dwell != null) item.dwell_ms = Math.round(dwell);
+            if (scroll != null) item.scroll_pct = Math.max(0, Math.min(100, Math.round(scroll)));
+            if (meta && typeof meta === 'object') item.meta = meta;
+            queue.push(item);
+            mirrorGoal(event);
+            touchSession();
+            if (queue.length >= 20) flush(false);
+            scheduleFlush();
+        } catch (e) {
+            /* журнал не критичен для интерфейса */
+        }
     }
 
     function scheduleFlush() {
@@ -106,26 +116,36 @@
 
     function flush(useKeepalive) {
         if (!queue.length) return;
-        var batch = queue.splice(0, 100);
-        var url = SUPABASE_URL.replace(/\/$/, '') + '/rest/v1/rpc/log_events';
-        var body = JSON.stringify({ p_key: key, p_session: session.id, p_events: batch });
+        var batch = [];
+        try {
+            if (!session) session = readSession();
+            batch = queue.splice(0, 100);
+            var url = SUPABASE_URL.replace(/\/$/, '') + '/rest/v1/rpc/log_events';
+            var body = JSON.stringify({ p_key: key, p_session: session.id, p_events: batch });
 
-        fetch(url, {
-            method: 'POST',
-            headers: {
-                apikey: SUPABASE_ANON_KEY,
-                Authorization: 'Bearer ' + SUPABASE_ANON_KEY,
-                'Content-Type': 'application/json'
-            },
-            body: body,
-            keepalive: Boolean(useKeepalive)
-        }).then(function (res) {
-            if (!res.ok) throw new Error('HTTP ' + res.status);
-            if (queue.length) scheduleFlush();
-        }).catch(function () {
-            queue = batch.concat(queue).slice(-MAX_QUEUE);
-            persistQueue();
-        });
+            fetch(url, {
+                method: 'POST',
+                headers: {
+                    apikey: SUPABASE_ANON_KEY,
+                    Authorization: 'Bearer ' + SUPABASE_ANON_KEY,
+                    'Content-Type': 'application/json'
+                },
+                body: body,
+                keepalive: Boolean(useKeepalive)
+            }).then(function (res) {
+                if (!res.ok) throw new Error('HTTP ' + res.status);
+                if (queue.length) scheduleFlush();
+            }).catch(function () {
+                queue = batch.concat(queue).slice(-MAX_QUEUE);
+                persistQueue();
+            });
+        } catch (e) {
+            // не смогли даже собрать запрос — возвращаем события в очередь
+            if (batch.length) {
+                queue = batch.concat(queue).slice(-MAX_QUEUE);
+                persistQueue();
+            }
+        }
     }
 
     function trackScroll() {

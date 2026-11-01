@@ -239,12 +239,23 @@ function countBookmarks(type) {
     return getBookmarks().filter(b => b.type === type).length;
 }
 
-/** Обновляет счётчик на плавающей кнопке */
+/** Обновляет счётчик на плавающей кнопке и на кнопке «Закладки» рядом с поиском */
 function refreshBookmarksFab() {
+    const n = countBookmarks(getPageBookmarkType());
+
+    const navBtn = document.getElementById('nav-bookmarks-btn');
+    if (navBtn) {
+        const navBadge = navBtn.querySelector('.nav-bookmarks-btn__count');
+        if (navBadge) {
+            navBadge.textContent = String(n);
+            navBadge.hidden = n === 0;
+        }
+        navBtn.setAttribute('aria-label', n > 0 ? `Мои закладки: ${n}` : 'Мои закладки: пусто');
+    }
+
     const fab = document.getElementById('bookmarks-fab');
     if (!fab) return;
 
-    const n = countBookmarks(getPageBookmarkType());
     const badge = fab.querySelector('.bookmarks-fab__count');
 
     if (badge) {
@@ -303,6 +314,10 @@ function buildBookmarksUi() {
     const page = document.body && document.body.dataset.page;
     if (page !== 'tickets' && page !== 'sections') return;
     if (document.getElementById('bookmarks-fab')) return;
+
+    // Кнопка «Закладки» рядом с поиском — понятный вход без правой панели (раунд 3)
+    const navBtn = document.getElementById('nav-bookmarks-btn');
+    if (navBtn) navBtn.addEventListener('click', openBookmarksModal);
 
     const fab = document.createElement('button');
     fab.id = 'bookmarks-fab';

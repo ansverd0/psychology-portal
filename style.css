@@ -10,6 +10,8 @@ body {
     display: flex;
     flex-direction: column;
     align-items: center;
+    min-height: 100vh;
+    box-sizing: border-box;
 }
 
 /* На телефоне системный «квадрат» вокруг кнопки при тапе выглядит как
@@ -623,6 +625,8 @@ button:hover {
 #mobile-search-input.open-dropdown, #mobile-tickets-search.open-dropdown {
     border-radius: 12px 12px 0 0;
     border-color: #2b6cb0;
+    /* нижняя грань поля не должна читаться как синяя линия над списком */
+    border-bottom-color: transparent;
 }
 .search-suggest-item {
     width: 100%;
@@ -1112,6 +1116,13 @@ button:hover {
     min-width: 0;
 }
 
+/* Верх теста и верх сайдбара — на одной линии (раунд 3) */
+@media screen and (min-width: 769px) {
+    .content-with-sidebar .quiz-card {
+        margin-top: 0;
+    }
+}
+
 /* --- ЛЕЙАУТ НАВИГАЦИИ (tickets.html, sections.html — ПК) ---
    Слева — единая колонка навигации, в центре — текст, справа — закладки.
    flex + justify-content:center держит блок конспекта по центру экрана. */
@@ -1158,7 +1169,7 @@ button:hover {
 @media screen and (min-width: 769px) {
     .nav-left {
         display: grid;
-        grid-template-columns: 170px 220px;
+        grid-template-columns: 170px 240px;
         gap: 12px;
         flex: 0 0 auto;
         width: auto;
@@ -1169,8 +1180,16 @@ button:hover {
     /* Поиск живёт над колонками и занимает обе (U2-07) */
     .nav-search {
         grid-column: 1 / -1;
+        display: flex;
+        align-items: center;
+        gap: 10px;
         width: 100%;
         position: relative;
+    }
+
+    .nav-search .mobile-search-wrapper {
+        flex: 1 1 auto;
+        min-width: 0;
     }
 
     .nav-left .nav-pane {
@@ -1184,9 +1203,15 @@ button:hover {
     }
 }
 
+@media screen and (min-width: 769px) and (max-width: 1199px) {
+    .nav-left {
+        grid-template-columns: 160px 230px;
+    }
+}
+
 @media screen and (min-width: 1600px) {
     .nav-left {
-        grid-template-columns: 190px 240px;
+        grid-template-columns: 190px 260px;
     }
 }
 
@@ -1378,8 +1403,8 @@ body.bookmarks-modal-open {
 @media screen and (max-width: 1599px) {
     .bookmarks-fab {
         position: fixed;
-        left: max(16px, env(safe-area-inset-left));
-        bottom: max(16px, env(safe-area-inset-bottom));
+        right: max(16px, env(safe-area-inset-right));
+        bottom: calc(80px + env(safe-area-inset-bottom));
         z-index: 9998;
         display: inline-flex;
         align-items: center;
@@ -1418,6 +1443,56 @@ body.bookmarks-modal-open {
     }
 
     .bookmarks-fab__count[hidden] {
+        display: none;
+    }
+}
+
+/* На телефоне закладки стоят над кнопкой «наверх», левый низ остаётся
+   навигации подвала (раунд 3) */
+
+/* Явный вход в закладки рядом с поиском: с 1600 px есть панель, ниже — только
+   эта кнопка и плавающая звезда, которую легко не заметить */
+.nav-bookmarks-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    flex: 0 0 auto;
+    min-height: 44px;
+    padding: 0 12px;
+    background: #ffffff;
+    color: #2b6cb0;
+    border: 2px solid #e2e8f0;
+    border-radius: 12px;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.nav-bookmarks-btn:hover {
+    border-color: #2b6cb0;
+    background: #ebf8ff;
+}
+
+.nav-bookmarks-btn__count {
+    background: #ebf8ff;
+    border-radius: 999px;
+    padding: 1px 7px;
+    font-size: 12px;
+}
+
+.nav-bookmarks-btn__count[hidden] {
+    display: none;
+}
+
+@media screen and (max-width: 768px) {
+    .nav-bookmarks-btn {
+        display: none;
+    }
+}
+
+@media screen and (min-width: 1600px) {
+    .nav-bookmarks-btn {
         display: none;
     }
 }
@@ -1630,9 +1705,13 @@ body.bookmarks-modal-open {
     .ticket-viewer .content-text,
     .section-viewer .content-text,
     .content-text,
-    .menu-item p,
-    #news-timeline ul li {
+    .menu-item p {
         text-align: left;
+    }
+
+    /* Новости просят выравнивать по ширине и на телефоне (раунд 3) */
+    #news-timeline ul li {
+        text-align: justify;
     }
 
     /* На телефоне плитки дисциплин снова идут по три в ряд */
@@ -1807,15 +1886,55 @@ body.bookmarks-modal-open {
     /* Подвал идёт во всю ширину экрана, контент внутри держится колонки 1200 px */
     width: calc(100% + 40px);
     max-width: none;
-    margin: 40px -20px 0;
-    padding: 28px 0 20px;
-    background: #ffffff;
+    /* auto прижимает подвал к низу коротких страниц, отрицательный низ
+       убирает светлую полосу под ним (раунд 3) */
+    margin: auto -20px -20px;
+    padding: 40px 0 20px;
+    background: #1a202c;
+    color: #e2e8f0;
     border: 0;
-    border-top: 1px solid #e2e8f0;
     border-radius: 0;
     box-shadow: none;
     box-sizing: border-box;
     text-align: left;
+}
+
+/* Тёмная тема подвала: контраст текста не ниже AA */
+.site-footer .site-footer__brand-title,
+.site-footer .site-footer__heading {
+    color: #ffffff;
+}
+
+.site-footer .site-footer__brand-text,
+.site-footer .site-footer__note,
+.site-footer .site-footer__copy {
+    color: #a0aec0;
+}
+
+.site-footer .site-footer__nav a {
+    color: #bee3f8;
+}
+
+.site-footer .site-footer__nav a:hover {
+    color: #ffffff;
+}
+
+.site-footer .contact-chip {
+    background: #2d3748;
+    border-color: #4a5568;
+}
+
+.site-footer .contact-chip:hover {
+    background: #2b6cb0;
+    border-color: #2b6cb0;
+}
+
+.site-footer .contact-chip__label {
+    color: #a0aec0;
+}
+
+.site-footer .contact-chip__value {
+    color: #ffffff;
 }
 
 .site-footer__inner {
@@ -1826,11 +1945,13 @@ body.bookmarks-modal-open {
     box-sizing: border-box;
 }
 
-/* Кнопки закладок/наверх висят над нижним краем: оставляем под них место,
-   чтобы они не накрывали «Главное меню» и «Политику данных» (U2-06) */
+/* Кнопки закладок/наверх стоят справа, а навигация подвала — слева,
+   поэтому под них не нужно резервировать высоту (раунд 3) */
 @media screen and (max-width: 1599px) {
-    .site-footer {
-        padding-bottom: 84px;
+    .site-footer__bottom {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
     }
 }
 
@@ -2016,8 +2137,8 @@ body.bookmarks-modal-open {
 @media screen and (max-width: 600px) {
     .site-footer {
         width: calc(100% + 20px);
-        margin: 30px -10px 0;
-        padding: 22px 0 84px;
+        margin: auto -10px -10px;
+        padding: 28px 0 18px;
         border-radius: 0;
     }
 
@@ -2480,6 +2601,17 @@ textarea:focus-visible,
         width: 100%;
         justify-content: space-between;
         box-sizing: border-box;
+        /* На телефоне убираем «капсулу»: подпись ID встаёт в одну линию
+           с заголовком и подзаголовком (раунд 3) */
+        background: none;
+        border: 0;
+        box-shadow: none;
+        border-radius: 0;
+        padding: 0;
+    }
+
+    .auth-widget__key {
+        color: #006d5b;
     }
 
     .auth-widget__logout {
@@ -2616,22 +2748,6 @@ textarea:focus-visible,
 /* ==========================================================================
    ДИАГНОСТИКА ОПРОСА (client-log.js): журнал в файл или буфер обмена
    ========================================================================== */
-.diag-toggle {
-    position: fixed;
-    right: max(16px, env(safe-area-inset-right));
-    bottom: calc(80px + env(safe-area-inset-bottom));
-    z-index: 100004;
-    padding: 8px 12px;
-    font-size: 12px;
-    font-weight: 600;
-    color: #4a5568;
-    background: #ffffff;
-    border: 1px solid #e2e8f0;
-    border-radius: 999px;
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
-    cursor: pointer;
-}
-
 .diag-panel {
     position: fixed;
     left: 12px;

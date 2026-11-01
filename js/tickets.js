@@ -149,10 +149,15 @@ function openTicketInNav(discipline, ticket) {
     ticketsActiveFolderId = discipline.id;
 
     if (window.PsyTracker) {
-        PsyTracker.event('ticket_open', {
-            number: String((target && target.number) || ''),
-            discipline: discipline.id || ''
-        });
+        // Журнал поведения не должен мешать навигации, даже если сам трекер сбоит
+        try {
+            PsyTracker.event('ticket_open', {
+                number: String((target && target.number) || ''),
+                discipline: discipline.id || ''
+            });
+        } catch (e) {
+            console.warn('⚠️ Трекер: ticket_open не записан:', e);
+        }
     }
 
     foldersCol.querySelectorAll('.folder-nav-btn').forEach(btn => {
