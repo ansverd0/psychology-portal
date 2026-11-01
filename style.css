@@ -1967,13 +1967,6 @@ body.bookmarks-modal-open {
 
 /* Кнопки закладок/наверх стоят справа, а навигация подвала — слева,
    поэтому под них не нужно резервировать высоту (раунд 3) */
-@media screen and (max-width: 1599px) {
-    .site-footer__bottom {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 10px;
-    }
-}
 
 .site-footer__top {
     display: flex;
@@ -2116,6 +2109,16 @@ body.bookmarks-modal-open {
     margin-top: 22px;
     padding-top: 16px;
     border-top: 1px solid #edf2f7;
+}
+
+/* До 1600 px копирайт и навигация идут столбиком от левого края: правило стоит
+   ПОСЛЕ базового, иначе align-items из базового перебивает его (раунд 4) */
+@media screen and (max-width: 1599px) {
+    .site-footer__bottom {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
 }
 
 .site-footer__copy {
