@@ -98,7 +98,7 @@ GitHub Action `Sync gh-pages` зеркалит `master` в `gh-pages`, Pages п�
 
 ## Тесты
 
-`npm run check:ui` — headless Chrome через CDP, без зависимостей: раскладка 390–1920, закладки, поиск, мобильная навигация, офлайн/ретрай, подвал, журнал опроса. Нужен установленный Chrome/Edge и доступ к Supabase; код возврата 1, если проверка упала. `node scripts/ui-probe.mjs --only=layout` — один сценарий, `--only=visual` — только скриншоты в `.audit/shots`.
+`npm run check:ui` — headless Chrome через CDP, без зависимостей: раскладка 390–1920, закладки, поиск, мобильная навигация, офлайн/ретрай, подвал, журнал опроса. Нужен установленный Chrome/Edge и доступ к Supabase; код возврата 1, если проверка упала. `node scripts/ui-probe.mjs --only=layout` — один сценарий, `--only=visual` — только скриншоты в `.audit/shots`, `--base=https://ansverd0.github.io/psychology-portal` — проверка уже задеплоенной сборки.
 
 Ручная проверка, если трогали вёрстку:
 

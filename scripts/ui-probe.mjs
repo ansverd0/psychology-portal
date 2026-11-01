@@ -597,10 +597,13 @@ const scenarios = {
 const argv = process.argv.slice(2);
 const onlyArg = argv.find((a) => a.startsWith('--only='));
 const only = onlyArg ? onlyArg.slice(7).split(',').map((s) => s.trim()).filter(Boolean) : null;
+const baseArg = argv.find((a) => a.startsWith('--base='));
+const externalBase = baseArg ? baseArg.slice(7).replace(/\/$/, '') : null;
 const jsonOnly = argv.includes('--json');
 
-const { server, port: httpPort } = await startServer();
-const base = `http://127.0.0.1:${httpPort}`;
+// --base=https://... проверяет уже задеплоенную сборку, без локального сервера
+const local = externalBase ? null : await startServer();
+const base = externalBase || `http://127.0.0.1:${local.port}`;
 const devtoolsPort = 9333 + (process.pid % 200);
 const { child, profile } = await launchChrome(devtoolsPort);
 let failed = 0;
@@ -629,7 +632,7 @@ try {
   }
 } finally {
   child.kill();
-  server.close();
+  if (local) local.server.close();
   await sleep(300);
   fs.rmSync(profile, { recursive: true, force: true });
 }
