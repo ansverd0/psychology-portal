@@ -73,12 +73,24 @@
         } catch (e) { /* приватный режим */ }
     }
 
+    var MIRROR_EVENTS = { page_view: 0, page_leave: 0, tab_switch: 0, article_open: 1, ticket_open: 1, test_complete: 1, card_flip: 1 };
+
+    function mirrorGoal(event) {
+        if (!MIRROR_EVENTS[event]) return;
+        if (!window.PsyAnalytics || typeof window.PsyAnalytics.hasConsent !== 'function') return;
+        if (!window.PsyAnalytics.hasConsent() || typeof window.ym !== 'function') return;
+        try {
+            window.ym(window.PsyAnalytics.counterId, 'reachGoal', event);
+        } catch (e) { /* Метрика не должна ломать трекер */ }
+    }
+
     function push(event, meta, dwell, scroll) {
         var item = { page: PAGE, event: event, ts: nowIso() };
         if (dwell != null) item.dwell_ms = Math.round(dwell);
         if (scroll != null) item.scroll_pct = Math.max(0, Math.min(100, Math.round(scroll)));
         if (meta && typeof meta === 'object') item.meta = meta;
         queue.push(item);
+        mirrorGoal(event);
         touchSession();
         if (queue.length >= 20) flush(false);
         scheduleFlush();
