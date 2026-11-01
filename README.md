@@ -64,6 +64,7 @@ node scripts/db-exec.mjs db/file.sql        # применить миграци�
 node scripts/check-permissions.mjs          # 10 проверок прав anon
 node scripts/check-vendor.mjs               # sha256 локальных supabase-js и DOMPurify
 node scripts/mcp-supabase.mjs               # MCP-сервер с токеном из .env
+npm run check:ui                            # UI-регрессия в headless Chrome (8 сценариев)
 ```
 
 ## Деплой
@@ -97,7 +98,9 @@ GitHub Action `Sync gh-pages` зеркалит `master` в `gh-pages`, Pages п�
 
 ## Тесты
 
-Автотестов пока нет (задача `A-03`/`A-04` в TECH-ROADMAP). Минимальная ручная проверка:
+`npm run check:ui` — headless Chrome через CDP, без зависимостей: раскладка 390–1920, закладки, поиск, мобильная навигация, офлайн/ретрай, подвал, журнал опроса. Нужен установленный Chrome/Edge и доступ к Supabase; код возврата 1, если проверка упала. `node scripts/ui-probe.mjs --only=layout` — один сценарий, `--only=visual` — только скриншоты в `.audit/shots`.
+
+Ручная проверка, если трогали вёрстку:
 
 - 1440 / 1024 / 768 / 390 px — нет горизонтального скролла;
 - билеты, статьи, карточки, тесты, новости и литература отдают контент;
