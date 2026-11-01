@@ -41,8 +41,9 @@ psychology-portal/
 ├── sw.js                   # Service Worker (PWA кэш)
 ├── README.md, docs/RUNBOOK.md
 ├── .github/workflows/      # pages.yml, backup.yml, monitor.yml
-├── db/                     # миграции RLS и авто-версии
-├── scripts/                # backup, db-exec, check-permissions, check-vendor, mcp
+├── db/                     # миграции RLS, версий и исследования
+├── materials/              # исходники контента: disciplines.json, <дисциплина>/inbox|content
+├── scripts/                # backup, db-exec, content-import, check-*, mcp
 └── js/
     ├── supabase-config.js  # Ядро: клиент, PAGE_LOADERS, кэш, SW
     ├── analytics.js        # Метрика после согласия, защита полей, PsyAnalytics API

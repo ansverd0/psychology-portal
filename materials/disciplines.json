@@ -1,0 +1,30 @@
+{
+  "canonical": {
+    "general-psych": {
+      "title": "Общая психология",
+      "short": "Общая",
+      "icon": "🧠",
+      "course": 1,
+      "order": 10
+    },
+    "social-psych": {
+      "title": "Социальная психология",
+      "short": "Социальная",
+      "icon": "👥",
+      "course": 2,
+      "order": 20
+    },
+    "developmental-psych": {
+      "title": "Возрастная психология",
+      "short": "Возрастная",
+      "icon": "🌱",
+      "course": 2,
+      "order": 30
+    }
+  },
+  "aliases": {
+    "general-exam": "general-psych",
+    "social-exam": "social-psych",
+    "developmental-exam": "developmental-psych"
+  }
+}
