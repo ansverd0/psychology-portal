@@ -1,4 +1,4 @@
-// UI-регрессия портала: headless Chrome + CDP, без внешних зависимостей.
+﻿// UI-регрессия портала: headless Chrome + CDP, без внешних зависимостей.
 //
 //   node scripts/ui-probe.mjs                 — все сценарии
 //   node scripts/ui-probe.mjs --only=layout   — один сценарий (можно через запятую)
@@ -439,6 +439,37 @@ const scenarios = {
       return { open: Boolean(p && !p.hidden), text: (p?.querySelector('.diag-panel__log')?.textContent || '').slice(0, 60) };
     })()`);
     c.ok(panel.open && panel.text.length > 40, 'опрос: панель журнала открывается', panel);
+  },
+
+  // Зависшая сеть на опросе: понятная ошибка за ~6 с, оживление после снятия блокировки
+  async surveyHang(cdp, base, c) {
+    await setViewport(cdp, 390, 844, true);
+    const seed = await cdp.send('Page.addScriptToEvaluateOnNewDocument', {
+      source: `try { localStorage.setItem('research_user_key', 'тестовый-ключ-11'); } catch (e) {}`
+    });
+    await cdp.send('Fetch.enable', { patterns: [{ urlPattern: '*supabase.co*', requestStage: 'Request' }] });
+    cdp.listeners.set('Fetch.requestPaused', (cdp.listeners.get('Fetch.requestPaused') || []).concat(() => { /* намеренно не продолжаем — сеть «висит» */ }));
+
+    const t0 = Date.now();
+    await goto(cdp, base, 'survey.html', 500);
+    await waitFor(cdp, 'document.querySelector("[data-survey-offline]")', 15000);
+    const elapsed = Date.now() - t0;
+    const card = await cdp.eval(`document.querySelector('[data-survey-offline]').innerText`);
+
+    c.ok(elapsed < 10000, 'опрос: ошибка зависшей сети появляется быстрее 10 с', elapsed);
+    c.ok(/VPN/i.test(card) && /6 секунд/i.test(card), 'опрос: сообщение называет причину и VPN', card.slice(0, 140));
+
+    // Снимаем блокировку и повторяем: страница должна ожить (для неизвестного ключа — экран ввода ключа)
+    await cdp.send('Fetch.disable');
+    await cdp.eval(`document.querySelector('[data-survey-offline] button').click()`);
+    await waitFor(cdp, '!document.querySelector("[data-survey-offline]") && /ключ|Учебная мотивация|Спасибо/i.test(document.getElementById("survey-app").innerText || "")', 15000);
+    const after = await cdp.eval(`({
+      text: document.getElementById('survey-app').innerText.slice(0, 80),
+      offline: Boolean(document.querySelector('[data-survey-offline]'))
+    })`);
+    c.ok(!after.offline && /ключ|Учебная мотивация|Спасибо/i.test(after.text), 'опрос: после снятия блокировки страница оживает', after);
+
+    await cdp.send('Page.removeScriptToEvaluateOnNewDocument', { identifier: seed.identifier });
   },
 
   // Сеть: ложный офлайн, тупик без данных, ретрай.

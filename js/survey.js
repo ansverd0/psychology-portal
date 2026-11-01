@@ -76,13 +76,37 @@
         } catch (e) { /* битый черновик игнорируем */ }
     }
 
-    function rpc(name, params) {
+    function rpc(name, params, timeoutMs) {
         if (typeof supabaseClient === 'undefined' || !supabaseClient) {
             return Promise.reject(new Error('Сервер недоступен. Проверьте соединение и обновите страницу.'));
         }
-        return supabaseClient.rpc(name, params).then(function (res) {
+
+        var query = supabaseClient.rpc(name, params);
+        var timer = null;
+
+        // Свой таймаут на конкретный вызов: если сеть «черная дыра» (запрос висит
+        // без ответа), не держим человека перед «Загрузкой…» дольше 6 секунд.
+        if (typeof AbortController !== 'undefined' && typeof query.abortSignal === 'function') {
+            var controller = new AbortController();
+            query = query.abortSignal(controller.signal);
+            var limit = timeoutMs || 6000;
+            timer = setTimeout(function () {
+                if (window.hubLog) {
+                    window.hubLog.add('net', 'RPC ' + name + ': нет ответа за ' + Math.round(limit / 1000) + ' с');
+                }
+                controller.abort();
+            }, limit);
+        }
+
+        return query.then(function (res) {
             if (res.error) throw new Error(res.error.message || 'Ошибка сервера');
             return res.data;
+        }).then(function (data) {
+            if (timer) clearTimeout(timer);
+            return data;
+        }, function (error) {
+            if (timer) clearTimeout(timer);
+            throw error;
         });
     }
 
@@ -188,7 +212,7 @@
                 if (res.error.code === '23505' && attempt < 5) return tryInsert();
                 throw res.error;
             }).catch(function () {
-                showError(err, 'Не удалось создать ключ. Проверьте соединение и попробуйте ещё раз.');
+                showError(err, 'Не удалось создать ключ. Проверьте соединение (если сеть блокирует сервер — включите VPN) и попробуйте ещё раз.');
                 btn.disabled = false;
                 btn.textContent = 'Сгенерировать ключ и продолжить';
             });
@@ -230,7 +254,7 @@
                 loadRemoteState();
             })
             .catch(function () {
-                showError(err, 'Не удалось проверить ключ. Попробуйте ещё раз.');
+                showError(err, 'Не удалось проверить ключ. Проверьте соединение (если сеть блокирует сервер — включите VPN) и попробуйте ещё раз.');
             });
     }
 
@@ -238,10 +262,9 @@
 
     function loadRemoteState() {
         clearApp();
-        var wait = card('Загрузка…', 'Проверяем, что уже пройдено.');
-        app.appendChild(wait);
+        app.appendChild(card('Загрузка…', 'Проверяем, что уже пройдено.'));
 
-        rpc('survey_state', { p_key: state.key }).then(function (data) {
+        rpc('survey_state', { p_key: state.key }, 6000).then(function (data) {
             state.group = data.group_code || null;
             state.course = data.course || null;
             state.submitted.sham = Boolean(data.sham_done);
@@ -255,21 +278,43 @@
             renderIntro();
         }).catch(function (e) {
             console.warn(e);
-            var text = String(e && e.message || '');
+            var text = String((e && e.message) || '');
             if (/unknown user_key/i.test(text)) {
                 localStorage.removeItem(KEY_STORE);
                 state.key = null;
                 renderKeyGate('Ключ не найден на сервере. Создайте новый или проверьте написание.');
                 return;
             }
+
+            var timedOut = (e && e.name === 'AbortError') || /abort|signal/i.test(text);
             clearApp();
-            var box = card('Не удалось загрузить', 'Сервер не ответил. Проверьте соединение — ответы никуда не делись.');
+            var box = card(
+                timedOut ? 'Сервер исследования не отвечает' : 'Не удалось загрузить',
+                timedOut
+                    ? 'Запрос к серверу данных не прошёл за 6 секунд — похоже, эта сеть его блокирует. Обычно помогает VPN или другая сеть (Wi-Fi). Ключ и черновик сохранены на этом устройстве.'
+                    : 'Сервер не ответил. Проверьте соединение — ответы никуда не делись.'
+            );
+            box.setAttribute('data-survey-offline', '');
+
+            if (timedOut) {
+                box.appendChild(make('p', 'sv-muted', 'Если VPN нет — откройте страницу позже с другой сети: ключ останется в этом браузере.'));
+            }
+
             var retry = make('button', 'sv-btn sv-btn--primary', 'Повторить');
             retry.type = 'button';
             retry.style.width = '100%';
             retry.addEventListener('click', loadRemoteState);
             box.appendChild(retry);
             app.appendChild(box);
+
+            // Браузер сообщил, что сеть появилась, — пробуем ещё раз сами
+            if (!state.retryOnReconnect) {
+                state.retryOnReconnect = true;
+                window.addEventListener('online', function () {
+                    state.retryOnReconnect = false;
+                    loadRemoteState();
+                }, { once: true });
+            }
         });
     }
 
