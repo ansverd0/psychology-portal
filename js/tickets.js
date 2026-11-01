@@ -191,6 +191,13 @@ function openTicketInNav(discipline, ticket) {
     const target = ticket || discipline.questions[0] || null;
     ticketsActiveFolderId = discipline.id;
 
+    if (window.PsyTracker) {
+        PsyTracker.event('ticket_open', {
+            number: String((target && target.number) || ''),
+            discipline: discipline.id || ''
+        });
+    }
+
     foldersCol.querySelectorAll('.folder-nav-btn').forEach(btn => {
         const isActive = btn.dataset.disciplineId === discipline.id;
         btn.classList.toggle('active', isActive);

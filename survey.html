@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://mc.yandex.ru; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://mc.yandex.ru; connect-src 'self' https://lrjszannmammzzqotaro.supabase.co https://mc.yandex.ru; font-src 'self'; frame-src https://mc.yandex.ru; worker-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'">
+    <meta name="referrer" content="strict-origin-when-cross-origin">
+    <link rel="preconnect" href="https://lrjszannmammzzqotaro.supabase.co" crossorigin>
+    <title>Опрос для исследования / Psy-Education</title>
+    <meta name="description" content="Анонимный опрос об учебной мотивации и саморегуляции студентов-психологов ПетрГУ.">
+    <meta name="robots" content="noindex">
+    <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
+    <script src="js/vendor/supabase.js"></script>
+    <link rel="stylesheet" href="style.css">
+    <script src="js/analytics.js" defer></script>
+    <script src="js/vitals.js" defer></script>
+    <style>
+        #survey-app { width: 100%; max-width: 760px; margin: 0 auto; padding: 0 16px 48px; box-sizing: border-box; }
+        .sv-card { background: #fff; border-radius: 16px; padding: 24px; box-shadow: 0 10px 25px -12px rgba(26, 54, 93, .25); margin-top: 20px; }
+        .sv-card h2 { margin: 0 0 12px; color: #1a365d; font-size: 20px; }
+        .sv-card p { color: #4a5568; line-height: 1.55; margin: 0 0 12px; }
+        .sv-muted { color: #718096; font-size: 13px; }
+        .sv-progress { margin: 20px 0 8px; }
+        .sv-progress__row { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; font-size: 13px; color: #4a5568; margin-bottom: 6px; }
+        .sv-bar { height: 8px; background: #e2e8f0; border-radius: 999px; overflow: hidden; }
+        .sv-bar__fill { height: 100%; width: 0; background: #2b6cb0; border-radius: 999px; transition: width .25s ease; }
+        .sv-legend { font-size: 12.5px; color: #4a5568; background: #f7fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 8px 12px; margin: 14px 0 4px; line-height: 1.5; }
+        .sv-legend b { color: #1a365d; }
+        .sv-item { border: 1px solid #e2e8f0; border-radius: 12px; padding: 14px 14px 10px; margin: 12px 0; }
+        .sv-item.is-missing { border-color: #c53030; background: #fff5f5; }
+        .sv-item legend { padding: 0 4px; font-weight: 600; color: #1a365d; font-size: 15px; line-height: 1.45; }
+        .sv-opts { display: flex; gap: 8px; flex-wrap: nowrap; margin-top: 10px; }
+        .sv-opt { flex: 1 1 0; position: relative; }
+        .sv-opt input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+        .sv-opt span { display: flex; align-items: center; justify-content: center; min-height: 44px; border: 2px solid #cbd5e0; border-radius: 10px; font-weight: 700; color: #4a5568; cursor: pointer; user-select: none; background: #fff; }
+        .sv-opt input:checked + span { background: #2b6cb0; border-color: #2b6cb0; color: #fff; }
+        .sv-opt input:focus-visible + span { outline: 3px solid #2b6cb0; outline-offset: 2px; }
+        .sv-nav { display: flex; gap: 10px; justify-content: space-between; margin-top: 20px; }
+        .sv-btn { min-height: 46px; padding: 12px 20px; border-radius: 10px; border: 2px solid #2b6cb0; background: #fff; color: #2b6cb0; font-weight: 700; font-size: 15px; cursor: pointer; }
+        .sv-btn--primary { background: #2b6cb0; color: #fff; }
+        .sv-btn:disabled { opacity: .5; cursor: not-allowed; }
+        .sv-btn--ghost { border-color: #cbd5e0; color: #4a5568; }
+        .sv-error { color: #c53030; font-size: 14px; margin-top: 10px; }
+        .sv-field { margin: 14px 0; }
+        .sv-field label { display: block; font-weight: 600; color: #1a365d; margin-bottom: 6px; }
+        .sv-field select, .sv-field input[type="text"] { width: 100%; box-sizing: border-box; min-height: 46px; padding: 10px 12px; border: 2px solid #cbd5e0; border-radius: 10px; font-size: 15px; }
+        .sv-check { display: flex; gap: 10px; align-items: flex-start; font-size: 13px; color: #4a5568; margin: 14px 0; }
+        .sv-check input { margin-top: 3px; width: 18px; height: 18px; accent-color: #2b6cb0; }
+        .sv-key { font-family: ui-monospace, Consolas, monospace; background: #f7fafc; border: 1px dashed #2b6cb0; border-radius: 10px; padding: 12px; text-align: center; font-size: 17px; font-weight: 700; color: #1a365d; margin: 10px 0; }
+        .sv-done { text-align: center; }
+        .sv-done .sv-emoji { font-size: 42px; }
+        @media (max-width: 420px) {
+            .sv-card { padding: 16px; }
+            .sv-opts { gap: 6px; }
+            .sv-opt span { min-height: 42px; font-size: 14px; }
+        }
+    </style>
+</head>
+
+<body data-page="survey">
+    <header>
+        <a href="index.html" class="capsule-back-btn">Главное меню</a>
+        <h1>Опрос для исследования</h1>
+    </header>
+
+    <main id="survey-app" aria-live="polite">
+        <noscript>
+            <div class="sv-card">
+                <h2>Нужен JavaScript</h2>
+                <p>Опрос работает только с включённым JavaScript. Включите его и обновите страницу.</p>
+            </div>
+        </noscript>
+    </main>
+
+    <script src="js/supabase-config.js"></script>
+    <script src="js/survey-data.js"></script>
+    <script src="js/survey.js"></script>
+</body>
+</html>

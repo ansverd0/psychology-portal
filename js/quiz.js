@@ -212,6 +212,15 @@ function showResults() {
     const qw = document.getElementById('quiz-wrapper');
     const rw = document.getElementById('result-wrapper');
     const st = document.getElementById('score-text');
+
+    if (window.PsyTracker) {
+        const discipline = (currentActiveQuestions[0] && currentActiveQuestions[0].discipline) || '';
+        PsyTracker.event('test_complete', {
+            discipline: discipline,
+            score: Number(score),
+            total: currentActiveQuestions.length
+        });
+    }
     if (qw) qw.style.display = 'none';
     if (rw) rw.style.display = 'block';
     

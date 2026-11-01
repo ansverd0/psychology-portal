@@ -57,8 +57,12 @@ try {
   r = await req('POST', 'rpc/set_course', { body: { p_key: key, p_course: 2 } });
   check('set_course', r.status, (s) => s === 204 || s === 200, r.text.slice(0, 100));
 
-  r = await req('POST', 'rpc/set_group', { body: { p_key: key, p_group: '2-П-1' } });
-  check('set_group', r.status, (s) => s === 204 || s === 200, r.text.slice(0, 100));
+  r = await req('POST', 'rpc/set_group', { body: { p_key: key, p_group: '821' } });
+  check('set_group', r.status, (s) => s === 200, r.text.slice(0, 100));
+  check('set_group вернул курс', r.json, (v) => v === 2);
+
+  r = await req('POST', 'rpc/set_group', { body: { p_key: key, p_group: '999' } });
+  check('несуществующая группа отклонена', r.status, (s) => s >= 400);
 
   // 2. ШАМ: все ответы «3» → каждая шкала 12
   r = await req('POST', 'rpc/submit_instrument', {
@@ -139,12 +143,17 @@ try {
   r = await req('GET', `users_profiles?user_key=eq.${key}&select=course,group_code,survey_done,essay_done,tests_completed_count`, { token: service });
   const p = r.json?.[0];
   check('курс записан', p?.course, (v) => v === 2);
-  check('группа записана', p?.group_code, (v) => v === '2-П-1');
+  check('группа записана', p?.group_code, (v) => v === '821');
   check('survey_done', p?.survey_done, (v) => v === true);
   check('essay_done', p?.essay_done, (v) => v === true);
   check('счётчик тестов = 1', p?.tests_completed_count, (v) => v === 1);
 
-  // 9. Неизвестный ключ отклоняется
+  // 9. Состояние опроса
+  r = await req('POST', 'rpc/survey_state', { body: { p_key: key } });
+  check('survey_state: обе методики', r.json?.sham_done && r.json?.sspm_done, (b) => b === true);
+  check('survey_state: группа', r.json?.group_code, (v) => v === '821');
+
+  // 10. Неизвестный ключ отклоняется
   r = await req('POST', 'rpc/log_events', {
     body: { p_key: 'no-such-key-xyz', p_session: 'test-session-0002', p_events: batch },
   });

@@ -323,6 +323,13 @@ function showSectionContent(section) {
     const contentContainer = document.querySelector('.section-viewer');
     if (!contentContainer || !section) return;
 
+    if (window.PsyTracker) {
+        PsyTracker.event('article_open', {
+            title: String(section.title || '').slice(0, 80),
+            discipline: section.discipline_id || ''
+        });
+    }
+
     // 1. Сначала санитизируем сырой контент статьи (убираем опасные теги/скрипты)
     const safeRawContent = sanitizeWikiHtml(section.content || '', {
         ALLOWED_TAGS: ['p', 'br', 'strong', 'em', 'u', 'h3', 'h4', 'h5', 'h6', 'ul', 'ol', 'li', 'blockquote', 'a', 'img', 'code', 'pre'],

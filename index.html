@@ -114,6 +114,15 @@
         </div>
         <p>Каталог рекомендованных учебников и научных трудов с аннотациями без полных текстов.</p>
     </a>
+
+    <!-- Блок 7: Опрос для исследования -->
+    <a class="menu-item" href="survey.html">
+        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
+            <span class="icon" style="margin: 0;">📋</span>
+            <h2>Опрос для исследования</h2>
+        </div>
+        <p>Анонимные методики об учебной мотивации и саморегуляции — один раз, около 10 минут.</p>
+    </a>
 </div>
 
     <!-- ПОЛНОЭКРАННОЕ МОДАЛЬНОЕ ОКНО АВТОРИЗАЦИИ (Для новых пользователей) -->
@@ -143,7 +152,7 @@
                 <input type="checkbox" id="chk-consent" aria-describedby="consent-error" style="margin-top: 3px; width: 16px; height: 16px; accent-color: #2b6cb0;">
                 <span style="font-size: 12px; color: #718096; line-height: 1.4;">
                     Я ознакомлен(а) с <a href="privacy.html" target="_blank" rel="noopener" style="color: #2b6cb0;">политикой обработки данных</a>
-                    и даю согласие на сохранение локальных файлов кэша, куки, фиксацию метрик прогресса тестов и результатов итоговых эссе.
+                    и даю согласие на сохранение локальных файлов кэша, куки, ответы на опросы, обезличенный журнал действий (страницы, время, прокрутка) и результаты итоговых эссе.
                 </span>
             </label>
             <!-- Ошибка согласия: показывается вместо системного alert -->
@@ -198,6 +207,7 @@
     </footer>
 
     <script src="js/supabase-config.js"></script>
+    <script src="js/tracker.js"></script>
 <script src="js/ui-notify.js"></script>
 <script src="js/auth.js"></script> <!-- Наш новый изолированный подмодуль -->
 
