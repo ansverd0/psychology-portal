@@ -93,7 +93,12 @@ function validateArticle(row, where) {
   if (!checkLength(where, 'title', row.title, 3, 200)) return null;
   if (!checkLength(where, 'content', row.content, 50, 100000)) return null;
   checkHtml(where, row.content);
-  return { discipline_id: canonicalDiscipline(where, row.discipline_id), title: text(row.title), content: text(row.content) };
+  return {
+    discipline_id: canonicalDiscipline(where, row.discipline_id),
+    title: text(row.title),
+    content: text(row.content),
+    ai_generated: Boolean(row.ai_generated)
+  };
 }
 
 function validateTicket(row, where) {
@@ -113,7 +118,8 @@ function validateTicket(row, where) {
     recommend_time: row.recommend_time ? text(row.recommend_time) : null,
     plan: row.plan ? text(row.plan) : null,
     content: text(row.content),
-    books
+    books,
+    ai_generated: Boolean(row.ai_generated)
   };
 }
 
@@ -241,8 +247,8 @@ function loadRows(files) {
         return;
       }
       const allowed = TYPES[type].key.slice();
-      if (type === 'articles') allowed.push('content', 'source');
-      if (type === 'tickets') allowed.push('title', 'recommend_time', 'plan', 'content', 'books');
+      if (type === 'articles') allowed.push('content', 'source', 'ai_generated');
+      if (type === 'tickets') allowed.push('title', 'recommend_time', 'plan', 'content', 'books', 'ai_generated');
       if (type === 'tests') allowed.push('options', 'correct_index', 'link_url');
       if (type === 'library') allowed.push('annotation');
       if (type === 'flashcards') allowed.push('definition');
@@ -273,8 +279,8 @@ async function fetchExistingKeys(type) {
 }
 
 const DB_FIELDS = {
-  articles: ['discipline_id', 'title', 'content'],
-  tickets: ['discipline_id', 'number', 'title', 'recommend_time', 'plan', 'content'],
+  articles: ['discipline_id', 'title', 'content', 'ai_generated'],
+  tickets: ['discipline_id', 'number', 'title', 'recommend_time', 'plan', 'content', 'ai_generated'],
   flashcards: ['discipline_id', 'term', 'definition'],
   tests: ['discipline_id', 'question', 'options', 'correct_index', 'link_url'],
   library: ['title', 'author', 'annotation']
@@ -282,7 +288,9 @@ const DB_FIELDS = {
 
 function toDb(type, row) {
   const out = {};
-  DB_FIELDS[type].forEach((field) => { out[field] = row[field] ?? null; });
+  DB_FIELDS[type].forEach((field) => {
+    out[field] = row[field] ?? (field === 'ai_generated' ? false : null);
+  });
   return out;
 }
 

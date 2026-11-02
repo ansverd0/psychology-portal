@@ -209,6 +209,15 @@ function showTicketContent(ticket) {
     const bookmarkActive = isBookmarked(ticket.number, 'ticket') ? 'active' : '';
     const bookmarkIcon = isBookmarked(ticket.number, 'ticket') ? '★' : '☆';
 
+    let aiHTML = '';
+    if (ticket.ai) {
+        aiHTML = `
+            <div style="background: #fff5f5; border-left: 4px solid #c53030; padding: 10px 14px; border-radius: 6px; margin-bottom: 18px; font-size: 13px; color: #742a2a;">
+                <strong>🤖 Контент сгенерирован при помощи ИИ.</strong> Проверяйте факты и сообщайте о неточностях — материал будет исправлен.
+            </div>
+        `;
+    }
+
     // Санитизируем только контент (не заголовок и не кнопку закладки)
     const safeContent = sanitizeDbHtml(ticket.content, {
         ALLOWED_TAGS: ['p', 'br', 'strong', 'em', 'u', 'h3', 'h4', 'h5', 'h6', 'ul', 'ol', 'li', 'blockquote', 'a', 'img', 'code', 'pre'],
@@ -224,6 +233,7 @@ function showTicketContent(ticket) {
             <button class="bookmark-star-btn ${bookmarkActive}" id="ticket-bookmark-star" data-bookmark-id="${escapeHtml(ticket.number)}" data-bookmark-type="ticket" aria-pressed="${bookmarkActive ? 'true' : 'false'}" title="${bookmarkActive ? 'Убрать из закладок' : 'В закладки'}">${bookmarkIcon}</button>
         </div>
         ${planHTML}
+        ${aiHTML}
         <div class="content-text">${safeContent}</div>
         <div class="literature-box" style="margin-top: 25px;">
             <h3>📚 Рекомендованная литература к вопросу:</h3>

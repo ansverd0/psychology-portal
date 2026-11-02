@@ -306,7 +306,10 @@ function showSectionContent(section) {
     `;
 
     // 3. Вставляем санитизированный HTML и уже в DOM подсвечиваем термины
-    contentContainer.innerHTML = `${headerWithBookmark}<div class="content-text">${safeRawContent}</div>`;
+    const aiBanner = section.ai
+        ? '<div style="background: #fff5f5; border-left: 4px solid #c53030; padding: 10px 14px; border-radius: 6px; margin-bottom: 18px; font-size: 13px; color: #742a2a;"><strong>🤖 Контент сгенерирован при помощи ИИ.</strong> Проверяйте факты и сообщайте о неточностях — материал будет исправлен.</div>'
+        : '';
+    contentContainer.innerHTML = `${headerWithBookmark}${aiBanner}<div class="content-text">${safeRawContent}</div>`;
 
     const contentText = contentContainer.querySelector('.content-text');
     applyWikiTerms(contentText, appGlossary);

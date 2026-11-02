@@ -43,7 +43,7 @@ psychology-portal/
 ├── .github/workflows/      # pages.yml, backup.yml, monitor.yml
 ├── db/                     # миграции RLS, версий и исследования
 ├── materials/              # исходники контента: disciplines.json, <дисциплина>/inbox|content
-├── scripts/                # backup, db-exec, content-import, docx_tickets, build-disciplines, check-*, ui-probe, mcp
+├── scripts/                # backup, db-exec, content-import, docx_tickets, format_tickets, build-disciplines, check-*, ui-probe, mcp
 └── js/
     ├── supabase-config.js  # Ядро: клиент, PAGE_LOADERS, кэш, SW
     ├── analytics.js        # Метрика после согласия, защита полей, PsyAnalytics API
@@ -138,7 +138,7 @@ psychology-portal/
 
 ## SERVICE WORKER
 
-- Версия: `psy-hub-v30` (v22 → v30: раунды 2–5 интерфейса, опрос по методикам, таймаут опроса, защита трекера, реестр дисциплин)
+- Версия: `psy-hub-v31` (v22 → v30: раунды 2–5 интерфейса, опрос по методикам, таймаут опроса, защита трекера, реестр дисциплин)
 - Стратегия: cache-first для статики, network-first для навигации с таймаутом 2.5 с
 - Кэширует все HTML, CSS, JS, шрифты; Supabase-запросы исключены
 - В `ASSETS` также `js/vitals.js` (добавлен в v13)
@@ -305,3 +305,4 @@ git push origin master
 - Зеркало Vercel (может быть недоступно из РФ): `https://psy-education.vercel.app/index.html`
 - GitHub: `https://github.com/ansverd0/psychology-portal`
 - Supabase: `https://supabase.com/dashboard/project/lrjszannmammzzqotaro`
+

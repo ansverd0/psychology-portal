@@ -376,6 +376,13 @@ button:hover {
     color: #2d3748;
     margin-bottom: 30px;
     text-align: justify; /* Академическое выравнивание текстов по ширине */
+    hyphens: auto;
+}
+
+/* Заголовки внутри конспекта не растягиваем по ширине: justify даёт огромные пробелы */
+.content-text h3, .content-text h4, .content-text h5, .content-text h6 {
+    text-align: left;
+    hyphens: none;
 }
 
 .literature-box {

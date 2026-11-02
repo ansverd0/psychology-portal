@@ -386,7 +386,7 @@ function mapArticles(data) {
 
         const meta = typeof psyDiscipline === 'function' ? psyDiscipline(cleanId) : { title: cleanId, order: 999 };
         if (!groups[cleanId]) groups[cleanId] = { id: cleanId, title: meta.title, order: meta.order, articles: [] };
-        groups[cleanId].articles.push({ title: a.title, content: a.content });
+        groups[cleanId].articles.push({ title: a.title, content: a.content, ai: Boolean(a.ai_generated) });
     });
 
     Object.keys(groups).forEach(key => {
@@ -430,7 +430,8 @@ function mapTickets(tickets, links, library) {
             time: t.recommend_time,
             plan: t.plan,
             content: t.content,
-            literature
+            literature,
+            ai: Boolean(t.ai_generated)
         });
     });
 
@@ -472,7 +473,7 @@ const PAGE_LOADERS = {
 
     sections: async () => {
         const [articles, glossary] = await Promise.all([
-            fetchTable('articles', 'title, content, discipline_id'),
+            fetchTable('articles', 'title, content, discipline_id, ai_generated'),
             fetchTable('glossary', 'term, definition').catch(e => {
                 console.warn('⚠️ Глоссарий недоступен, статьи покажем без подсказок:', e.message);
                 return [];
@@ -483,7 +484,7 @@ const PAGE_LOADERS = {
 
     tickets: async () => {
         const [tickets, links, library] = await Promise.all([
-            fetchTable('tickets', 'id, number, title, recommend_time, plan, content, discipline_id'),
+            fetchTable('tickets', 'id, number, title, recommend_time, plan, content, discipline_id, ai_generated'),
             fetchTable('ticket_library', 'ticket_id, book_id').catch(e => {
                 console.warn('⚠️ Связи билетов с литературой недоступны:', e.message);
                 return [];
