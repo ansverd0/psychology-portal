@@ -1,7 +1,7 @@
 // Service Worker: офлайн-первый для статики и быстрый фолбек при медленной сети.
 // Важно: при каждом релизе меняйте CACHE_NAME — это и есть инвалидация кэша.
 
-const CACHE_NAME = 'psy-hub-v29';
+const CACHE_NAME = 'psy-hub-v30';
 
 // Пути относительные: работают и в корне домена, и в подпапке (GitHub Pages).
 const ASSETS = [
@@ -21,6 +21,7 @@ const ASSETS = [
   './js/vendor/dompurify.min.js',
   './js/analytics.js',
   './js/vitals.js',
+  './js/disciplines.js',
   './js/supabase-config.js',
   './js/ui-notify.js',
   './js/auth.js',

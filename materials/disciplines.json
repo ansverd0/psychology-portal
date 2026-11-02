@@ -7,24 +7,118 @@
       "course": 1,
       "order": 10
     },
+    "intro-profession": {
+      "title": "Введение в профессиональную деятельность",
+      "short": "Введение",
+      "icon": "🚪",
+      "course": 1,
+      "order": 20
+    },
+    "developmental-psych": {
+      "title": "Психология развития и возрастная психология",
+      "short": "Возрастная",
+      "icon": "🌱",
+      "course": 2,
+      "order": 30
+    },
     "social-psych": {
       "title": "Социальная психология",
       "short": "Социальная",
       "icon": "👥",
       "course": 2,
-      "order": 20
+      "order": 40
     },
-    "developmental-psych": {
-      "title": "Возрастная психология",
-      "short": "Возрастная",
-      "icon": "🌱",
+    "psychophysiology": {
+      "title": "Психофизиология",
+      "short": "Психофизиология",
+      "icon": "⚡",
       "course": 2,
-      "order": 30
+      "order": 50
+    },
+    "psychodiagnostics": {
+      "title": "Психолого-педагогическая диагностика",
+      "short": "Психодиагностика",
+      "icon": "📊",
+      "course": 2,
+      "order": 60
+    },
+    "pedagogical-psych": {
+      "title": "Педагогическая психология",
+      "short": "Педагогическая",
+      "icon": "🎓",
+      "course": 2,
+      "order": 70
+    },
+    "defectology": {
+      "title": "Дефектология",
+      "short": "Дефектология",
+      "icon": "🧷",
+      "course": 2,
+      "order": 80
+    },
+    "experimental-psych": {
+      "title": "Экспериментальная психология",
+      "short": "Экспериментальная",
+      "icon": "🔬",
+      "course": 2,
+      "order": 90
+    },
+    "research-methods": {
+      "title": "Качественные и количественные методы исследования",
+      "short": "Методы исследования",
+      "icon": "📈",
+      "course": 2,
+      "order": 100
+    },
+    "conflictology": {
+      "title": "Конфликтология",
+      "short": "Конфликтология",
+      "icon": "🤝",
+      "course": 3,
+      "order": 110
+    },
+    "neuropsychology": {
+      "title": "Нейропсихология",
+      "short": "Нейропсихология",
+      "icon": "🧩",
+      "course": 3,
+      "order": 120
+    },
+    "clinical-child-psych": {
+      "title": "Клиническая психология детей и подростков",
+      "short": "Клиническая",
+      "icon": "🩺",
+      "course": 3,
+      "order": 130
+    },
+    "special-psych": {
+      "title": "Специальная психология",
+      "short": "Специальная",
+      "icon": "♿",
+      "course": 3,
+      "order": 140
+    },
+    "differential-psych": {
+      "title": "Дифференциальная психология",
+      "short": "Дифференциальная",
+      "icon": "🎭",
+      "course": 3,
+      "order": 150
+    },
+    "psychocorrection": {
+      "title": "Основы психологической коррекции",
+      "short": "Психокоррекция",
+      "icon": "🛠",
+      "course": 3,
+      "order": 160
     }
   },
   "aliases": {
     "general-exam": "general-psych",
     "social-exam": "social-psych",
-    "developmental-exam": "developmental-psych"
+    "developmental-exam": "developmental-psych",
+    "ppd": "psychodiagnostics",
+    "ped-psych": "pedagogical-psych",
+    "age-psych": "developmental-psych"
   }
 }

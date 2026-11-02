@@ -384,8 +384,8 @@ function mapArticles(data) {
         if (cleanId.includes('social')) cleanId = 'social-psych';
         if (cleanId.includes('developmental') || cleanId.includes('age')) cleanId = 'developmental-psych';
 
-        const titleName = cleanId === 'general-psych' ? 'Общая психология' : (cleanId === 'social-psych' ? 'Социальная психология' : 'Возрастная психология');
-        if (!groups[cleanId]) groups[cleanId] = { id: cleanId, title: titleName, articles: [] };
+        const meta = typeof psyDiscipline === 'function' ? psyDiscipline(cleanId) : { title: cleanId, order: 999 };
+        if (!groups[cleanId]) groups[cleanId] = { id: cleanId, title: meta.title, order: meta.order, articles: [] };
         groups[cleanId].articles.push({ title: a.title, content: a.content });
     });
 
@@ -397,8 +397,9 @@ function mapArticles(data) {
         });
     });
 
-    const order = ['general-psych', 'social-psych', 'developmental-psych'];
-    return order.filter(id => groups[id]).map(id => groups[id]);
+    return Object.keys(groups)
+        .map(id => groups[id])
+        .sort((a, b) => (a.order - b.order) || String(a.title).localeCompare(String(b.title)));
 }
 
 function mapTickets(tickets, links, library) {
@@ -408,11 +409,11 @@ function mapTickets(tickets, links, library) {
 
     tickets.forEach(t => {
         let cleanId = t.discipline_id;
-        if (cleanId === 'general-psych' || cleanId === 'general-exam') cleanId = 'general-exam';
-        if (cleanId === 'social-psych' || cleanId === 'social-exam') cleanId = 'social-exam';
-        if (cleanId === 'developmental-psych' || cleanId === 'developmental-exam') cleanId = 'developmental-exam';
+        if (cleanId === 'general-exam') cleanId = 'general-psych';
+        if (cleanId === 'social-exam') cleanId = 'social-psych';
+        if (cleanId === 'developmental-exam') cleanId = 'developmental-psych';
 
-        const titleName = cleanId === 'general-exam' ? 'Общая психология' : (cleanId === 'social-exam' ? 'Социальная психология' : 'Возрастная психология');
+        const meta = typeof psyDiscipline === 'function' ? psyDiscipline(cleanId) : { title: cleanId, order: 999 };
 
         let literature = [];
         if (safeLibrary.length > 0) {
@@ -422,7 +423,7 @@ function mapTickets(tickets, links, library) {
                 .map(b => `${b.author} — ${b.title}`);
         }
 
-        if (!groups[cleanId]) groups[cleanId] = { id: cleanId, title: titleName, questions: [] };
+        if (!groups[cleanId]) groups[cleanId] = { id: cleanId, title: meta.title, emoji: meta.icon, order: meta.order, questions: [] };
         groups[cleanId].questions.push({
             number: t.number,
             title: t.title,
@@ -437,8 +438,9 @@ function mapTickets(tickets, links, library) {
         groups[key].questions.sort((a, b) => parseInt(a.number, 10) - parseInt(b.number, 10));
     });
 
-    const order = ['general-exam', 'social-exam', 'developmental-exam'];
-    return order.filter(id => groups[id]).map(id => groups[id]);
+    return Object.keys(groups)
+        .map(id => groups[id])
+        .sort((a, b) => (a.order - b.order) || String(a.title).localeCompare(String(b.title)));
 }
 
 function mapNews(data) {

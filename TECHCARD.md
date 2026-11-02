@@ -43,7 +43,7 @@ psychology-portal/
 ├── .github/workflows/      # pages.yml, backup.yml, monitor.yml
 ├── db/                     # миграции RLS, версий и исследования
 ├── materials/              # исходники контента: disciplines.json, <дисциплина>/inbox|content
-├── scripts/                # backup, db-exec, content-import, check-*, ui-probe, mcp
+├── scripts/                # backup, db-exec, content-import, docx_tickets, build-disciplines, check-*, ui-probe, mcp
 └── js/
     ├── supabase-config.js  # Ядро: клиент, PAGE_LOADERS, кэш, SW
     ├── analytics.js        # Метрика после согласия, защита полей, PsyAnalytics API
@@ -55,6 +55,7 @@ psychology-portal/
     ├── sections-wiki.js    # Разделы психологии + вики-эффект
     ├── news-library.js     # Новости + библиотека
     ├── bookmarks.js        # Система закладок для tickets и sections
+    ├── disciplines.js      # Реестр дисциплин (генерируется из materials/disciplines.json)
     ├── live-search.js      # Живой поиск по названиям (tickets/sections)
     ├── client-log.js       # Клиентский журнал и панель диагностики (опрос)
     ├── tracker.js          # Журнал поведения: страницы, время, прокрутка, вкладки
@@ -137,7 +138,7 @@ psychology-portal/
 
 ## SERVICE WORKER
 
-- Версия: `psy-hub-v29` (v22 → v29: раунды 2–5 интерфейса, опрос по методикам, таймаут опроса, защита трекера)
+- Версия: `psy-hub-v30` (v22 → v30: раунды 2–5 интерфейса, опрос по методикам, таймаут опроса, защита трекера, реестр дисциплин)
 - Стратегия: cache-first для статики, network-first для навигации с таймаутом 2.5 с
 - Кэширует все HTML, CSS, JS, шрифты; Supabase-запросы исключены
 - В `ASSETS` также `js/vitals.js` (добавлен в v13)

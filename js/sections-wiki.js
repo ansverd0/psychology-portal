@@ -46,10 +46,8 @@ function initSections() {
             tile.setAttribute('aria-pressed', 'false');
             tile.id = `mobile-tile-${section.id}`; 
             
-            let icon = "📁";
-            if (section.id === "general-psych") icon = "🧠";
-            if (section.id === "social-psych") icon = "👥";
-            if (section.id === "developmental-psych") icon = "🌱";
+            const meta = typeof psyDiscipline === 'function' ? psyDiscipline(section.id) : { icon: '📁' };
+            const icon = meta.icon;
 
             tile.innerHTML = `${icon}<br>${section.title}`;
 

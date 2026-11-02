@@ -272,10 +272,24 @@ async function fetchExistingKeys(type) {
   return new Set((data || []).map((row) => keyOf(type, row)));
 }
 
+const DB_FIELDS = {
+  articles: ['discipline_id', 'title', 'content'],
+  tickets: ['discipline_id', 'number', 'title', 'recommend_time', 'plan', 'content'],
+  flashcards: ['discipline_id', 'term', 'definition'],
+  tests: ['discipline_id', 'question', 'options', 'correct_index', 'link_url'],
+  library: ['title', 'author', 'annotation']
+};
+
+function toDb(type, row) {
+  const out = {};
+  DB_FIELDS[type].forEach((field) => { out[field] = row[field] ?? null; });
+  return out;
+}
+
 async function upsert(type, rows) {
   const { table, key } = TYPES[type];
   for (let i = 0; i < rows.length; i += 50) {
-    const chunk = rows.slice(i, i + 50);
+    const chunk = rows.slice(i, i + 50).map((row) => toDb(type, row));
     await rest(`${table}?on_conflict=${key.join(',')}`, {
       method: 'POST',
       prefer: 'resolution=merge-duplicates,return=minimal',

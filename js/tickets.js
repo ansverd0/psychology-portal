@@ -19,7 +19,7 @@ function initTickets() {
             const folderBtn = document.createElement('button');
             folderBtn.classList.add('folder-nav-btn');
             folderBtn.dataset.disciplineId = discipline.id;
-            folderBtn.innerHTML = `📁 ${discipline.title}`;
+            folderBtn.innerHTML = `${discipline.emoji || '📁'} ${discipline.title}`;
 
             folderBtn.addEventListener('click', () => {
                 openTicketInNav(discipline);
@@ -41,12 +41,9 @@ function initTickets() {
             tile.classList.add('mobile-tile-btn');
             tile.setAttribute('aria-pressed', 'false');
             
-            let icon = "📝";
-            if (discipline.id === "general-exam") icon = "🧠";
-            if (discipline.id === "social-exam") icon = "👥";
-            if (discipline.id === "developmental-exam") icon = "🌱";
+            let icon = discipline.emoji || "📝";
 
-            tile.innerHTML = `${icon}<br>${discipline.title.replace(" (Экзамен)", "")}`;
+            tile.innerHTML = `${icon}<br>${discipline.title}`;
 
             tile.addEventListener('click', () => {
                 document.querySelectorAll('#mobile-tickets-tiles .mobile-tile-btn').forEach(b => { b.classList.remove('active'); b.setAttribute('aria-pressed', 'false'); });

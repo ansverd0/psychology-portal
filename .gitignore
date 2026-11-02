@@ -57,3 +57,8 @@ dist/
 .audit/
 backups/
 AUDIT.md
+
+# === Учебные материалы и черновики импорта ===
+inbox/
+.tmp-*
+~WRL*.tmp

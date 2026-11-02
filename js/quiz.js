@@ -77,21 +77,16 @@ function initQuiz() {
         });
         quizTilesContainer.appendChild(allTile);
 
-        const uniqueQuizDisciplines = [...new Set(allQuestions.map(q => q.discipline).filter(Boolean))];
-        
-        const disciplineMeta = {
-            "general-psych": { title: "Общая", icon: "🧠" },
-            "social-psych": { title: "Социальная", icon: "👥" },
-            "developmental-psych": { title: "Возрастная", icon: "🌱" }
-        };
+        const uniqueQuizDisciplines = [...new Set(allQuestions.map(q => q.discipline).filter(Boolean))]
+            .sort((a, b) => (typeof psyDiscipline === 'function' ? psyDiscipline(a).order - psyDiscipline(b).order : 0));
 
         uniqueQuizDisciplines.forEach(dispId => {
             const tile = document.createElement('button');
             tile.classList.add('mobile-tile-btn');
             tile.setAttribute('aria-pressed', 'false');
-            
-            const meta = disciplineMeta[dispId] || { title: "Раздел", icon: "📁" };
-            tile.innerHTML = `${meta.icon} ${meta.title}`;
+
+            const meta = typeof psyDiscipline === 'function' ? psyDiscipline(dispId) : { title: 'Раздел', icon: '📁' };
+            tile.innerHTML = `${meta.icon} ${meta.short}`;
 
             tile.addEventListener('click', () => {
                 document.querySelectorAll('#quiz-discipline-tiles .mobile-tile-btn').forEach(b => { b.classList.remove('active'); b.setAttribute('aria-pressed', 'false'); });
