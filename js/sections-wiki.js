@@ -290,7 +290,7 @@ function showSectionContent(section) {
 
     // 1. Сначала санитизируем сырой контент статьи (убираем опасные теги/скрипты)
     const safeRawContent = sanitizeWikiHtml(section.content || '', {
-        ALLOWED_TAGS: ['p', 'br', 'strong', 'em', 'u', 'h3', 'h4', 'h5', 'h6', 'ul', 'ol', 'li', 'blockquote', 'a', 'img', 'code', 'pre'],
+        ALLOWED_TAGS: ['p', 'br', 'strong', 'b', 'em', 'i', 'u', 'h3', 'h4', 'h5', 'h6', 'ul', 'ol', 'li', 'blockquote', 'a', 'img', 'code', 'pre'],
         ALLOWED_ATTR: ['href', 'rel', 'target', 'src', 'alt']
     });
 

@@ -220,7 +220,7 @@ function showTicketContent(ticket) {
 
     // Санитизируем только контент (не заголовок и не кнопку закладки)
     const safeContent = sanitizeDbHtml(ticket.content, {
-        ALLOWED_TAGS: ['p', 'br', 'strong', 'em', 'u', 'h3', 'h4', 'h5', 'h6', 'ul', 'ol', 'li', 'blockquote', 'a', 'img', 'code', 'pre'],
+        ALLOWED_TAGS: ['p', 'br', 'strong', 'b', 'em', 'i', 'u', 'h3', 'h4', 'h5', 'h6', 'ul', 'ol', 'li', 'blockquote', 'a', 'img', 'code', 'pre'],
         ALLOWED_ATTR: ['href', 'rel', 'target', 'src', 'alt']
     });
 
