@@ -742,8 +742,18 @@ const scenarios = {
       };
     })()`);
     c.ok(aboveFooter.fab !== null && aboveFooter.fab <= aboveFooter.darkTop, '390: закладки не лежат на подвале', aboveFooter);
-    c.ok(aboveFooter.top !== null && Math.abs(aboveFooter.scrollTopGap - 16) <= 1, '390: «наверх» остаётся у нижнего края (подъём только у закладок)', aboveFooter);
-    c.ok(aboveFooter.fab !== null && aboveFooter.top !== null && aboveFooter.fab < aboveFooter.top, '390: закладки выше «наверх»', aboveFooter);
+    c.ok(aboveFooter.top !== null && Math.abs(aboveFooter.scrollTopGap - 80) <= 1, '390: «наверх» стоит над закладками (80 px)', aboveFooter);
+    c.ok(aboveFooter.fab !== null && aboveFooter.top !== null && aboveFooter.fab < aboveFooter.top, '390: закладки выше «наверх», когда поднимаются', aboveFooter);
+
+    // В обычном положении закладки занимают нижний слот (раунд 5)
+    await cdp.eval('window.scrollTo(0, 700)');
+    await sleep(500);
+    const slots = await cdp.eval(`(() => {
+      const box = (sel) => { const el = document.querySelector(sel); if (!el || getComputedStyle(el).display === 'none') return null; const r = el.getBoundingClientRect(); return { gap: Math.round(innerHeight - r.bottom) }; };
+      return { fab: box('#bookmarks-fab'), top: box('#scroll-top-btn') };
+    })()`);
+    c.ok(slots.fab && Math.abs(slots.fab.gap - 16) <= 2, '390: закладки в нижнем слоте (16 px от края)', slots);
+    c.ok(slots.top && Math.abs(slots.top.gap - 80) <= 2, '390: «наверх» на 80 px от края', slots);
 
     // Кнопки справа, навигация подвала слева — не пересекаются
     await cdp.eval(`window.scrollTo(0, document.body.scrollHeight)`);
@@ -758,6 +768,101 @@ const scenarios = {
       && bottom.fab.left < bottom.nav.right && bottom.fab.right > bottom.nav.left
       && bottom.fab.top < bottom.nav.bottom && bottom.fab.bottom > bottom.nav.top;
     c.ok(bottom.nav && !intersects, '390: кнопки не перекрывают навигацию подвала', bottom);
+  },
+
+  // Опрос: инструкция перед методикой, шкала и конец методики (раунд 5)
+  async survey(cdp, base, c) {
+    await setViewport(cdp, 390, 844, true);
+
+    // Cеть подменяем: сценарий не должен зависеть от того, что уже лежит на сервере
+    const stub = (shamDone) => `(() => {
+      const of = window.fetch;
+      window.fetch = function (input, init) {
+        const url = typeof input === 'string' ? input : (input && input.url) || '';
+        if (url.indexOf('/rest/v1/') !== -1) {
+          let body = '{}';
+          if (url.indexOf('survey_state') !== -1) body = JSON.stringify({ group_code: '821', course: 2, sham_done: ${shamDone}, sspm_done: false });
+          return Promise.resolve(new Response(body, { status: 200, headers: { 'Content-Type': 'application/json' } }));
+        }
+        return of.apply(this, arguments);
+      };
+    })();
+    try { localStorage.setItem('research_user_key', 'белый-кедр-73'); } catch (e) {}`;
+
+    const pre1 = await cdp.send('Page.addScriptToEvaluateOnNewDocument', { source: stub(false) });
+    await goto(cdp, base, 'survey.html', 3000);
+    await waitFor(cdp, 'document.querySelector(".sv-scale")', 20000);
+    const intro = await cdp.eval(`(() => ({
+      title: (document.querySelector('.sv-card h2') || {}).textContent || '',
+      scale: (document.querySelector('.sv-scale') || {}).innerText.replace(/\\s+/g, ' ').trim(),
+      button: (document.querySelector('.sv-nav button') || {}).textContent,
+      notice: Boolean(document.querySelector('.sv-notice'))
+    }))()`);
+    c.ok(/Методика 1 из 2/.test(intro.title), 'опрос: перед методикой экран-инструкция', intro);
+    c.ok(/не соответствует/i.test(intro.scale) && /соответствует/i.test(intro.scale), 'опрос: на инструкции подписаны оба конца шкалы', intro);
+    c.ok(!intro.notice, 'опрос: у первой методики нет предупреждения о смене шкалы', intro);
+
+    // Блок вопросов: карточки одной ширины, шкала закреплена
+    await cdp.eval(`document.querySelector('.sv-nav button').click()`);
+    await sleep(900);
+    const block = await cdp.eval(`(() => {
+      const items = [...document.querySelectorAll('.sv-item')];
+      const widths = items.map((el) => Math.round(el.getBoundingClientRect().width));
+      return {
+        items: items.length,
+        min: Math.min(...widths),
+        max: Math.max(...widths),
+        legend: items[0] ? getComputedStyle(items[0].querySelector('legend')).fontSize : null,
+        sticky: Boolean(document.querySelector('.sv-scale--sticky'))
+      };
+    })()`);
+    c.ok(block.items >= 10 && block.max - block.min <= 2, 'опрос: все карточки вопросов одной ширины', block);
+    c.ok(block.legend === '16px', 'опрос: текст вопроса одного размера', block);
+    c.ok(block.sticky, 'опрос: шкала закреплена над блоком', block);
+    await cdp.send('Page.removeScriptToEvaluateOnNewDocument', { identifier: pre1.identifier });
+
+    // Вторая методика: своя инструкция и предупреждение о смене шкалы
+    const pre2 = await cdp.send('Page.addScriptToEvaluateOnNewDocument', { source: stub(true) });
+    await goto(cdp, base, 'survey.html', 3000);
+    await waitFor(cdp, 'document.querySelector(".sv-notice")', 20000);
+    const second = await cdp.eval(`(() => ({
+      title: (document.querySelector('.sv-card h2') || {}).textContent || '',
+      notice: (document.querySelector('.sv-notice') || {}).innerText.replace(/\\s+/g, ' ').trim(),
+      scale: (document.querySelector('.sv-scale') || {}).innerText.replace(/\\s+/g, ' ').trim(),
+      reversed: Boolean(document.querySelector('.sv-scale--reversed'))
+    }))()`);
+    c.ok(/Методика 2 из 2/.test(second.title), 'опрос: у второй методики своя инструкция', second);
+    c.ok(second.reversed && /обратная/i.test(second.scale), 'опрос: обратная шкала подписана', second);
+    c.ok(/шкала другая/i.test(second.notice), 'опрос: предупреждение о смене шкалы', second);
+    await cdp.send('Page.removeScriptToEvaluateOnNewDocument', { identifier: pre2.identifier });
+
+    // В конце методики — «Завершить и перейти к следующей»
+    const pre3 = await cdp.send('Page.addScriptToEvaluateOnNewDocument', { source: stub(false) });
+    await goto(cdp, base, 'survey.html', 3000);
+    await waitFor(cdp, 'document.querySelector(".sv-nav button")', 20000);
+    await cdp.eval(`document.querySelector('.sv-nav button').click()`);
+    await sleep(800);
+    const labels = await cdp.eval(`(async () => {
+      const w = (ms) => new Promise((r) => setTimeout(r, ms));
+      const answer = () => { document.querySelectorAll('.sv-item').forEach((el) => { const r = el.querySelector('.sv-opt input'); if (r && !el.querySelector('input:checked')) { r.checked = true; r.dispatchEvent(new Event('change', { bubbles: true })); } }); };
+      const next = () => { const b = document.querySelector('[data-survey-next]'); if (b) b.click(); };
+      answer(); await w(150); next(); await w(700);
+      answer(); await w(150); next(); await w(700);
+      answer(); await w(150);
+      return { last: (document.querySelector('[data-survey-next]') || {}).textContent, progress: (document.querySelector('.sv-progress__row') || {}).innerText };
+    })()`);
+    c.ok(/Завершить и перейти к следующей/.test(labels.last || ''), 'опрос: в конце методики — «завершить и перейти к следующей»', labels);
+
+    // Нажатие ведёт прямо к инструкции второй методики с предупреждением о шкале
+    await cdp.eval(`document.querySelector('[data-survey-next]').click()`);
+    await sleep(1200);
+    const moved = await cdp.eval(`(() => ({
+      title: (document.querySelector('.sv-card h2') || {}).textContent || '',
+      notice: Boolean(document.querySelector('.sv-notice')),
+      button: (document.querySelector('.sv-nav button') || {}).textContent
+    }))()`);
+    c.ok(/Методика 2 из 2/.test(moved.title) && moved.notice, 'опрос: после методики сразу её инструкция', moved);
+    await cdp.send('Page.removeScriptToEvaluateOnNewDocument', { identifier: pre3.identifier });
   },
 
   // Вики-подсказка у края карточки не обрезается (раунд 4)
@@ -794,10 +899,23 @@ const scenarios = {
   // Опрос: группы по направлениям, внутри — по курсу (раунд 4)
   async surveyGroups(cdp, base, c) {
     await setViewport(cdp, 1440, 900, false);
-    // Без ключа страница показывает экран ввода ключа — сеем известный ключ,
-    // иначе списка групп на странице нет
+    // Список групп живёт на стартовом экране, а он показывается только пока группа
+    // не выбрана. Сеть подменяем: сценарий не зависит от состояния тестового ключа
     const seed = await cdp.send('Page.addScriptToEvaluateOnNewDocument', {
-      source: `try { localStorage.setItem('research_user_key', 'белый-кедр-73'); } catch (e) {}`
+      source: `(() => {
+        const of = window.fetch;
+        window.fetch = function (input, init) {
+          const url = typeof input === 'string' ? input : (input && input.url) || '';
+          if (url.indexOf('/rest/v1/') !== -1) {
+            const body = url.indexOf('survey_state') !== -1
+              ? JSON.stringify({ group_code: null, course: null, sham_done: false, sspm_done: false })
+              : '{}';
+            return Promise.resolve(new Response(body, { status: 200, headers: { 'Content-Type': 'application/json' } }));
+          }
+          return of.apply(this, arguments);
+        };
+        try { localStorage.setItem('research_user_key', 'белый-кедр-73'); } catch (e) {}
+      })();`
     });
     await goto(cdp, base, 'survey.html', 3000);
     await cdp.send('Page.removeScriptToEvaluateOnNewDocument', { identifier: seed.identifier });

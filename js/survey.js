@@ -8,9 +8,11 @@
     var DRAFT_PREFIX = 'hub_survey_draft_v1:';
     var app = document.getElementById('survey-app');
 
+    var INSTRUMENT_ORDER = ['sham', 'sspm'];
+
     var INSTRUMENTS = {
-        sham: { items: SHAM_ITEMS, options: SHAM_OPTIONS, title: 'Учебная мотивация', intro: 'Почему Вы в настоящее время ходите на занятия в университет?' },
-        sspm: { items: SSPM_ITEMS, options: SSPM_OPTIONS, title: 'Саморегуляция', intro: 'Оцените, насколько каждое высказывание описывает Ваше обычное поведение.' }
+        sham: { items: SHAM_ITEMS, options: SHAM_OPTIONS, meta: SURVEY_META.sham },
+        sspm: { items: SSPM_ITEMS, options: SSPM_OPTIONS, meta: SURVEY_META.sspm }
     };
 
     var state = {
@@ -281,7 +283,10 @@
                 return;
             }
             buildPlan();
-            renderIntro();
+            // Группа выбрана — сразу к методике: инструкция или первый блок.
+            // Группы нет — сначала общий стартовый экран с выбором группы.
+            if (!state.group) renderStart();
+            else renderStep();
         }).catch(function (e) {
             console.warn(e);
             var text = String((e && e.message) || '');
@@ -325,28 +330,42 @@
     }
 
     function buildPlan() {
-        var shamBlocks = [];
-        var sspmBlocks = [];
-        var i;
-        for (i = 0; i < SHAM_ITEMS.length; i += 10) {
-            shamBlocks.push({ instrument: 'sham', from: i, to: Math.min(i + 10, SHAM_ITEMS.length) });
-        }
-        for (i = 0; i < SSPM_ITEMS.length; i += 10) {
-            sspmBlocks.push({ instrument: 'sspm', from: i, to: Math.min(i + 10, SSPM_ITEMS.length) });
-        }
-        state.plan = (state.submitted.sham ? [] : shamBlocks).concat(state.submitted.sspm ? [] : sspmBlocks);
+        var steps = [];
+        INSTRUMENT_ORDER.forEach(function (key) {
+            if (state.submitted[key]) return;
+            var items = INSTRUMENTS[key].items.length;
+            // Инструкцию показываем только тем, кто ещё не начинал методику:
+            // при возврате к черновику человек уже читал её и хочет продолжить
+            if (answeredCount(key) === 0) steps.push({ kind: 'intro', instrument: key });
+            for (var i = 0; i < items; i += 10) {
+                steps.push({ kind: 'block', instrument: key, from: i, to: Math.min(i + 10, items) });
+            }
+        });
+        state.plan = steps;
         state.step = 0;
-        for (var s = 0; s < state.plan.length; s++) {
-            if (missingInBlock(state.plan[s]).length) {
+        for (var s = 0; s < steps.length; s++) {
+            if (steps[s].kind !== 'block') continue;
+            if (missingInBlock(steps[s]).length) {
                 state.step = s;
                 break;
             }
         }
+        // Если у методики ещё нет ни одного ответа, начинаем с её инструкции,
+        // а не с первого блока (иначе инструкцию никто не увидит при возврате)
+        var current = steps[state.step];
+        if (current && current.kind === 'block' && answeredCount(current.instrument) === 0) {
+            for (var back = state.step; back >= 0; back--) {
+                if (steps[back].kind === 'intro' && steps[back].instrument === current.instrument) {
+                    state.step = back;
+                    break;
+                }
+            }
+        }
     }
 
-    // ---------- вступление ----------
+    // ---------- стартовый экран ----------
 
-    function renderIntro() {
+    function renderStart() {
         clearApp();
         var box = card('Опрос об учебной мотивации и саморегуляции');
         box.appendChild(make('p', null, 'Исследование самостоятельной учебной деятельности студентов-психологов ПетрГУ. Две методики, 74 утверждения, около 10 минут. Один раз, без правильных ответов.'));
@@ -397,7 +416,7 @@
                 state.course = found ? found.course : null;
                 saveDraft();
                 setBusy(false);
-                renderBlock();
+                renderStep();
             }).catch(function () {
                 setBusy(false);
                 showError(err, 'Не удалось сохранить группу. Проверьте соединение.');
@@ -407,46 +426,177 @@
         app.appendChild(box);
     }
 
-    // ---------- блоки вопросов ----------
+    // ---------- шаги: инструкция методики и блоки вопросов ----------
 
-    function currentBlock() {
+    function currentStep() {
         return state.plan[state.step];
     }
 
-    function totalAnswered(instrument) {
+    function answeredCount(instrument) {
         return Object.keys(state.answers[instrument]).length;
     }
 
-    function renderBlock() {
-        clearApp();
-        var block = currentBlock();
-        if (!block) {
-            renderDone();
-            return;
-        }
-        var instrument = INSTRUMENTS[block.instrument];
-        var total = state.plan.length;
-        state.startedAt[block.instrument] = state.startedAt[block.instrument] || Date.now();
+    /** Прогресс по двум методикам: знаменатель всегда 74, даже после отправки первой */
+    function progressInfo() {
+        var total = 0;
+        var done = 0;
+        INSTRUMENT_ORDER.forEach(function (key) {
+            var n = INSTRUMENTS[key].items.length;
+            total += n;
+            done += state.submitted[key] ? n : answeredCount(key);
+        });
+        return { total: total, done: done };
+    }
 
+    function renderProgress(leftText, rightText) {
+        var info = progressInfo();
         var progress = make('div', 'sv-progress');
         var row = make('div', 'sv-progress__row');
-        row.appendChild(make('span', null, 'Шаг ' + (state.step + 1) + ' из ' + total));
-        row.appendChild(make('span', null, 'Вопросы ' + (block.from + 1) + '–' + block.to + ' из ' + instrument.items.length));
+        row.appendChild(make('span', null, leftText));
+        if (rightText) row.appendChild(make('span', null, rightText));
         progress.appendChild(row);
         var bar = make('div', 'sv-bar');
         var fill = make('div', 'sv-bar__fill');
-        fill.style.width = Math.round(((state.step + 1) / total) * 100) + '%';
+        fill.style.width = Math.round((info.done / info.total) * 100) + '%';
         bar.appendChild(fill);
         progress.appendChild(bar);
-        app.appendChild(progress);
+        return progress;
+    }
 
-        var head = card(instrument.title, block.instrument === 'sham' ? instrument.intro : instrument.intro);
-        var legend = make('div', 'sv-legend');
-        legend.innerHTML = instrument.options.map(function (o) {
-            return '<b>' + o.value + '</b> — ' + o.label;
-        }).join(' · ');
-        head.appendChild(legend);
-        app.appendChild(head);
+    /** Пересчитывает полосу прогресса без перерисовки экрана: отвечать можно
+     *  и после того, как полоса уже нарисована */
+    function updateProgressBar() {
+        var fill = app.querySelector('.sv-bar__fill');
+        if (!fill) return;
+        var info = progressInfo();
+        fill.style.width = Math.round((info.done / info.total) * 100) + '%';
+    }
+
+    function instrumentLabel(key) {
+        var order = INSTRUMENT_ORDER.indexOf(key) + 1;
+        return 'Методика ' + order + ' из ' + INSTRUMENT_ORDER.length;
+    }
+
+    /** Шкала ответа: ось с числами и подписями концов. Концы берём из самих
+     *  вариантов, чтобы подписи не разъезжались с кнопками. Обратная шкала
+     *  окрашена и подписана отдельно — иначе после первой методики отвечают
+     *  «по привычке» (замечание автора). */
+    function scaleBar(key, big) {
+        var meta = INSTRUMENTS[key].meta;
+        var options = INSTRUMENTS[key].options;
+        var first = options[0];
+        var last = options[options.length - 1];
+
+        var box = make('div', 'sv-scale'
+            + (meta.reversed ? ' sv-scale--reversed' : '')
+            + (big ? ' sv-scale--big' : ''));
+
+        if (meta.reversed) box.appendChild(make('span', 'sv-scale__badge', 'обратная шкала'));
+
+        var row = make('div', 'sv-scale__row');
+        row.appendChild(make('span', 'sv-scale__num', String(first.value)));
+        var track = make('span', 'sv-scale__track');
+        track.setAttribute('aria-hidden', 'true');
+        row.appendChild(track);
+        row.appendChild(make('span', 'sv-scale__num', String(last.value)));
+
+        var labels = make('div', 'sv-scale__labels');
+        labels.appendChild(make('span', null, first.label));
+        labels.appendChild(make('span', 'sv-scale__labels-right', last.label));
+
+        box.appendChild(row);
+        box.appendChild(labels);
+        if (big && meta.hint) box.appendChild(make('p', 'sv-scale__hint', meta.hint));
+        return box;
+    }
+
+    /** Напоминание о смене шкалы для второй методики */
+    function scaleChangeNotice() {
+        var box = make('div', 'sv-notice');
+        box.appendChild(make('p', 'sv-notice__head', 'Шкала другая — прочитайте это до начала'));
+        box.appendChild(make('p', null, 'В первой методике было: 1 — «совсем не соответствует», 5 — «вполне соответствует». Здесь наоборот: 1 — «верно», 4 — «неверно».'));
+        box.appendChild(make('p', null, 'Читайте каждое высказывание заново и отвечайте на него, а не «по привычке» к прошлой шкале.'));
+        return box;
+    }
+
+    /** Экран-инструкция перед методикой: что за методика, как отвечать, какая шкала */
+    function renderInstrumentIntro(key) {
+        var meta = INSTRUMENTS[key].meta;
+        var items = INSTRUMENTS[key].items.length;
+
+        app.appendChild(renderProgress(instrumentLabel(key) + ' · инструкция', items + ' утверждений'));
+
+        var box = card(instrumentLabel(key) + ' · ' + meta.title);
+        box.appendChild(make('p', 'sv-muted', meta.method));
+
+        if (meta.reversed) box.appendChild(scaleChangeNotice());
+
+        meta.instruction.forEach(function (text) {
+            box.appendChild(make('p', null, text));
+        });
+
+        box.appendChild(scaleBar(key, true));
+
+        var rules = make('ul', 'sv-rules');
+        meta.rules.forEach(function (text) {
+            rules.appendChild(make('li', null, text));
+        });
+        box.appendChild(rules);
+
+        app.appendChild(box);
+
+        var nav = make('div', 'sv-nav sv-nav--end');
+        var go = make('button', 'sv-btn sv-btn--primary', 'Понятно, перейти к вопросам');
+        go.type = 'button';
+        go.addEventListener('click', function () {
+            state.step++;
+            saveDraft();
+            renderStep();
+            window.scrollTo(0, 0);
+        });
+        nav.appendChild(go);
+        app.appendChild(nav);
+    }
+
+    /** Следующая методика, которую ещё не прошли (null — если её нет) */
+    function nextInstrumentAfter(key) {
+        var from = INSTRUMENT_ORDER.indexOf(key) + 1;
+        for (var i = from; i < INSTRUMENT_ORDER.length; i++) {
+            if (!state.submitted[INSTRUMENT_ORDER[i]]) return INSTRUMENT_ORDER[i];
+        }
+        return null;
+    }
+
+    function renderStep() {
+        clearApp();
+        var step = currentStep();
+        if (!step) {
+            renderDone();
+            return;
+        }
+        if (step.kind === 'intro') {
+            renderInstrumentIntro(step.instrument);
+            return;
+        }
+        renderBlock(step);
+    }
+
+    function renderBlock(block) {
+        var instrument = INSTRUMENTS[block.instrument];
+        var meta = instrument.meta;
+        state.startedAt[block.instrument] = state.startedAt[block.instrument] || Date.now();
+
+        app.appendChild(renderProgress(
+            instrumentLabel(block.instrument) + ' · ' + meta.title,
+            'Вопросы ' + (block.from + 1) + '–' + block.to + ' из ' + instrument.items.length
+        ));
+
+        app.appendChild(card(meta.title, meta.lead));
+
+        // Шкала остаётся на экране, пока человек отвечает на этот блок
+        var scale = scaleBar(block.instrument, false);
+        scale.classList.add('sv-scale--sticky');
+        app.appendChild(scale);
 
         var err = make('p', 'sv-error');
         err.hidden = true;
@@ -464,14 +614,20 @@
             if (state.step > 0) {
                 state.step--;
                 saveDraft();
-                renderBlock();
+                renderStep();
                 window.scrollTo(0, 0);
             }
         });
 
-        var isLast = state.step === state.plan.length - 1;
-        var next = make('button', 'sv-btn sv-btn--primary', isLast ? 'Завершить опрос' : 'Далее');
+        // Последний блок методики ведёт к следующей, а не просто «Далее»
+        var lastOfInstrument = block.to >= instrument.items.length;
+        var nextKey = nextInstrumentAfter(block.instrument);
+        var label = lastOfInstrument
+            ? (nextKey ? 'Завершить и перейти к следующей' : 'Завершить опрос')
+            : 'Далее';
+        var next = make('button', 'sv-btn sv-btn--primary', label);
         next.type = 'button';
+        next.setAttribute('data-survey-next', '');
         next.addEventListener('click', function () {
             var missing = missingInBlock(block);
             if (missing.length) {
@@ -523,6 +679,7 @@
                 state.answers[instrumentKey][index + 1] = option.value;
                 fieldset.classList.remove('is-missing');
                 saveDraft();
+                updateProgressBar();
             });
         });
         fieldset.appendChild(opts);
@@ -563,7 +720,7 @@
             return;
         }
         saveDraft();
-        renderBlock();
+        renderStep();
         window.scrollTo(0, 0);
     }
 

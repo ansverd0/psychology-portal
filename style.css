@@ -1043,12 +1043,12 @@ button:hover {
 }
 
 /* Универсальная плавающая кнопка быстрой прокрутки наверх (ПК + Мобильные).
-   Кнопка всегда у нижнего края: подъём над подвалом (--fab-lift) — только
-   у кнопки закладок, по просьбе автора (раунд 4) */
+   Нижний слот справа занят кнопкой закладок (раунд 5), поэтому «наверх»
+   стоит над ней и никуда не поднимается */
 #scroll-top-btn {
     display: none;
     position: fixed;
-    bottom: max(16px, env(safe-area-inset-bottom));
+    bottom: calc(80px + env(safe-area-inset-bottom));
     right: max(16px, env(safe-area-inset-right));
     background: #2b6cb0;
     color: white;
@@ -1405,13 +1405,13 @@ body.bookmarks-modal-open {
 }
 
 /* Кнопка закладок нужна всюду, где нет правой панели (U2-04).
-   Пока подвал на экране, она поднимается над ним: --fab-lift считает
-   js/supabase-config.js (раунд 4) */
+   Стоит в нижнем слоте справа — там, где раньше была «наверх»; пока подвал
+   на экране, поднимается над ним (--fab-lift считает js/supabase-config.js) */
 @media screen and (max-width: 1599px) {
     .bookmarks-fab {
         position: fixed;
         right: max(16px, env(safe-area-inset-right));
-        bottom: calc(80px + var(--fab-lift, 0px) + env(safe-area-inset-bottom));
+        bottom: calc(16px + var(--fab-lift, 0px) + env(safe-area-inset-bottom));
         z-index: 9998;
         display: inline-flex;
         align-items: center;
@@ -2332,7 +2332,7 @@ body {
     body { padding-top: max(20px, env(safe-area-inset-top)); }
     .consent-banner { left: max(16px, env(safe-area-inset-left)); right: max(16px, env(safe-area-inset-right)); bottom: max(16px, env(safe-area-inset-bottom)); }
     .update-banner { top: max(12px, env(safe-area-inset-top)); }
-    #scroll-top-btn { right: max(16px, env(safe-area-inset-right)); bottom: max(16px, env(safe-area-inset-bottom)); }
+    #scroll-top-btn { right: max(16px, env(safe-area-inset-right)); bottom: calc(80px + env(safe-area-inset-bottom)); }
 }
 
 button,
