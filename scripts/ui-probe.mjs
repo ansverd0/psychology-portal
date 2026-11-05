@@ -479,9 +479,18 @@ const scenarios = {
     await sleep(800);
     const state = await cdp.eval(`(() => {
       const tiles = [...document.querySelectorAll('#mobile-tickets-tiles .mobile-tile-btn')];
-      return { tiles: tiles.length, sameRow: tiles.every((t) => Math.abs(t.getBoundingClientRect().y - tiles[0].getBoundingClientRect().y) <= 2) };
+      const rows = {};
+      tiles.forEach((t) => {
+        const r = t.getBoundingClientRect();
+        const y = Math.round(r.y);
+        (rows[y] = rows[y] || []).push(Math.round(r.width));
+      });
+      const first = rows[Object.keys(rows).map(Number).sort((a, b) => a - b)[0]] || [];
+      return { tiles: tiles.length, firstRow: first.length, widths: first };
     })()`);
-    c.ok(state.tiles === 3 && state.sameRow, '390 tickets: три плитки в одном ряду', state);
+    // Дисциплин стало больше трёх — проверяем правило раскладки, а не число плиток
+    c.ok(state.tiles >= 3 && state.firstRow === 3, '390 tickets: в первом ряду три плитки', state);
+    c.ok(new Set(state.widths).size === 1, '390 tickets: плитки в ряду равной ширины', state);
 
     await cdp.eval(`document.querySelector('#mobile-tickets-tiles .mobile-tile-btn').click()`);
     await sleep(500);
@@ -774,7 +783,8 @@ const scenarios = {
   async survey(cdp, base, c) {
     await setViewport(cdp, 390, 844, true);
 
-    // Cеть подменяем: сценарий не должен зависеть от того, что уже лежит на сервере
+    // Cеть подменяем: сценарий не должен зависеть от того, что уже лежит на сервере.
+    // Заодно перехватываем PsyTracker, чтобы проверить вехи журнала без записи в базу
     const stub = (shamDone) => `(() => {
       const of = window.fetch;
       window.fetch = function (input, init) {
@@ -786,6 +796,22 @@ const scenarios = {
         }
         return of.apply(this, arguments);
       };
+      window.__surveyEvents = [];
+      let tracker = null;
+      Object.defineProperty(window, 'PsyTracker', {
+        configurable: true,
+        get: function () { return tracker; },
+        set: function (value) {
+          if (value && typeof value.event === 'function') {
+            const orig = value.event;
+            value.event = function (name, meta) {
+              window.__surveyEvents.push(name);
+              return orig.call(value, name, meta);
+            };
+          }
+          tracker = value;
+        }
+      });
     })();
     try { localStorage.setItem('research_user_key', 'белый-кедр-73'); } catch (e) {}`;
 
@@ -862,6 +888,12 @@ const scenarios = {
       button: (document.querySelector('.sv-nav button') || {}).textContent
     }))()`);
     c.ok(/Методика 2 из 2/.test(moved.title) && moved.notice, 'опрос: после методики сразу её инструкция', moved);
+
+    // Вехи журнала: без них не считается воронка «открыл → дошёл»
+    const events = await cdp.eval(`window.__surveyEvents || []`);
+    c.ok(events.includes('survey_open'), 'опрос: веха «открыл» пишется в журнал', events);
+    c.ok(events.includes('instrument_started'), 'опрос: веха «начал методику» пишется', events);
+    c.ok(events.includes('instrument_done'), 'опрос: веха «закончил методику» пишется', events);
     await cdp.send('Page.removeScriptToEvaluateOnNewDocument', { identifier: pre3.identifier });
   },
 

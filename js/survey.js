@@ -416,6 +416,7 @@
                 state.course = found ? found.course : null;
                 saveDraft();
                 setBusy(false);
+                logEvent('survey_group', { group: value });
                 renderStep();
             }).catch(function () {
                 setBusy(false);
@@ -461,6 +462,16 @@
         bar.appendChild(fill);
         progress.appendChild(bar);
         return progress;
+    }
+
+    /** Веха в журнал исследования. Трекер может быть не загружен (офлайн, старый
+     *  кэш) — опрос из-за журнала падать не должен. */
+    function logEvent(name, meta) {
+        try {
+            if (window.PsyTracker && typeof window.PsyTracker.event === 'function') {
+                window.PsyTracker.event(name, meta);
+            }
+        } catch (e) { /* журнал не критичен для прохождения */ }
     }
 
     /** Пересчитывает полосу прогресса без перерисовки экрана: отвечать можно
@@ -584,7 +595,11 @@
     function renderBlock(block) {
         var instrument = INSTRUMENTS[block.instrument];
         var meta = instrument.meta;
+        var firstBlockOfInstrument = !state.startedAt[block.instrument];
         state.startedAt[block.instrument] = state.startedAt[block.instrument] || Date.now();
+        if (firstBlockOfInstrument) {
+            logEvent('instrument_started', { instrument: block.instrument, from: block.from });
+        }
 
         app.appendChild(renderProgress(
             instrumentLabel(block.instrument) + ' · ' + meta.title,
@@ -701,6 +716,10 @@
             submitInstrument(block.instrument).then(function () {
                 setBusy(false);
                 state.submitted[block.instrument] = true;
+                logEvent('instrument_done', {
+                    instrument: block.instrument,
+                    seconds: Math.round((Date.now() - (state.startedAt[block.instrument] || Date.now())) / 1000)
+                });
                 saveDraft();
                 nextStepOrFinish();
             }).catch(function (e) {
@@ -756,6 +775,7 @@
 
         app.appendChild(box);
         try { localStorage.removeItem(draftKey()); } catch (e) { /* ignore */ }
+        logEvent('survey_finished');
     }
 
     // ---------- старт ----------
@@ -763,6 +783,9 @@
     function boot() {
         var saved = null;
         try { saved = localStorage.getItem(KEY_STORE); } catch (e) { /* ignore */ }
+        // Веха «открыл опрос»: без неё не посчитать, сколько людей отвалилось
+        // между открытием и первой методикой
+        logEvent('survey_open', { has_key: Boolean(saved) });
         if (!saved) {
             renderKeyGate();
             return;
