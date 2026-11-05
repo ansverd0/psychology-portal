@@ -1,16 +1,22 @@
 // Журнал поведения для исследования: страницы, время, прокрутка, переключения вкладок.
-// Пишет только при наличии анонимного ключа и только на учебных страницах (не на опросе).
+// Пишет только при наличии анонимного ключа. На учебных страницах — автоматически
+// (просмотр, уход, вкладки), на странице опроса — только явные вехи из survey.js
+// (открыл, выбрал группу, начал/закончил методику), иначе воронку не посчитать.
 // Отправка — пакетами через RPC log_events; при обрыве события ждут в localStorage.
 
 (function () {
     'use strict';
 
     var PAGE = (document.body && document.body.dataset.page) || '';
-    if (!PAGE || PAGE === 'survey') return;
+    if (!PAGE) return;
 
+    // Как и раньше: на учебных страницах без ключа ничего не пишем.
+    // На опросе ключ может появиться позже (его создают на этой же странице),
+    // поэтому там ждём его до отправки, а не отказываемся от журнала сразу.
+    var SURVEY = PAGE === 'survey';
     var key = null;
     try { key = localStorage.getItem('research_user_key'); } catch (e) { return; }
-    if (!key) return;
+    if (!key && !SURVEY) return;
     if (typeof SUPABASE_URL === 'undefined' || typeof SUPABASE_ANON_KEY === 'undefined') return;
 
     var SESSION_STORE = 'hub_tracker_session';
@@ -118,6 +124,15 @@
         if (!queue.length) return;
         var batch = [];
         try {
+            // Ключ могли создать уже после загрузки страницы (опрос): берём актуальный
+            if (!key) {
+                try { key = localStorage.getItem('research_user_key'); } catch (e) { key = null; }
+            }
+            if (!key) {
+                // Нечего отправлять — события ждут ключа на диске
+                persistQueue();
+                return;
+            }
             if (!session) session = readSession();
             batch = queue.splice(0, 100);
             var url = SUPABASE_URL.replace(/\/$/, '') + '/rest/v1/rpc/log_events';
@@ -188,9 +203,19 @@
     function start() {
         session = readSession();
         queue = readQueue();
+
+        if (SURVEY) {
+            // На опросе только вехи: их присылает survey.js через PsyTracker.event
+            if (queue.length) flush(false);
+            window.addEventListener('pagehide', function () {
+                persistQueue();
+                flush(true);
+            });
+            return;
+        }
+
         visibleSince = document.visibilityState === 'hidden' ? 0 : Date.now();
         trackScroll();
-
         push('page_view', { referrer: document.referrer ? 1 : 0 });
         if (queue.length) flush(false);
 
