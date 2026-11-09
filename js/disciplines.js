@@ -113,6 +113,83 @@ window.PSY_DISCIPLINES = {
         "icon": "🛠",
         "course": 3,
         "order": 160
+    },
+    "personality-psych": {
+        "title": "Психология личности",
+        "short": "Личность",
+        "icon": "👤",
+        "course": 2,
+        "order": 165
+    },
+    "stress-psych": {
+        "title": "Психология стресса и совладающего поведения",
+        "short": "Стресс",
+        "icon": "🌪",
+        "course": 3,
+        "order": 170
+    },
+    "deviant-psych": {
+        "title": "Психология девиантного поведения",
+        "short": "Девиантное поведение",
+        "icon": "⚠️",
+        "course": 3,
+        "order": 175
+    },
+    "legal-psych": {
+        "title": "Юридическая психология",
+        "short": "Юридическая",
+        "icon": "⚖️",
+        "course": 4,
+        "order": 180
+    },
+    "counseling-psych": {
+        "title": "Психологическое консультирование",
+        "short": "Консультирование",
+        "icon": "💬",
+        "course": 3,
+        "order": 185
+    },
+    "family-psych": {
+        "title": "Психология семьи",
+        "short": "Семья",
+        "icon": "👨‍👩‍👧",
+        "course": 3,
+        "order": 190
+    },
+    "labor-psych": {
+        "title": "Психология труда",
+        "short": "Труд",
+        "icon": "🛠",
+        "course": 2,
+        "order": 195
+    },
+    "org-psych": {
+        "title": "Организационная психология",
+        "short": "Организационная",
+        "icon": "🏢",
+        "course": 2,
+        "order": 200
+    },
+    "safety-psych": {
+        "title": "Психология безопасности",
+        "short": "Безопасность",
+        "icon": "🛡",
+        "course": 3,
+        "order": 205
+    },
+    "health-psych": {
+        "title": "Психология здоровья",
+        "short": "Здоровье",
+        "icon": "🩺",
+        "course": 3,
+        "order": 210
+    },
+    "crisis-psych": {
+        "title": "Психология кризисных состояний",
+        "short": "Кризисные состояния",
+        "icon": "🌧",
+        "course": 4,
+        "order": 215
     }
 };
 
@@ -122,7 +199,18 @@ window.PSY_ALIASES = {
     "developmental-exam": "developmental-psych",
     "ppd": "psychodiagnostics",
     "ped-psych": "pedagogical-psych",
-    "age-psych": "developmental-psych"
+    "age-psych": "developmental-psych",
+    "personology": "personality-psych",
+    "stress": "stress-psych",
+    "deviance": "deviant-psych",
+    "legal": "legal-psych",
+    "counseling": "counseling-psych",
+    "family": "family-psych",
+    "labor": "labor-psych",
+    "org": "org-psych",
+    "safety": "safety-psych",
+    "health": "health-psych",
+    "crisis": "crisis-psych"
 };
 
 window.psyDiscipline = function (id) {
