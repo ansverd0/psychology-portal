@@ -8,6 +8,7 @@ on:
 permissions:
   contents: read
   issues: write
+  actions: read
 
 jobs:
   check:
@@ -29,6 +30,28 @@ jobs:
             -H "apikey: $KEY" -H "Authorization: Bearer $KEY" \
             "https://lrjszannmammzzqotaro.supabase.co/rest/v1/version_control?select=version&limit=1" > /dev/null
 
+      - name: Check last successful DB backup
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+
+          LAST=$(gh api "repos/$GITHUB_REPOSITORY/actions/workflows/backup.yml/runs?status=success&per_page=1" \
+            --jq '.workflow_runs[0].updated_at // empty')
+
+          if [ -z "$LAST" ]; then
+            echo "::error::Нет ни одного успешного запуска Backup database."
+            exit 1
+          fi
+
+          AGE_H=$(( ( $(date -u +%s) - $(date -u -d "$LAST" +%s) ) / 3600 ))
+          echo "Последний успешный бэкап: $LAST (${AGE_H} ч назад, порог 26 ч)."
+
+          if [ "$AGE_H" -ge 26 ]; then
+            echo "::error::Резервная копия старше 26 часов: последний успешный запуск $LAST."
+            exit 1
+          fi
+
       - name: Open incident issue
         if: failure()
         env:
@@ -38,11 +61,11 @@ jobs:
           EXISTING=$(gh issue list --state open --label incident --limit 1 --json number --jq '.[0].number // empty')
           if [ -z "$EXISTING" ]; then
             gh issue create \
-              --title "Портал недоступен (автопроверка)" \
+              --title "Портал недоступен или нет свежей копии БД (автопроверка)" \
               --label incident \
-              --body "Проверка $(date -u +%Y-%m-%dT%H:%MZ) не смогла открыть сайт или Supabase. Проверьте GitHub Pages, последний деплой и статус Supabase."
+              --body "Проверка $(date -u +%Y-%m-%dT%H:%MZ) не смогла открыть сайт/Supabase либо последний успешный Backup database старше 26 ч. Проверьте GitHub Pages, последний деплой, статус Supabase и журнал backup.yml."
           else
-            gh issue comment "$EXISTING" --body "Проверка $(date -u +%Y-%m-%dT%H:%MZ): портал всё ещё недоступен."
+            gh issue comment "$EXISTING" --body "Проверка $(date -u +%Y-%m-%dT%H:%MZ): портал недоступен или резервная копия БД устарела."
           fi
 
       - name: Close incident issue

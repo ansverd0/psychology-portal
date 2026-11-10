@@ -68,7 +68,9 @@ Workflow `.github/workflows/backup.yml` запускается ежедневн�
 
 - нужны секреты `SUPABASE_PAT`, `SUPABASE_PROJECT_REF`, `BACKUP_PASSPHRASE`;
 - дамп шифруется GPG (AES256) и 14 дней лежит в artifact;
-- без `BACKUP_PASSPHRASE` workflow падает и **не** выгружает открытый дамп.
+- без `BACKUP_PASSPHRASE` workflow падает и **не** выгружает открытый дамп;
+- без `SUPABASE_PAT`/`SUPABASE_PROJECT_REF` шаг тоже падает (`exit 1`), поэтому зелёный запуск всегда означает, что дамп действительно снят (до 10.11.2026 там стоял `exit 0` и «зелёный» мог означать «бэкап пропущен»).
+- Проверять не «зелёный», а артефакт: скачать `db-backup-<run_id>`, расшифровать по п. 3.1 и сверить число таблиц/строк.
 
 ### Восстановление
 
@@ -197,7 +199,8 @@ curl.exe -H "apikey: <publishable>" -H "Authorization: Bearer <publishable>" `
 
 - `index.html`;
 - `sw.js`;
-- `version_control` через Supabase REST.
+- `version_control` через Supabase REST;
+- **свежесть бэкапа**: последний успешный запуск `backup.yml` должен быть не старше 26 часов (запрос к Actions API, право `actions: read`).
 
 При сбое создаёт issue с меткой `incident`, при восстановлении — закрывает. GitHub отключит scheduled workflow после 60 дней без активности в репозитории — периодически делайте любой коммит.
 
