@@ -71,7 +71,20 @@ try {
   r = await req('POST', 'quiz_results', {
     body: { user_key: testKey, discipline_id: 'general-psych', score_obtained: 1, total_questions: 2, percentage: 50 },
   });
-  check('anon может записать результат теста', r.status, (s) => s >= 200 && s < 300, r.text.slice(0, 120));
+  check('anon НЕ пишет в quiz_results напрямую', r.status, (s) => s >= 400 && s < 500, r.text.slice(0, 120));
+
+  r = await req('POST', 'rpc/log_quiz_result', {
+    body: { p_key: testKey, p_discipline: 'general-psych', p_score: 1, p_total: 2 },
+  });
+  check('anon пишет результат теста через RPC log_quiz_result', r.status, (s) => s >= 200 && s < 300, r.text.slice(0, 120));
+
+  r = await req('GET', `quiz_results?select=id,percentage&user_key=eq.${testKey}`, { key: service });
+  const savedRows = (() => { try { return JSON.parse(r.text).length; } catch { return -1; } })();
+  check('результат лёг в quiz_results (видно через service_role)', savedRows, (n) => n === 1);
+
+  r = await req('GET', `users_profiles?select=tests_completed_count&user_key=eq.${testKey}`, { key: service });
+  const counter = (() => { try { return JSON.parse(r.text)[0].tests_completed_count; } catch { return -1; } })();
+  check('счётчик пройденных тестов вырос до 1', counter, (n) => n === 1);
 
   r = await req('GET', 'session_essays?select=id', { key: service });
   check('service_role читает эссе', r.status, (s) => s === 200);

@@ -3,7 +3,9 @@
 //   node scripts/content-import.mjs materials/general-psych            # проверка
 //   node scripts/content-import.mjs materials/general-psych --apply    # запись
 //   node scripts/content-import.mjs --export materials/general-psych/content
+//   node scripts/content-import.mjs --export .audit/exam --discipline general-psych   # только одна дисциплина
 // Идемпотентно: записи обновляются по естественному ключу, дублей не появляется.
+// Поля статей: файл — источник истины; поле source пишется в БД как есть (нет в файле — в БД null).
 
 import fs from 'node:fs';
 import path from 'node:path';
@@ -14,7 +16,11 @@ const args = process.argv.slice(2);
 const apply = args.includes('--apply');
 const exportIdx = args.indexOf('--export');
 const exportDir = exportIdx > -1 ? args[exportIdx + 1] : null;
-const target = args.find((a, i) => !a.startsWith('--') && !(exportIdx > -1 && i === exportIdx + 1));
+const discIdx = args.indexOf('--discipline');
+const exportDisciplineArg = discIdx > -1 ? args[discIdx + 1] : null;
+const target = args.find((a, i) => !a.startsWith('--')
+  && !(exportIdx > -1 && i === exportIdx + 1)
+  && !(discIdx > -1 && i === discIdx + 1));
 
 const env = {};
 for (const line of fs.readFileSync(path.join(root, '.env'), 'utf8').split(/\r?\n/)) {
@@ -92,11 +98,20 @@ function canonicalDiscipline(where, value) {
 function validateArticle(row, where) {
   if (!checkLength(where, 'title', row.title, 3, 200)) return null;
   if (!checkLength(where, 'content', row.content, 50, 100000)) return null;
+  if (row.source != null && typeof row.source !== 'string') {
+    fail(where, 'source должен быть строкой');
+    return null;
+  }
+  if (typeof row.source === 'string' && row.source.trim().length > 500) {
+    fail(where, 'source длиннее 500 символов');
+    return null;
+  }
   checkHtml(where, row.content);
   return {
     discipline_id: canonicalDiscipline(where, row.discipline_id),
     title: text(row.title),
     content: text(row.content),
+    source: row.source ? text(row.source) : null,
     ai_generated: Boolean(row.ai_generated)
   };
 }
@@ -279,7 +294,7 @@ async function fetchExistingKeys(type) {
 }
 
 const DB_FIELDS = {
-  articles: ['discipline_id', 'title', 'content', 'ai_generated'],
+  articles: ['discipline_id', 'title', 'content', 'source', 'ai_generated'],
   tickets: ['discipline_id', 'number', 'title', 'recommend_time', 'plan', 'content', 'ai_generated'],
   flashcards: ['discipline_id', 'term', 'definition'],
   tests: ['discipline_id', 'question', 'options', 'correct_index', 'link_url'],
@@ -366,10 +381,12 @@ async function applyTicketsBooks(tickets) {
   return pairs.length;
 }
 
-async function exportContent(dir) {
+async function exportContent(dir, discipline = null) {
   fs.mkdirSync(dir, { recursive: true });
   for (const [type, cfg] of Object.entries(TYPES)) {
-    let rows = await rest(`${cfg.table}?select=*`);
+    const scoped = discipline && TYPES[type].key.includes('discipline_id');
+    const filter = scoped ? `&discipline_id=eq.${encodeURIComponent(discipline)}` : '';
+    let rows = await rest(`${cfg.table}?select=*${filter}`);
     if (type === 'tickets') {
       const links = await rest('ticket_library?select=ticket_id,book_id');
       const books = await rest('library?select=id,title,author');
@@ -384,13 +401,26 @@ async function exportContent(dir) {
     }
     (rows || []).forEach((row) => delete row.id);
     fs.writeFileSync(path.join(dir, `${type}.json`), JSON.stringify(rows, null, 2), 'utf8');
-    console.log(`${type}: ${(rows || []).length} строк → ${path.join(dir, `${type}.json`)}`);
+    console.log(`${type}: ${(rows || []).length} строк → ${path.join(dir, `${type}.json`)}${discipline && !scoped ? ' (таблица без дисциплины, выгружена целиком)' : ''}`);
   }
 }
 
 async function main() {
   if (exportDir) {
-    await exportContent(path.resolve(root, exportDir));
+    let discipline = null;
+    if (exportDisciplineArg) {
+      const raw = text(exportDisciplineArg);
+      discipline = ALIASES[raw] || raw;
+      if (!CANONICAL[discipline]) {
+        console.error(`Неизвестная дисциплина "${raw}" — сверься с materials/disciplines.json`);
+        process.exit(1);
+      }
+      console.log(`Экспорт только по дисциплине: ${discipline}`);
+    } else if (discIdx > -1) {
+      console.error('После --discipline нужен id дисциплины');
+      process.exit(1);
+    }
+    await exportContent(path.resolve(root, exportDir), discipline);
     return;
   }
   if (!target) {

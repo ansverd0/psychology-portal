@@ -210,19 +210,46 @@ function handleAnswer(selectedButton, selectedIndex, correctIndex) {
     if (quizNextBtn) quizNextBtn.style.display = 'block';
 }
 
+/** Результат теста пишется в БД через RPC log_quiz_result (db/2026-11-01_research_schema.sql):
+ *  он проверяет ключ, считает процент и поднимает users_profiles.tests_completed_count.
+ *  Прямой INSERT в quiz_results закрыт политикой (db/2026-11-10_quiz_results_rpc_only.sql).
+ *  Гостя без ключа не пишем: RPC всё равно отклонит запись. Ошибка сети не должна ломать страницу. */
+function saveQuizResult(scoreValue, total, discipline) {
+    let key = null;
+    try { key = localStorage.getItem('research_user_key'); } catch (e) { return; }
+    if (!key || !total || !discipline) return;
+
+    const url = String(SUPABASE_URL).replace(/\/$/, '') + '/rest/v1/rpc/log_quiz_result';
+    fetch(url, {
+        method: 'POST',
+        headers: {
+            apikey: SUPABASE_ANON_KEY,
+            Authorization: 'Bearer ' + SUPABASE_ANON_KEY,
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            p_key: key,
+            p_discipline: discipline,
+            p_score: Number(scoreValue) || 0,
+            p_total: Number(total) || 0
+        })
+    }).catch(() => { /* прогресс не критичен для показа результата */ });
+}
+
 function showResults() {
     const qw = document.getElementById('quiz-wrapper');
     const rw = document.getElementById('result-wrapper');
     const st = document.getElementById('score-text');
 
+    const resultDiscipline = (currentActiveQuestions[0] && currentActiveQuestions[0].discipline) || '';
     if (window.PsyTracker) {
-        const discipline = (currentActiveQuestions[0] && currentActiveQuestions[0].discipline) || '';
         PsyTracker.event('test_complete', {
-            discipline: discipline,
+            discipline: resultDiscipline,
             score: Number(score),
             total: currentActiveQuestions.length
         });
     }
+    saveQuizResult(score, currentActiveQuestions.length, resultDiscipline);
     if (qw) qw.style.display = 'none';
     if (rw) rw.style.display = 'block';
     

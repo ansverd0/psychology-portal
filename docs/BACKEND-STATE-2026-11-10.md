@@ -1,48 +1,65 @@
 # Бэкенд: состояние и решения, 10.11.2026
 
 Документ фиксирует, что сделано в чате «бэкенд» и какие решения принял владелец. Заменяет собой переписку:
-если через месяц непонятно, почему `articles.source` так и нет — ответ здесь.
+если через месяц непонятно, почему в `articles` есть `source`, а в реестре 27 дисциплин — ответ здесь.
 
 ## 1. Бэкапы восстановлены (P0 закрыт)
 
 | Что | Доказательство |
 |---|---|
-| Причина 9 падений | лог запуска 42801555895, шаг «Dump and encrypt»: `Error: HTTP 401: {"message":"Invalid access token"}` — секрет `SUPABASE_PAT` в GitHub содержал отозванный токен (создан 25.10, с тех пор не менялся) |
+| Причина 9 падений | лог запуска 42801555895, шаг «Dump and encrypt»: `Error: HTTP 401: {"message":"Invalid access token"}` — в GitHub Secret `SUPABASE_PAT` лежал отозванный токен (создан 25.10, с тех пор не менялся) |
 | Секреты | `SUPABASE_PAT` и `SUPABASE_PROJECT_REF` обновлены 10.11.2026 19:29 UTC; `BACKUP_PASSPHRASE` не трогали |
-| Зелёный запуск | `workflow_dispatch`, run [42885777053](https://github.com/ansverd0/psychology-portal/actions/runs/42885777053) — success |
-| Артефакт проверен | `db-backup-42885777053`, 913 292 байта; `gpg --decrypt` с паролем из `backuppassphrase.txt` → exit 0; внутри 19 JSON + `_security_before.json`, 8722 строки |
-| Сверка строк | articles 196, tickets 168, flashcards 774, tests 432, glossary 365, library 20, news 10, ticket_library 377, disciplines 30, users_profiles 34, events 6122, instrument_responses 56, instrument_keys 128, study_groups 9, version_control 1; quiz_results / session_essays / initial_anxiety_tests / deadlines — 0 |
-| Локальный дамп | `node scripts/backup-db.mjs` → `backups/2026-11-10-19-30_db` (19 таблиц, 8722 строки, совпадает с артефактом строка в строку) |
+| Зелёные запуски | 42885777053 (до миграций) и 42892821932 (после миграций) — `workflow_dispatch`, оба success |
+| Артефакт проверен | `db-backup-42885777053`, 913 292 байта; `gpg --decrypt` с паролем из `backuppassphrase.txt` → exit 0; 19 JSON + `_security_before.json`, 8722 строки |
+| Локальные дампы | `backups/2026-11-10-19-30_db` (8722 строки) и `backups/2026-11-10-20-06_db` (перед миграциями) |
 
-`events` вырос с 6055 (аудит 10.11) до 6122 — это нормальный прирост, а не расхождение.
+`events` вырос с 6055 (аудит 10.11) до 6122 — прирост, не расхождение.
 
-Ловушка в `backup.yml` («нет секретов → warning + `exit 0`») убрана: теперь `exit 1`. Монитор
+Ловушка в `backup.yml` («нет секретов → warning + `exit 0`») убрана: теперь `exit 1`.
 `monitor.yml` раз в 30 минут проверяет, что последний успешный `backup.yml` не старше 26 часов.
 
-## 2. Ротация PAT отложена (решение владельца)
+## 2. PAT: новый, ротация не нужна (решение владельца)
 
-10.11.2026 в переписке засветился PAT, который сейчас работает. Владелец решил **не перевыпускать его
-сразу**. Что это значит практически:
+Владелец подтвердил 10.11.2026: токен в `.env` — уже перевыпущенный, факт засветки в переписке
+принят. Повторная ротация не планируется.
 
-- токен действует и лежит в `.env` и в GitHub Secrets (в Secrets он был записан этим чатом, чтобы поднять бэкап);
-- пока токен не отозван, любой, у кого он есть, может через Management API читать и менять базу в обход RLS;
-- когда решите ротировать: Supabase → Account → Access Tokens → Revoke старый → создать новый → `git`-секрет и `.env` обновить, проверить `node scripts/backup-db.mjs`. Порядок — `docs/RUNBOOK.md` §4.
+- токен проверен: `GET /v1/projects/lrjszannmammzzqotaro` → 200;
+- он же лежит в GitHub Secrets, поэтому бэкап и работает;
+- порядок на случай компрометации — `docs/RUNBOOK.md` §4.
 
-## 3. Схема БД: решено ничего не менять (10.11.2026)
+## 3. Миграции применены (10.11.2026, по просьбе владельца)
 
-Проверено фактически, менять пока не будем:
+Все три файла — `begin; … commit;`, сначала `--dry-run` (HTTP 201), перед накатом снят дамп
+`backups/2026-11-10-20-06_db`. После каждой — `notify pgrst, 'reload schema'`.
 
-| Вопрос | Факт | Решение |
+| Файл | Что делает | Проверка после наката |
 |---|---|---|
-| N14 `articles.source` | в схеме `articles` колонок 5: `id, discipline_id, title, content, ai_generated`; `content-import.mjs:250` принимает `source` из JSON, `validateArticle` (`:92-102`) его не возвращает, `DB_FIELDS.articles` (`:282`) не пишет — поле теряется молча | отложено |
-| Мёртвые строки `disciplines` | 30 строк, из них 14 пустых; `general-exam`, `social-exam`, `developmental-exam` — 0 строк во всех контентных таблицах и 0 ссылок в `deadlines` (в `study_groups` колонки `discipline_id` нет вовсе) | отложено, удалять безопасно, когда решите |
-| Индексы под дисциплину | новые не нужны: у каждой контентной таблицы уже есть уникальный индекс с `discipline_id` первым столбцом — `articles(discipline_id,title)`, `tickets(discipline_id,number)`, `flashcards(discipline_id,term)`, `tests(discipline_id,question)`, `ticket_library(ticket_id,book_id)` | закрыто без изменений |
-| `quiz_results` | RPC **уже есть**: `log_quiz_result(p_key, p_discipline, p_score, p_total)` — `SECURITY DEFINER`, проверяет ключ, диапазоны счёта, пишет `percentage` и поднимает `users_profiles.tests_completed_count`. Клиент его не вызывает (`git grep quiz_results js/` → 0). Политика `quiz insert` разрешает `anon` прямой INSERT с `with check (true)` — минуя проверку ключа | отложено; RPC создавать не надо, надо звать его из клиента. Прямой INSERT — дыра для накрутки research-данных, закрывать только вместе с фронтендом |
-| `--export` игнорирует дисциплину | `exportContent` (`scripts/content-import.mjs:369-391`) выгружает таблицы целиком | отложено (обходной путь — фильтровать JSON после экспорта) |
+| `db/2026-11-10_articles_source.sql` | колонка `articles.source text` + комментарий | `information_schema.columns` → 6-я колонка `source text`, nullable |
+| `db/2026-11-10_cleanup_alias_disciplines.sql` | удаляет 3 мёртвые строки `disciplines` (`general-exam`, `social-exam`, `developmental-exam`); удаляет дубль индекса `ticket_library_pair_key` (тот же `(ticket_id, book_id)`, что у первичного ключа) | `select count(*) from disciplines` → **27**, `like '%-exam'` → 0; у `ticket_library` остался один индекс `ticket_library_pkey`; связок по-прежнему 377 |
+| `db/2026-11-10_quiz_results_rpc_only.sql` | снимает политику `quiz insert` (прямой INSERT от `anon` с `with check (true)`) | `pg_policy` по `quiz_results` → 0 политик; запись идёт только через RPC `log_quiz_result` |
 
-## 4. Контент, который есть только в БД — архивирован (решение владельца)
+Удалять псевдонимы было безопасно: 0 строк во всех контентных таблицах и в `deadlines`, внешние ключи
+`ON DELETE CASCADE` — каскадировать нечего. В реестре `materials/disciplines.json` псевдонимы
+остались как `aliases` — они нужны импорту, чтобы файлы с `general-exam` продолжали попадать
+в канонические дисциплины.
 
-Сверка `.audit/export-all` (экспорт БД) с `materials/*/content/*.json` (скрипт `.audit/compare-materials.mjs`):
+После DDL клиенты один раз перезагрузились: `version_control.version` сменилась на `ed25dae8…`
+(её подняли триггеры).
+
+## 4. Что доделано в коде (не схема)
+
+| Что | Где | Проверка |
+|---|---|---|
+| `source` больше не теряется при импорте | `scripts/content-import.mjs`: `validateArticle` возвращает `source` (тип строка, ≤500 символов), `DB_FIELDS.articles` его пишет | round-trip: экспорт `stress-psych` → `source="__TEST_SOURCE_10_11__"` → `--apply` → в БД поле появилось у 1 статьи → повторный импорт исходного файла вернул `null`. В БД снова 0 непустых `source`, 196 статей |
+| Выгрузка по одной дисциплине | `--export <dir> --discipline <id>`; неизвестный id → exit 1; `library` выгружается целиком (таблица без дисциплины) с пометкой в логе | `--discipline general-psych` → articles 22, tickets 28, flashcards 65, tests 30, library 20 |
+| Результат теста действительно сохраняется | `js/quiz.js`: `saveQuizResult()` в `showResults()` зовёт `rpc/log_quiz_result`, только если есть `research_user_key`; ошибки сети глушатся | `check-permissions` — RPC 200, в `quiz_results` лёг 1 ряд, `tests_completed_count` стал 1, после теста строки убраны |
+| Прямой INSERT в `quiz_results` закрыт | политика снята (см. §3) | `check-permissions` — прямой POST 401 |
+| Счётчик проверок в скрипте | `scripts/check-permissions.mjs`: было 10, стало 13 (RPC, ряд в `quiz_results`, счётчик профиля) | 13/13 PASS, exit 0 |
+| Кэш клиента сброшен под новую версию `quiz.js` | `sw.js`: `CACHE_NAME` `psy-hub-v33` → `psy-hub-v34` | `node --check` на `quiz.js`/`sw.js`; `npm run check:ui` — 12 сценариев, **109/109** |
+
+## 5. Контент, который есть только в БД — архив (решение владельца)
+
+Сверка `.audit/export-all2` (экспорт БД) с `materials/*/content/*.json` (`.audit/compare-materials.mjs`):
 
 | Таблица | В БД | В файлах | Совпало по ключу | Только в БД | Расхождений по полям |
 |---|---:|---:|---:|---:|---:|
@@ -52,17 +69,32 @@
 | `tests` | 432 | 292 | 292 | 140 | 0 |
 | `library` | 20 | 0 | 0 | 20 | 0 |
 
-67 статей / 177 карточек / 140 тестов — легаси общей (22/65/30), социальной (15/52/30) и возрастной (30/60/80)
-психологии: у этих трёх дисциплин в `materials/` есть только `tickets.json`.
+67 статей / 177 карточек / 140 тестов — легаси общей (22/65/30), социальной (15/52/30) и возрастной
+(30/60/80) психологии: у этих трёх дисциплин в `materials/` есть только `tickets.json`.
 
-**Решение:** файлы не выгружать, строки считать архивом. Риск принят: если строка пропадёт из БД, из
-`materials/` её не восстановить — только из дампа `backups/` (или artifact GitHub, 14 дней).
-Расхождений по полям у совпавших 1186 строк нет ни одного, то есть источник и база не разъехались.
+**Решение:** файлы не выгружать, строки считать архивом. Риск принят: если строка пропадёт из БД,
+из `materials/` её не восстановить — только из дампа `backups/` (или artifact GitHub, 14 дней).
 
-## 5. Что осталось сделать по бэкенду
+## 6. Что осталось
 
-1. Ротация PAT (п. 2) — когда решите.
-2. Миграции из п. 3 — когда решите; для N14 порядок такой: бэкап (есть) → `db/2026-11-10_articles_source.sql`
-   → `DB_FIELDS.articles` + `validateArticle` → заполнить из `materials` → обратный `--export` для проверки.
-3. `--export` с фильтром по дисциплине — правка одного скрипта, никого не блокирует.
-4. `quiz_results`: подключить `log_quiz_result` в `js/quiz.js` (фронтенд) и закрыть прямой INSERT.
+1. **Источники статей.** Колонка готова, но `source` пуст у всех 196 статей — в `materials` его
+   нет ни у одной дисциплины (кроме `_example`). Это работа редактора контента: добавить `source`
+   в JSON и импортировать. Импорт — зеркало: если в файле поля нет, в БД оно станет `null`.
+2. **Дубли тестов** (7 вопросов в двух дисциплинах) — контент, не схема.
+3. **Прогресс карточек** (`cards.html`) не сохраняется — интерфейс, не бэкенд.
+4. Записи `quiz_results` теперь появляются только у тех, у кого есть ключ (вошёл/создал ID).
+   Гостю результат по-прежнему не сохраняется — так и задумано.
+
+## 7. Чем это проверялось
+
+```powershell
+node scripts/check-permissions.mjs                  # 13/13 PASS, exit 0
+node scripts/db-exec.mjs db/<миграция>.sql --dry-run   # HTTP 201
+node scripts/check-vendor.mjs                       # sha256 совпадают
+node scripts/content-import.mjs materials/general-psych # новых 0, exit 0
+node scripts/content-import.mjs --export .audit/export-all2
+node .audit/compare-materials.mjs                   # расхождений 0
+node scripts/backup-db.mjs                          # 19 таблиц, 8722 строки
+npm run check:ui                                    # 109/109
+gh run list --workflow=backup.yml --limit 2         # 42892821932 success
+```
