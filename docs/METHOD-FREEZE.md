@@ -143,6 +143,57 @@
 
 ---
 
+## 5.1. Практикум: уровень когнитивной активности
+
+Фиксируется до старта сбора (17.11.2026): названия событий, поля `meta` и метрики ниже
+не меняются.
+
+**Что это.** Страница `practice` и таблицы `practice_tasks` / `practice_attempts`
+добавляют задания верхних уровней Блума (`apply`, `analyze`, `evaluate`, `create`)
+с самопроверкой по критериям. Попытка — это факт работы с задачей, а не измерение
+компетентности.
+
+**События.** `PsyTracker.event(name, meta)`, `page = 'practice'` проставляется трекером.
+
+| Событие | Когда | `meta` |
+|---|---|---|
+| `task_open` | открыта карточка задачи | `task_id`, `slug`, `level`, `competence`, `kind` |
+| `task_submit` | RPC вернул успех | `task_id`, `slug`, `level`, `competence`, `kind`, `correct` (choice), `self_score`, `max_score` (open) |
+| `self_check` | сохранена рубрика open-задачи | `task_id`, `level`, `self_score`, `max_score` |
+
+`meta` — короткий: без текста ответа и без ФИО.
+
+**Метрики (считаются на выгрузке, не при записи).**
+
+| Метрика | Формула | Зачем |
+|---|---|---|
+| `practice_users` | число уникальных `user_key` в `practice_attempts` | охват |
+| `practice_attempts` | число строк `practice_attempts` | активность |
+| `higher_order_share` | время/события на `page='practice'` ÷ всё учебное время/события | выход на верхние уровни |
+| `level_mix` | доля попыток по `level` | какие уровни выбирает |
+| `self_score_avg` | средний `self_score / max_score` по open | самооценка результата |
+| `return_after_low_score` | `self_check` с низким баллом → повторный `task_open`/`task_submit` в течение N минут | регуляторный возврат |
+| `time_by_level` | dwell/интервалы по уровням | сколько времени на верхних уровнях |
+
+Сырые данные — `practice_attempts` (`answer`, `self_score`, `max_score`, `is_correct`,
+`duration_ms`) и `events`. Быстрый срез — `node scripts/practice-report.mjs`; остальные
+метрики считаются тем же экспортом, что и §5.
+
+**Гипотеза.** Высокие `planning`, `modeling`, `programming`, `results` (ССПМ) связаны
+не с общим временем, а с `higher_order_share`, завершением задач верхних уровней
+и возвратом после низкой самопроверки. Низкая саморегуляция — с пребыванием
+в карточках/билетах и редким выходом на `apply+`.
+
+**Ограничение.** `practice_attempts` — поведенческий индикатор работы с задачей,
+а не измерение сформированности компетентности. Это фиксируется в главе 2 и в отчёте.
+Автоматическая проверка открытых ответов и экспертная валидация заданий в рамки
+исследования не входят.
+
+**Зафиксировано:** 12.11.2026, до начала сбора 17.11.2026. Изменения — только новой
+версией с датой.
+
+---
+
 ## 6. Окно сбора
 
 **Общее окно** — календарный период, в который собираются поведенческие данные у всех:
@@ -251,11 +302,16 @@ essay_motive_code, essay_emotion_code, essay_evaluation_code, essay_regulation_c
 - `js/tracker.js` — страницы, время, прокрутка, переключения вкладок, батчи, офлайн-очередь;
   подключён на 7 учебных страницах, события `article_open`, `ticket_open`, `test_complete`,
   `card_flip`;
-- `scripts/check-research.mjs` — 36 проверок (подсчёт шкал, группы, защита от мусора,
-  повторная отправка, эссе, флаги). Прогон: 36/36 PASS;
-- `scripts/check-permissions.mjs` — без регрессии, 10/10 PASS;
+- `scripts/check-research.mjs` — 42 проверки (подсчёт шкал, группы, защита от мусора,
+  повторная отправка, эссе, флаги, практикум). Прогон: 42/42 PASS;
+- `scripts/check-permissions.mjs` — без регрессии, 28/28 PASS;
 - сквозной прогон страницы опроса в headless Chrome: 8 шагов, обе методики записаны,
   шкалы сошлись с ручным расчётом.
+- `db/2026-11-12_practice_tasks.sql` — `practice_tasks`, `practice_attempts`, RLS,
+  RPC `submit_practice_attempt`/`practice_progress`, триггеры версии и `updated_at`;
+- `scripts/content-import.mjs` — тип `practice`; `materials/general-psych/content/practice.json` —
+  4 пилотные задачи (`apply`, `analyze`, `evaluate`, `create`);
+- `scripts/practice-report.mjs` — отчёт по задачам и попыткам (текст и `--json`).
 
 ---
 

@@ -14,15 +14,17 @@ materials/
 │       ├── tickets.json
 │       ├── flashcards.json
 │       ├── tests.json
+│       ├── practice.json
 │       └── library.json
 ├── _current/                 # выгрузка текущего контента из базы (для правок)
 └── <дисциплина>/             # например, general-psych
     ├── inbox/                # сюда кидаешь что есть: docx, pdf, txt, фото конспектов
-    └── content/              # отсюда импорт: те же пять файлов
+    └── content/              # отсюда импорт: те же файлы
         ├── articles.json
         ├── tickets.json
         ├── flashcards.json
         ├── tests.json
+        ├── practice.json
         └── library.json
 ```
 
@@ -96,6 +98,45 @@ materials/
 `options` — от 2 до 6 вариантов, `correct_index` — номер правильного с нуля.
 `link_url` — необязательная относительная ссылка на материал.
 
+### practice.json — задания «Практикума»
+
+Задания верхних уровней таксономии Блума (`apply`, `analyze`, `evaluate`, `create`)
+с самопроверкой по критериям. Это не тесты на узнавание: задача даёт ситуацию, действие,
+критерии и эталон. Полный контракт — `docs/SPEC-PRACTICE.md`.
+
+```json
+[
+  {
+    "discipline_id": "general-psych",
+    "slug": "apply-memory-complaint",
+    "level": "apply",
+    "competence": "применение психологических знаний в практической задаче",
+    "title": "Жалоба на «плохую память»: что проверять первым",
+    "situation": "<p>Студентка жалуется на плохую память и просит совета, как готовиться.</p>",
+    "task": "<p>Какое учебное действие проверить в первую очередь?</p>",
+    "kind": "choice",
+    "options": ["Скорость чтения", "Отсроченное воспроизведение", "Объём кратковременной памяти"],
+    "correct_index": 1,
+    "criteria": ["Выбран вариант с отсроченным воспроизведением", "Объяснено отличие от объёма памяти", "Учтена стратегия подготовки"],
+    "model_answer": "<p>Эталонный ответ, который допускает альтернативные формулировки.</p>",
+    "explanation": "<p>Почему верный вариант верен, а остальные нет.</p>",
+    "source": "Общая психология: тема «Память» (материалы портала)",
+    "ai_generated": true,
+    "active": true,
+    "sort_order": 10
+  }
+]
+```
+
+- `kind`: `choice` или `open`. Для `open` — `options` и `correct_index` равны `null`,
+  `model_answer` обязателен, `explanation` может быть `null`.
+- `level`: `remember|understand|apply|analyze|evaluate|create`; в пилоте — только
+  верхние четыре.
+- `criteria` — 3–5 наблюдаемых признаков по 10–300 символов.
+- `slug` уникален внутри дисциплины: `^[a-z0-9-]{3,64}$`, по нему идёт повторный импорт.
+- `source` — реальный раздел/учебник или тема портала, до 500 символов.
+- `active: false` скрывает задачу со страницы, не удаляя попытки.
+
 ### library.json — каталог литературы
 
 ```json
@@ -119,7 +160,14 @@ node scripts/content-import.mjs materials/general-psych --apply
 
 # Выгрузить текущий контент из базы обратно в JSON (для правок)
 node scripts/content-import.mjs --export materials/general-psych/content
+
+# Отчёт по «Практикуму»: задачи, попытки, самопроверка (только чтение)
+node scripts/practice-report.mjs
+node scripts/practice-report.mjs --json
 ```
+
+Выгрузка включает `practice.json`; служебные `id`, `created_at`, `updated_at` при экспорте
+удаляются, чтобы файл можно было импортировать обратно.
 
 Импорт идемпотентный: повторный запуск обновляет существующие записи по естественному ключу
 и не создаёт дублей. Версия контента в `version_control` поднимается триггерами автоматически —
@@ -146,9 +194,9 @@ python scripts/format_tickets.py materials/<дисциплина>/content/ticket
 
 ## Плашка «контент сгенерирован ИИ»
 
-В `articles` и `tickets` есть поле `ai_generated`. Поставь `true`, если материал больше чем
-наполовину написан моделью, а не тобой и не из твоих конспектов. На странице появится красная
-плашка с просьбой проверять факты.
+В `articles`, `tickets` и `practice` есть поле `ai_generated`. Поставь `true`, если материал
+больше чем наполовину написан моделью, а не тобой и не из твоих конспектов. На странице
+появится красная плашка с просьбой проверять факты.
 
 ```json
 { "discipline_id": "general-psych", "title": "...", "content": "...", "ai_generated": true }
@@ -159,6 +207,8 @@ python scripts/format_tickets.py materials/<дисциплина>/content/ticket
 - дисциплина есть в `disciplines.json` (или в её псевдонимах);
 - обязательные поля заполнены, длины в разумных пределах;
 - в тестах 2–6 вариантов и `correct_index` указывает на существующий;
+- в заданиях практикума `criteria` — 3–5 строк, `choice` требует `options`/`correct_index`/
+  `explanation`, `open` требует `model_answer` и запрещает `options`/`correct_index`;
 - внутри одного файла нет повторов по ключу;
 - в HTML нет `<script>` и inline-обработчиков `onclick=`;
 - книги из `books` существуют в `library.json`.

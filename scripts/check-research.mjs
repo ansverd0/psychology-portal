@@ -118,6 +118,44 @@ try {
   r = await req('GET', `events?user_key=eq.${key}&select=event`);
   check('anon не читает чужие события', r.json?.length, (n) => n === 0 || n === undefined);
 
+  // 5.1. Практикум: задания, попытки, прогресс
+  r = await req('GET', 'practice_tasks?select=id,kind,correct_index,criteria&active=eq.true&order=sort_order', { token: service });
+  const practiceTasks = Array.isArray(r.json) ? r.json : [];
+  const practiceChoice = practiceTasks.find((t) => t.kind === 'choice');
+  const practiceOpen = practiceTasks.find((t) => t.kind === 'open');
+  check('в базе есть задачи практикума', Boolean(practiceChoice && practiceOpen), (b) => b === true);
+
+  r = await req('POST', 'rpc/submit_practice_attempt', {
+    body: {
+      p_key: key,
+      p_task_id: practiceChoice?.id ?? 0,
+      p_answer: { choice: practiceChoice?.correct_index ?? 0 },
+      p_duration_ms: 60000,
+    },
+  });
+  check('choice-попытка: is_correct соответствует correct_index', r.json?.is_correct, (v) => v === true && typeof v === 'boolean', r.text.slice(0, 100));
+
+  r = await req('POST', 'rpc/submit_practice_attempt', {
+    body: {
+      p_key: key,
+      p_task_id: practiceOpen?.id ?? 0,
+      p_answer: { text: 'Открытый ответ достаточной длины для проверки сохранения попытки практикума.' },
+      p_self_score: 3,
+      p_duration_ms: 90000,
+    },
+  });
+  const openMax = (practiceOpen?.criteria?.length ?? 0) * 2;
+  check('open-попытка: self_score и max_score сохранены', r.json?.self_score === 3 && r.json?.max_score === openMax, (b) => b === true, r.text.slice(0, 100));
+
+  r = await req('GET', `practice_attempts?user_key=eq.${key}&select=task_id,self_score,max_score,is_correct`, { token: service });
+  check('обе попытки практикума сохранены', r.json?.length, (n) => n === 2);
+
+  r = await req('POST', 'rpc/practice_progress', { body: { p_key: key } });
+  check('practice_progress: attempts >= 1', Array.isArray(r.json) && r.json.length >= 1 && r.json.every((x) => x.attempts >= 1), (b) => b === true, r.text.slice(0, 100));
+
+  r = await req('POST', 'rpc/practice_progress', { body: { p_key: 'no-such-key-xyz' } });
+  check('практикум: неизвестный ключ отклонён', r.status, (s) => s >= 400);
+
   // 6. Тест знаний
   r = await req('POST', 'rpc/log_quiz_result', {
     body: { p_key: key, p_discipline: 'general-psych', p_score: 7, p_total: 10 },
@@ -163,6 +201,7 @@ try {
   process.exitCode = 1;
 } finally {
   // Чистка: каскад удалит responses/events по FK
+  await req('DELETE', `practice_attempts?user_key=eq.${key}`, { token: service });
   await req('DELETE', `session_essays?user_key=eq.${key}`, { token: service });
   await req('DELETE', `quiz_results?user_key=eq.${key}`, { token: service });
   await req('DELETE', `users_profiles?user_key=eq.${key}`, { token: service });

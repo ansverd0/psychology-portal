@@ -120,7 +120,7 @@ node scripts/backup-db.mjs
 node scripts/check-permissions.mjs
 ```
 
-Ожидаемо 13/13 PASS:
+Ожидаемо 28/28 PASS:
 
 - anon читает `articles`;
 - не пишет/не удаляет `glossary`;
@@ -129,7 +129,10 @@ node scripts/check-permissions.mjs
 - **не пишет в `quiz_results` напрямую** (политика `quiz insert` снята `db/2026-11-10_quiz_results_rpc_only.sql`),
   но пишет результат через RPC `log_quiz_result` — и проверка убеждается, что ряд действительно лёг
   в таблицу, а `users_profiles.tests_completed_count` вырос на 1;
-- `service_role` читает эссе.
+- `service_role` читает эссе;
+- читает `practice_tasks`, но не пишет в неё и не читает/не пишет `practice_attempts`
+  напрямую; choice/open-попытки проходят через RPC, `self_score` и `max_score` считаются
+  на сервере.
 
 Скрипт создаёт временные строки и удаляет их через `service_role`. Если проверка падает — не деплоить,
 разобраться с грантами/политиками.

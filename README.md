@@ -20,7 +20,7 @@
 ## Структура
 
 ```
-index.html, tickets.html, sections.html, cards.html, tests.html, library.html, news.html, privacy.html, offline.html
+index.html, tickets.html, sections.html, cards.html, tests.html, library.html, news.html, privacy.html, survey.html, practice.html, offline.html
 404.html, robots.txt, sitemap.xml
 assets/             # favicon.svg, og-image.png (1200×630)
 style.css
@@ -61,7 +61,8 @@ python -m http.server 8767 --bind 127.0.0.1
 node scripts/backup-db.mjs                  # дамп public-таблиц + снимок RLS/грантов
 node scripts/db-exec.mjs db/file.sql --dry-run
 node scripts/db-exec.mjs db/file.sql        # применить миграцию
-node scripts/check-permissions.mjs          # 13 проверок прав anon
+node scripts/check-permissions.mjs          # 28 проверок прав anon
+node scripts/practice-report.mjs            # отчёт «Практикума» (--json — машинный формат)
 node scripts/check-vendor.mjs               # sha256 локальных supabase-js и DOMPurify
 node scripts/mcp-supabase.mjs               # MCP-сервер с токеном из .env
 npm run check:ui                            # UI-регрессия в headless Chrome (8 сценариев)
@@ -81,8 +82,9 @@ GitHub Action `Sync gh-pages` зеркалит `master` в `gh-pages`, Pages п�
 
 ## Безопасность
 
-- RLS включён во всех 14 таблицах `public`.
-- `anon` читает контент, создаёт профиль и пишет ответы методик; изменять/удалять контент не может.
+- RLS включён во всех таблицах `public`.
+- `anon` читает контент и задания практикума, создаёт профиль и пишет ответы методик; попытки
+  практикума — только через RPC; изменять/удалять контент не может.
 - Контент из БД санитизируется (DOMPurify + экранирование).
 - Секреты — только в `.env`; `.mcp.json` и `.env` в `.gitignore`.
 - Политика данных и согласие: `privacy.html`.
@@ -107,5 +109,5 @@ GitHub Action `Sync gh-pages` зеркалит `master` в `gh-pages`, Pages п�
 - вики-термины показывают подсказки, закладки сохраняются после перезагрузки;
 - клавиатура: Tab/Enter по плиткам, Esc и focus trap в модалке;
 - 404: несуществующий путь отдаёт `404.html`; печать: Ctrl+P на `tickets.html`;
-- `node scripts/check-permissions.mjs` — 13/13 PASS; `node scripts/check-vendor.mjs` — sha256 совпадает;
+- `node scripts/check-permissions.mjs` — 28/28 PASS; `node scripts/check-vendor.mjs` — sha256 совпадает;
 - в консоли нет ошибок CSP; `hubVitals.latest()` в DevTools показывает LCP/CLS/INP.

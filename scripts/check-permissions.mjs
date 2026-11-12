@@ -89,9 +89,88 @@ try {
   r = await req('GET', 'session_essays?select=id', { key: service });
   check('service_role читает эссе', r.status, (s) => s === 200);
 
+  // Практикум: задания читаются, попытки — только через RPC
+  r = await req('GET', 'practice_tasks?select=id,kind,correct_index,criteria&active=eq.true&order=sort_order');
+  const practiceTasks = (() => { try { return JSON.parse(r.text) || []; } catch { return []; } })();
+  check('anon читает задания практикума', r.status, (s) => s === 200);
+  const choiceTask = practiceTasks.find((t) => t.kind === 'choice');
+  const openTask = practiceTasks.find((t) => t.kind === 'open');
+  check('в базе есть задачи practice (choice и open)', Boolean(choiceTask && openTask), (b) => b === true);
+
+  r = await req('POST', 'practice_tasks', {
+    body: {
+      discipline_id: 'general-psych', slug: 'perm-test-task', level: 'apply', title: 'тестовая задача',
+      situation: 'x'.repeat(60), task: 'x'.repeat(30), kind: 'open',
+      criteria: ['x'.repeat(12), 'y'.repeat(12), 'z'.repeat(12)], model_answer: 'm'.repeat(60),
+    },
+  });
+  check('anon НЕ может писать в practice_tasks', r.status, (s) => s >= 400 && s < 500);
+
+  r = await req('GET', 'practice_attempts?select=id');
+  const attemptsVisible = (() => { try { return JSON.parse(r.text)?.length; } catch { return null; } })();
+  check('anon НЕ читает попытки практикума', r.status >= 400 || attemptsVisible === 0, (b) => b === true, `HTTP ${r.status}`);
+
+  r = await req('POST', 'practice_attempts', {
+    body: { user_key: testKey, task_id: choiceTask?.id ?? 0, answer: { choice: 0 }, is_correct: true },
+  });
+  check('anon НЕ пишет в practice_attempts напрямую', r.status, (s) => s >= 400 && s < 500);
+
+  r = await req('POST', 'rpc/submit_practice_attempt', {
+    body: {
+      p_key: testKey,
+      p_task_id: choiceTask?.id ?? 0,
+      p_answer: { choice: choiceTask?.correct_index ?? 0 },
+      p_duration_ms: 60000,
+    },
+  });
+  const choiceResult = (() => { try { return JSON.parse(r.text); } catch { return null; } })();
+  check('anon отправляет choice-попытку через RPC', r.status, (s) => s === 200, r.text.slice(0, 120));
+  check('choice-попытка: is_correct — boolean', choiceResult?.is_correct, (v) => typeof v === 'boolean');
+
+  r = await req('POST', 'rpc/submit_practice_attempt', {
+    body: { p_key: testKey, p_task_id: choiceTask?.id ?? 0, p_answer: { choice: 99 } },
+  });
+  check('неверный choice отклоняется', r.status, (s) => s >= 400 && s < 500);
+
+  const openAnswer = 'В этом ответе достаточно символов, чтобы пройти проверку длины открытого ответа.';
+  r = await req('POST', 'rpc/submit_practice_attempt', {
+    body: { p_key: testKey, p_task_id: openTask?.id ?? 0, p_answer: { text: 'коротко' }, p_self_score: 1 },
+  });
+  check('слишком короткий open-ответ отклоняется', r.status, (s) => s >= 400 && s < 500);
+
+  const openMax = (openTask?.criteria?.length ?? 0) * 2;
+  r = await req('POST', 'rpc/submit_practice_attempt', {
+    body: {
+      p_key: testKey,
+      p_task_id: openTask?.id ?? 0,
+      p_answer: { text: openAnswer },
+      p_self_score: 2,
+      p_duration_ms: 60000,
+    },
+  });
+  const openResult = (() => { try { return JSON.parse(r.text); } catch { return null; } })();
+  check('валидный open с self_score принят', r.status, (s) => s === 200, r.text.slice(0, 120));
+  check('open: max_score = criteria*2', openResult?.max_score, (v) => v === openMax);
+
+  r = await req('POST', 'rpc/submit_practice_attempt', {
+    body: { p_key: testKey, p_task_id: openTask?.id ?? 0, p_answer: { text: openAnswer }, p_self_score: openMax + 1 },
+  });
+  check('self_score вне диапазона отклоняется', r.status, (s) => s >= 400 && s < 500);
+
+  r = await req('POST', 'rpc/practice_progress', { body: { p_key: testKey } });
+  const practiceProgress = (() => { try { return JSON.parse(r.text); } catch { return null; } })();
+  check('practice_progress возвращает прогресс', r.status, (s) => s === 200);
+  check('practice_progress: есть задача с попытками', Array.isArray(practiceProgress) && practiceProgress.length >= 1, (b) => b === true);
+
+  r = await req('GET', `practice_attempts?select=id&user_key=eq.${testKey}&task_id=eq.${choiceTask?.id ?? 0}`, { key: service });
+  const savedPracticeAttempts = (() => { try { return JSON.parse(r.text)?.length; } catch { return -1; } })();
+  check('попытка легла в practice_attempts (service_role)', savedPracticeAttempts, (n) => n === 1);
+
   // Чистка тестовых строк
   await req('DELETE', `session_essays?user_key=eq.${testKey}`, { key: service });
   await req('DELETE', `quiz_results?user_key=eq.${testKey}`, { key: service });
+  await req('DELETE', `practice_attempts?user_key=eq.${testKey}`, { key: service });
+  await req('DELETE', 'practice_tasks?discipline_id=eq.general-psych&slug=eq.perm-test-task', { key: service });
   await req('DELETE', `users_profiles?user_key=eq.${testKey}`, { key: service });
 } catch (e) {
   console.error('Ошибка проверки:', e);

@@ -4,7 +4,7 @@
 > Технический бэклог, приоритеты и правила для новых чатов: `TECH-ROADMAP.md`.
 > Обновлено: 2026-10-26
 
-> **Статус:** этап 1 закрыт; этап 0 закрыт, кроме `S-08` (полное восстановление из бэкапа); в этапе 3 остались `U-10`, `A-07`. Исследовательский бэкенд и клиент сбора готовы: опросник и трекер (36/36 проверок). Дальше — пилот и запуск выборки. Автотестов нет, проверки ручные (см. «ПРОВЕРКИ»).
+> **Статус:** этап 1 закрыт; этап 0 закрыт, кроме `S-08` (полное восстановление из бэкапа); в этапе 3 остались `U-10`, `A-07`. Исследовательский бэкенд, клиент сбора и практикум готовы: опросник, трекер и задания верхних уровней (42/42 проверки). Дальше — пилот и запуск выборки. Автотестов нет, проверки ручные (см. «ПРОВЕРКИ»).
 
 ---
 
@@ -32,6 +32,7 @@ psychology-portal/
 ├── news.html               # История изменений
 ├── privacy.html            # Политика обработки данных
 ├── survey.html             # Опрос: ШАМ + ССПМ (исследование)
+├── practice.html           # Практикум: задания верхних уровней Блума
 ├── offline.html            # Офлайн-страница PWA
 ├── 404.html                # Автономная страница ошибки (GitHub Pages)
 ├── robots.txt              # Индексация
@@ -61,6 +62,7 @@ psychology-portal/
     ├── tracker.js          # Журнал поведения: страницы, время, прокрутка, вкладки
     ├── survey-data.js      # Тексты пунктов ШАМ и ССПМ, группы
     ├── survey.js           # Логика опроса: блоки, черновик, отправка
+    ├── practice.js         # Практикум: список, фильтры, оба потока, прогресс
     ├── vendor/             # supabase-js 2.43.4, DOMPurify 3.0.11, manifest.json (sha256)
 ```
 
@@ -84,6 +86,8 @@ psychology-portal/
 | `instrument_responses` | Ответы ШАМ и ССПМ + посчитанные сервером шкалы | `user_key`, `instrument`, `answers`, `scales`, `duration_ms` |
 | `events` | Журнал поведения (цифровой след) | `user_key`, `session_id`, `page`, `event`, `ts`, `dwell_ms`, `scroll_pct` |
 | `deadlines` | Даты зачётов и экзаменов по группам | `course`, `group_code`, `discipline_id`, `kind`, `due_at` |
+| `practice_tasks` | Задания «Практикума» (верхние уровни Блума) | `discipline_id`, `slug`, `level`, `kind`, `criteria`, `options`, `correct_index`, `model_answer`, `active`, `sort_order` |
+| `practice_attempts` | Попытки: choice — `is_correct`, open — `self_score`/`max_score`; пишутся только через RPC | `user_key`, `task_id`, `answer`, `self_score`, `max_score`, `is_correct`, `duration_ms` |
 
 ---
 
@@ -191,7 +195,7 @@ psychology-portal/
 ## ПРОВЕРКИ
 
 - `Get-ChildItem js\*.js | ForEach-Object { node --check $_.FullName }` — синтаксис.
-- `node scripts/check-permissions.mjs` — 10/10 прав anon; `node scripts/check-vendor.mjs` — sha256 vendor.
+- `node scripts/check-permissions.mjs` — 28/28 прав anon; `node scripts/check-vendor.mjs` — sha256 vendor.
 - `npm run check:ui` — headless Chrome: раскладка 390–1920, закладки, поиск, мобильная навигация, офлайн/ретрай, подвал, диагностика опроса, зависшая сеть на опросе. 9 сценариев, 72 проверки; код возврата 1 при падении.
 - `git diff --check` — пробелы/конфликты; `git status` — нет секретов и мусора.
 - Браузер (локальный `python -m http.server 8767`): 1440/1024/768/390 px, консоль без CSP-ошибок; Tab/Enter по плиткам; Esc и focus trap в модалке; 404 на несуществующий путь; Ctrl+P на `tickets.html`.
@@ -205,7 +209,7 @@ psychology-portal/
 
 - HTTP-заголовки безопасности (`X-Content-Type-Options`, HSTS, `frame-ancestors`) на GitHub Pages недоступны — работает только meta-CSP (`S-04`);
 - нет unit-тестов; UI-регрессия есть локально (`npm run check:ui`, headless Chrome), но в CI не подключена (`A-03`–`A-05`);
-- сбор данных исследования готов: опросник (ШАМ+ССПМ) и трекер поведения, 36 проверок (`scripts/check-research.mjs`); не хватает выгрузки и анализа (`R-09`);
+- сбор данных исследования готов: опросник (ШАМ+ССПМ), трекер поведения и практикум, 42 проверки (`scripts/check-research.mjs`); не хватает выгрузки и анализа (`R-09`);
 - нет админки, контент правится через Table Editor (`O-01`);
 - из этапа 3 остались `U-10` (копирование ключа/QR) и `A-07` (закладки по id).
 

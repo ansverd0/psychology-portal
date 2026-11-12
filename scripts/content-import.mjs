@@ -43,7 +43,8 @@ const TYPES = {
   tickets: { table: 'tickets', key: ['discipline_id', 'number'] },
   flashcards: { table: 'flashcards', key: ['discipline_id', 'term'] },
   tests: { table: 'tests', key: ['discipline_id', 'question'] },
-  library: { table: 'library', key: ['title', 'author'] }
+  library: { table: 'library', key: ['title', 'author'] },
+  practice: { table: 'practice_tasks', key: ['discipline_id', 'slug'] }
 };
 
 const errors = [];
@@ -184,12 +185,142 @@ function validateBook(row, where) {
   return { title: text(row.title), author: text(row.author), annotation: text(row.annotation) };
 }
 
+const PRACTICE_LEVELS = ['remember', 'understand', 'apply', 'analyze', 'evaluate', 'create'];
+
+function validatePractice(row, where) {
+  if (typeof row.slug !== 'string' || !/^[a-z0-9-]{3,64}$/.test(row.slug)) {
+    fail(where, 'slug: только a-z, 0-9 и дефис, 3–64 символа');
+    return null;
+  }
+  if (!PRACTICE_LEVELS.includes(row.level)) {
+    fail(where, `level: один из ${PRACTICE_LEVELS.join(', ')}`);
+    return null;
+  }
+  if (!['choice', 'open'].includes(row.kind)) {
+    fail(where, 'kind: choice или open');
+    return null;
+  }
+  if (!checkLength(where, 'title', row.title, 5, 200)) return null;
+  if (!checkLength(where, 'situation', row.situation, 50, 5000)) return null;
+  if (!checkLength(where, 'task', row.task, 20, 2000)) return null;
+
+  if (!Array.isArray(row.criteria) || row.criteria.length < 3 || row.criteria.length > 5) {
+    fail(where, 'criteria: массив из 3–5 строк');
+    return null;
+  }
+  const criteria = row.criteria.map((item) => text(item));
+  if (criteria.some((item) => typeof item !== 'string' || item.length < 10 || item.length > 300)) {
+    fail(where, 'criteria: каждая строка 10–300 символов');
+    return null;
+  }
+
+  const modelAnswer = row.model_answer == null ? null : text(row.model_answer);
+  const explanation = row.explanation == null ? null : text(row.explanation);
+  if (modelAnswer != null && typeof modelAnswer !== 'string') {
+    fail(where, 'model_answer должен быть строкой или null');
+    return null;
+  }
+  if (explanation != null && typeof explanation !== 'string') {
+    fail(where, 'explanation должен быть строкой или null');
+    return null;
+  }
+  let options = null;
+  let correctIndex = null;
+
+  if (row.kind === 'choice') {
+    if (!Array.isArray(row.options) || row.options.length < 2 || row.options.length > 6) {
+      fail(where, 'options: нужно от 2 до 6 вариантов');
+      return null;
+    }
+    options = row.options.map((item) => text(item));
+    if (options.some((item) => typeof item !== 'string' || !item.length || item.length > 300)) {
+      fail(where, 'options: пустой или слишком длинный вариант');
+      return null;
+    }
+    if (new Set(options).size !== options.length) {
+      fail(where, 'options: повторяющиеся варианты');
+      return null;
+    }
+    if (!Number.isInteger(row.correct_index) || row.correct_index < 0 || row.correct_index >= options.length) {
+      fail(where, 'correct_index вне диапазона вариантов');
+      return null;
+    }
+    correctIndex = row.correct_index;
+    if (!checkLength(where, 'explanation', explanation, 20, 2000)) return null;
+    if (modelAnswer != null && modelAnswer.length > 8000) {
+      fail(where, 'model_answer длиннее 8000 символов');
+      return null;
+    }
+  } else {
+    if (row.options != null || row.correct_index != null) {
+      fail(where, 'open: options и correct_index должны быть null');
+      return null;
+    }
+    if (!checkLength(where, 'model_answer', modelAnswer, 50, 8000)) return null;
+    if (explanation != null && explanation.length > 2000) {
+      fail(where, 'explanation длиннее 2000 символов');
+      return null;
+    }
+  }
+
+  if (row.source != null && typeof row.source !== 'string') {
+    fail(where, 'source должен быть строкой');
+    return null;
+  }
+  if (typeof row.source === 'string' && row.source.trim().length > 500) {
+    fail(where, 'source длиннее 500 символов');
+    return null;
+  }
+  ['situation', 'task', 'model_answer', 'explanation'].forEach((field) => checkHtml(where, row[field]));
+
+  const aiGenerated = row.ai_generated === undefined ? false : row.ai_generated;
+  if (typeof aiGenerated !== 'boolean') {
+    fail(where, 'ai_generated должен быть boolean');
+    return null;
+  }
+  const active = row.active === undefined ? true : row.active;
+  if (typeof active !== 'boolean') {
+    fail(where, 'active должен быть boolean');
+    return null;
+  }
+  const sortOrder = row.sort_order === undefined ? 0 : row.sort_order;
+  if (!Number.isInteger(sortOrder) || sortOrder < 0 || sortOrder > 10000) {
+    fail(where, 'sort_order: целое 0–10000');
+    return null;
+  }
+  if (row.competence != null && typeof row.competence !== 'string') {
+    fail(where, 'competence должен быть строкой или null');
+    return null;
+  }
+
+  return {
+    discipline_id: canonicalDiscipline(where, row.discipline_id),
+    slug: text(row.slug),
+    level: row.level,
+    competence: row.competence == null ? null : text(row.competence),
+    title: text(row.title),
+    situation: text(row.situation),
+    task: text(row.task),
+    kind: row.kind,
+    options,
+    correct_index: correctIndex,
+    criteria,
+    model_answer: modelAnswer,
+    explanation,
+    source: row.source == null ? null : text(row.source),
+    ai_generated: aiGenerated,
+    active,
+    sort_order: sortOrder
+  };
+}
+
 const VALIDATORS = {
   articles: validateArticle,
   tickets: validateTicket,
   flashcards: validateFlashcard,
   tests: validateTest,
-  library: validateBook
+  library: validateBook,
+  practice: validatePractice
 };
 
 async function rest(endpoint, options = {}) {
@@ -231,7 +362,8 @@ function readSource(dirOrFile) {
   } else {
     const base = path.basename(dirOrFile, '.json');
     if (!TYPES[base]) {
-      console.error(`По имени файла не понять тип. Назови файл articles.json, tickets.json, flashcards.json, tests.json или library.json`);
+      const names = Object.keys(TYPES).map((type) => `${type}.json`).join(', ');
+      console.error(`По имени файла не понять тип. Назови файл одним из: ${names}`);
       process.exit(1);
     }
     files[base] = dirOrFile;
@@ -267,6 +399,10 @@ function loadRows(files) {
       if (type === 'tests') allowed.push('options', 'correct_index', 'link_url');
       if (type === 'library') allowed.push('annotation');
       if (type === 'flashcards') allowed.push('definition');
+      if (type === 'practice') {
+        allowed.push('level', 'competence', 'title', 'situation', 'task', 'kind', 'options', 'correct_index',
+          'criteria', 'model_answer', 'explanation', 'source', 'ai_generated', 'active', 'sort_order');
+      }
       Object.keys(item).forEach((k) => {
         if (!allowed.includes(k)) warnings.push(`${where}: лишнее поле "${k}" проигнорировано`);
       });
@@ -298,7 +434,10 @@ const DB_FIELDS = {
   tickets: ['discipline_id', 'number', 'title', 'recommend_time', 'plan', 'content', 'ai_generated'],
   flashcards: ['discipline_id', 'term', 'definition'],
   tests: ['discipline_id', 'question', 'options', 'correct_index', 'link_url'],
-  library: ['title', 'author', 'annotation']
+  library: ['title', 'author', 'annotation'],
+  practice: ['discipline_id', 'slug', 'level', 'competence', 'title', 'situation', 'task', 'kind',
+    'options', 'correct_index', 'criteria', 'model_answer', 'explanation', 'source',
+    'ai_generated', 'active', 'sort_order']
 };
 
 function toDb(type, row) {
@@ -400,6 +539,12 @@ async function exportContent(dir, discipline = null) {
       });
     }
     (rows || []).forEach((row) => delete row.id);
+    if (type === 'practice') {
+      (rows || []).forEach((row) => {
+        delete row.created_at;
+        delete row.updated_at;
+      });
+    }
     fs.writeFileSync(path.join(dir, `${type}.json`), JSON.stringify(rows, null, 2), 'utf8');
     console.log(`${type}: ${(rows || []).length} строк → ${path.join(dir, `${type}.json`)}${discipline && !scoped ? ' (таблица без дисциплины, выгружена целиком)' : ''}`);
   }
