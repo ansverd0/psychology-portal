@@ -5,7 +5,8 @@ let appDatabase = {
     tests: [],
     sections: [],
     library: [],
-    news: []
+    news: [],
+    practice: []
 };
 let appGlossary = {};
 let cacheRendered = false;
@@ -114,6 +115,7 @@ function detectPage() {
     if (document.body && document.body.dataset.page) return document.body.dataset.page;
     if (document.getElementById('myCard')) return 'cards';
     if (document.getElementById('quiz-wrapper')) return 'tests';
+    if (document.getElementById('practice-app')) return 'practice';
     if (document.getElementById('sections-page-marker')) return 'sections';
     if (document.querySelector('.ticket-viewer')) return 'tickets';
     if (document.getElementById('library-page-marker')) return 'library';
@@ -370,6 +372,33 @@ function mapTests(data) {
     return data.map(t => ({ question: t.question, options: t.options, correct: t.correct_index, link: t.link_url, discipline: t.discipline_id }));
 }
 
+/** Задания «Практикума» (docs/SPEC-PRACTICE.md §2): плоский массив, поля
+ *  приведены к типам, неактивные строки отброшены. HTML-поля (situation, task,
+ *  model, explanation) остаются строками — их санитайзит js/practice.js. */
+function mapPractice(data) {
+    const rows = Array.isArray(data) ? data : [];
+    return rows
+        .filter(p => p && p.active !== false && p.id)
+        .map(p => ({
+            id: Number(p.id),
+            discipline: p.discipline_id,
+            slug: p.slug,
+            level: p.level,
+            competence: p.competence || '',
+            title: p.title || '',
+            situation: p.situation || '',
+            task: p.task || '',
+            kind: p.kind === 'choice' ? 'choice' : 'open',
+            options: Array.isArray(p.options) ? p.options.map(String) : [],
+            correct: Number.isInteger(p.correct_index) ? p.correct_index : null,
+            criteria: Array.isArray(p.criteria) ? p.criteria.map(String) : [],
+            model: p.model_answer || '',
+            explanation: p.explanation || '',
+            ai: Boolean(p.ai_generated),
+            order: Number(p.sort_order) || 0
+        }));
+}
+
 function mapGlossary(data) {
     const glossary = {};
     data.forEach(g => { glossary[g.term.trim()] = g.definition; });
@@ -459,6 +488,14 @@ const PAGE_LOADERS = {
     tests: async () => {
         const tests = mapTests(await fetchTable('tests', 'question, options, correct_index, link_url, discipline_id'));
         return { db: { tests }, glossary: {} };
+    },
+
+    practice: async () => {
+        const tasks = mapPractice(await fetchTable(
+            'practice_tasks',
+            'id, discipline_id, slug, level, competence, title, situation, task, kind, options, correct_index, criteria, model_answer, explanation, ai_generated, sort_order, active'
+        ));
+        return { db: { practice: tasks }, glossary: {} };
     },
 
     library: async () => {
@@ -599,6 +636,7 @@ function executePageModuleInitialization(force) {
     if (cardElement && typeof initFlashcards === 'function') initFlashcards(); 
     if (document.querySelector('.tri-column-layout') && !document.getElementById('sections-page-marker') && typeof initTickets === 'function') initTickets();
     if (document.getElementById('quiz-wrapper') && typeof initQuiz === 'function') initQuiz(); 
+    if (document.getElementById('practice-app') && typeof initPractice === 'function') initPractice();
     if (document.getElementById('sections-page-marker') && typeof initSections === 'function') initSections(); 
     if (document.getElementById('library-page-marker') && typeof initLibrary === 'function') initLibrary(); 
     if (document.getElementById('news-page-marker') && typeof initNews === 'function') initNews(); 

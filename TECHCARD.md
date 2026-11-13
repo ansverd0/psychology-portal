@@ -36,7 +36,7 @@ psychology-portal/
 ├── offline.html            # Офлайн-страница PWA
 ├── 404.html                # Автономная страница ошибки (GitHub Pages)
 ├── robots.txt              # Индексация
-├── sitemap.xml             # 8 URL
+├── sitemap.xml             # 9 URL
 ├── assets/                 # favicon.svg, og-image.png (1200×630)
 ├── style.css               # Глобальные стили
 ├── sw.js                   # Service Worker (PWA кэш)
@@ -167,7 +167,7 @@ psychology-portal/
 
 - На всех 9 страницах: `meta description`, абсолютный `canonical`, favicon (`assets/favicon.svg`), OG-теги (`og:type`, `og:locale=ru_RU`, `og:site_name`, `og:image` 1200×630, `og:image:width/height/alt`) и `twitter:card=summary_large_image`.
 - `og:image` — `assets/og-image.png`, простой шаблон (Pillow, фон `#1a365d`); можно заменить своим, теги трогать не нужно.
-- `robots.txt` и `sitemap.xml` (8 URL, без `offline.html`) в корне. Для project-сайта GitHub Pages `robots.txt` в подпапке краулеры не читают (нужен корень домена) — sitemap лучше добавить в Search Console вручную.
+- `robots.txt` и `sitemap.xml` (9 URL, без `offline.html`) в корне. Для project-сайта GitHub Pages `robots.txt` в подпапке краулеры не читают (нужен корень домена) — sitemap лучше добавить в Search Console вручную.
 - `404.html` автономна: инлайн-стили, абсолютная ссылка на главную. GitHub Pages отдаёт её на любой глубине URL, поэтому относительные пути там не работают — осознанное исключение из правила «только относительные пути».
 - Плитки главного меню — `<a href>` с `:focus-visible` (переход в текущей вкладке); модалка авторизации — `role="dialog"`, `aria-modal`, крестик, Esc, focus trap и возврат фокуса на кнопку входа (`js/auth.js`).
 
@@ -196,7 +196,7 @@ psychology-portal/
 
 - `Get-ChildItem js\*.js | ForEach-Object { node --check $_.FullName }` — синтаксис.
 - `node scripts/check-permissions.mjs` — 28/28 прав anon; `node scripts/check-vendor.mjs` — sha256 vendor.
-- `npm run check:ui` — headless Chrome: раскладка 390–1920, закладки, поиск, мобильная навигация, офлайн/ретрай, подвал, диагностика опроса, зависшая сеть на опросе. 9 сценариев, 72 проверки; код возврата 1 при падении.
+- `npm run check:ui` — headless Chrome: раскладка 390–1920, закладки, поиск, мобильная навигация, офлайн/ретрай, подвал, диагностика опроса, зависшая сеть на опросе, практикум (список, фильтры, оба потока на заглушке RPC, кэш SW), аудит 12 страниц × 3 ширины. 14 сценариев, 157 проверок; код возврата 1 при падении.
 - `git diff --check` — пробелы/конфликты; `git status` — нет секретов и мусора.
 - Браузер (локальный `python -m http.server 8767`): 1440/1024/768/390 px, консоль без CSP-ошибок; Tab/Enter по плиткам; Esc и focus trap в модалке; 404 на несуществующий путь; Ctrl+P на `tickets.html`.
 - После пуша: `sw.js` с новым `CACHE_NAME`; `robots.txt` и `sitemap.xml` — 200.
@@ -276,6 +276,21 @@ js/
 ### cards.html / tests.html
 - ПК: `.content-with-sidebar` — слева сайдбар дисциплин, справа контент
 - Мобильные: `.limited-tiles` для вертикальной прокрутки
+
+### practice.html
+- Лейаут как у `tests.html`: слева прогресс «Пройдено X из Y», плитки дисциплин, чипы уровней;
+  справа список `[data-practice-task]` или открытая карточка `[data-practice-task-view]`.
+- Данные: `PAGE_LOADERS.practice` → `mapPractice` (фильтр `active`, приведение типов).
+  HTML из БД (`situation`, `task`, `model_answer`, `explanation`) санитайзится DOMPurify;
+  `options`/`criteria` выводятся только как `textContent`.
+- Потоки: choice — выбор → «Проверить» → RPC `submit_practice_attempt` → верно/неверно + объяснение;
+  open — ответ → «Показать критерии» → 0/1/2 по каждому критерию → «Сохранить попытку» → эталон.
+- Гость читает и проверяет, но попытка не пишется: плашка «не сохранено» + кнопка создания ID.
+- Хранение: `hub_practice_progress_v1` (попытки, лучший балл, последний результат — без текста ответа),
+  черновик `hub_practice_draft_v1_<id>` с debounce 300 мс; при ключе — слияние с RPC `practice_progress`.
+- События `PsyTracker`: `task_open`, `task_submit`, `self_check` (meta без текста ответа и ФИО).
+- Мобильные: одна колонка, плитки дисциплин по две в ряд; открытая задача прячет сайдбар
+  (`body.practice-task-open`), «К списку» возвращает фильтры.
 
 ### Доступность (2026-10-26)
 - Контраст WCAG AA: текст ≥ 4.5:1 (крупный ≥ 3:1). Основные кнопки — `#2b6cb0`, вторичный текст — `#4a5568`, иконки VK/TG/почты затемнены (`U-04`).

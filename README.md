@@ -65,7 +65,7 @@ node scripts/check-permissions.mjs          # 28 проверок прав anon
 node scripts/practice-report.mjs            # отчёт «Практикума» (--json — машинный формат)
 node scripts/check-vendor.mjs               # sha256 локальных supabase-js и DOMPurify
 node scripts/mcp-supabase.mjs               # MCP-сервер с токеном из .env
-npm run check:ui                            # UI-регрессия в headless Chrome (8 сценариев)
+npm run check:ui                            # UI-регрессия в headless Chrome (14 сценариев)
 ```
 
 ## Деплой
@@ -95,12 +95,12 @@ GitHub Action `Sync gh-pages` зеркалит `master` в `gh-pages`, Pages п�
 
 - Клавиатура: плитки меню — ссылки, модалка закрывается по Esc, focus trap и возврат фокуса; сквозной `:focus-visible`.
 - Контраст текста — WCAG AA; `prefers-reduced-motion` отключает анимации и плавный скролл.
-- На 9 страницах — `meta description`, абсолютный `canonical`, OG/Twitter, favicon; в корне — `robots.txt`, `sitemap.xml` (8 URL), автономная `404.html`; `assets/og-image.png` 1200×630.
+- На 11 страницах — `meta description`, на 10 — абсолютный `canonical` и OG/Twitter, favicon; в корне — `robots.txt`, `sitemap.xml` (9 URL), автономная `404.html`; `assets/og-image.png` 1200×630.
 - Печать билета: Ctrl+P на `tickets.html` — без шапки, меню и подвала.
 
 ## Тесты
 
-`npm run check:ui` — headless Chrome через CDP, без зависимостей: раскладка 390–1920, закладки, поиск, мобильная навигация, офлайн/ретрай, подвал, журнал опроса. Нужен установленный Chrome/Edge и доступ к Supabase; код возврата 1, если проверка упала. `node scripts/ui-probe.mjs --only=layout` — один сценарий, `--only=visual` — только скриншоты в `.audit/shots`, `--base=https://ansverd0.github.io/psychology-portal` — проверка уже задеплоенной сборки.
+`npm run check:ui` — headless Chrome через CDP, без зависимостей: раскладка 390–1920, закладки, поиск, мобильная навигация, офлайн/ретрай, подвал, журнал опроса, практикум (список, фильтры, оба потока без записи в базу). Нужен установленный Chrome/Edge и доступ к Supabase; код возврата 1, если проверка упала. `node scripts/ui-probe.mjs --only=layout` — один сценарий, `--only=visual` — только скриншоты в `.audit/shots`, `--base=https://ansverd0.github.io/psychology-portal` — проверка уже задеплоенной сборки.
 
 Ручная проверка, если трогали вёрстку:
 

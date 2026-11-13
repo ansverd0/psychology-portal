@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://mc.yandex.ru; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://mc.yandex.ru; connect-src 'self' https://lrjszannmammzzqotaro.supabase.co https://mc.yandex.ru; font-src 'self'; frame-src https://mc.yandex.ru; worker-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'">
+    <meta name="referrer" content="strict-origin-when-cross-origin">
+    <link rel="preconnect" href="https://lrjszannmammzzqotaro.supabase.co" crossorigin>
+    <title>Практикум: задания на компетентность / Психология</title>
+    <meta name="description" content="Практикум по психологии: задачи на применение, анализ, оценку и создание с критериями самопроверки и эталонным ответом.">
+    <link rel="canonical" href="https://ansverd0.github.io/psychology-portal/practice.html">
+    <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
+    <!-- Надежное незаблокированное подключение клиента базы данных -->
+<script src="js/vendor/supabase.js"></script>
+
+    <link rel="stylesheet" href="style.css">
+    <script src="js/vendor/dompurify.min.js"></script>
+
+    <!-- Мета-теги для правильного отображения ссылки в Telegram и соцсетях -->
+    <meta property="og:type" content="website">
+    <meta property="og:locale" content="ru_RU">
+    <meta property="og:site_name" content="Психология образования">
+    <meta property="og:title" content="Практикум: задания на компетентность / Психология">
+    <meta property="og:description" content="Практикум по психологии: задачи на применение, анализ, оценку и создание с критериями самопроверки и эталонным ответом.">
+    <meta property="og:url" content="https://ansverd0.github.io/psychology-portal/practice.html">
+    <meta property="og:image" content="https://ansverd0.github.io/psychology-portal/assets/og-image.png">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:image:alt" content="Психология образования — учебный портал">
+    <meta name="twitter:card" content="summary_large_image">
+    <script src="js/analytics.js" defer></script>
+    <script src="js/vitals.js" defer></script>
+</head>
+
+<body data-page="practice">
+    <header class="practice-header">
+        <a href="index.html" class="capsule-back-btn">Главное меню</a>
+        <div class="practice-header__row">
+            <div class="practice-header__intro">
+                <h1>Практикум</h1>
+                <p>Задания на применение, анализ, оценку и создание</p>
+            </div>
+            <div id="platform-user-widget">
+                <div id="auth-status-logged" class="auth-widget" style="display: none;">
+                    <span class="auth-widget__label">Ваш ID: <span id="research-key-output" class="auth-widget__key">...</span></span>
+                    <button type="button" id="btn-logout" class="auth-widget__logout">Выйти</button>
+                </div>
+                <div id="auth-status-guest" style="display: block;">
+                    <button id="btn-open-auth-modal" style="background: #2b6cb0; color: white; border: none; padding: 10px 20px; border-radius: 20px; font-size: 13px; font-weight: 600; cursor: pointer; transition: background 0.2s;">🔑 Войти / Создать ID</button>
+                </div>
+            </div>
+        </div>
+        <h2>Прочитайте ситуацию, выполните задание и сверьте ответ с критериями и эталоном. Это тренажёр с самопроверкой: он не заменяет практику и не ставит оценку за компетентность.</h2>
+    </header>
+
+    <main class="content-with-sidebar" id="practice-app">
+        <!-- ЛЕВАЯ КОЛОНКА: прогресс, дисциплины, уровни -->
+        <div class="discipline-sidebar" id="practice-sidebar">
+            <p class="practice-progress" id="practice-progress" aria-live="polite">Пройдено 0 из 0</p>
+
+            <p class="practice-sidebar__label">Дисциплины</p>
+            <div id="practice-discipline-tiles" class="practice-tiles" role="group" aria-label="Дисциплины"></div>
+
+            <p class="practice-sidebar__label">Уровень задания</p>
+            <div class="practice-levels" id="practice-level-chips" role="group" aria-label="Уровень задания"></div>
+        </div>
+
+        <!-- ПРАВАЯ КОЛОНКА: список задач или открытая задача -->
+        <div class="content-area">
+            <div class="practice-list" id="practice-list" aria-live="polite"></div>
+
+            <article class="practice-task" id="practice-task-view" data-practice-task-view hidden></article>
+
+            <div class="practice-empty" id="practice-empty" hidden></div>
+        </div>
+    </main>
+
+    <!-- ПОЛНОЭКРАННОЕ МОДАЛЬНОЕ ОКНО АВТОРИЗАЦИИ -->
+    <div id="research-auth-box" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100vh; height: 100dvh; background: rgba(26, 32, 44, 0.6); backdrop-filter: blur(4px); z-index: 100001; justify-content: center; align-items: flex-start; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 20px 12px; box-sizing: border-box; font-family: system-ui, sans-serif;" role="dialog" aria-modal="true" aria-labelledby="research-auth-title">
+        <div id="research-auth-panel" style="background: white; width: 100%; max-width: 500px; box-sizing: border-box; padding: 35px; border-radius: 20px; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1); position: relative; margin: 20px auto; text-align: left; flex: 0 0 auto;">
+            <button type="button" id="btn-close-auth" class="modal-close" aria-label="Закрыть окно">×</button>
+            <h3 id="research-auth-title" style="margin: 0 0 12px 0; color: #1a365d; font-size: 20px; font-weight: 800;">🔑 Активация учебного профиля</h3>
+            <p style="margin: 0 0 20px 0; font-size: 14px; color: #4a5568; line-height: 1.5;">
+                Для сохранения личного прогресса тестов, закладок и лекций платформе необходим ваш анонимный идентификатор.
+            </p>
+
+            <div style="margin-bottom: 20px;">
+                <input type="text" id="research-key-input" placeholder="Введите ваш старый ID для синхронизации" style="width: 100%; padding: 12px 15px; border: 2px solid #cbd5e0; border-radius: 8px; font-size: 14px; outline: none; box-sizing: border-box; margin-bottom: 12px;">
+                <button id="btn-login" style="width: 100%; background: #2b6cb0; color: white; border: none; padding: 12px; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 14px;">Войти по существующему ID</button>
+            </div>
+
+            <div style="border-top: 1px solid #edf2f7; padding-top: 20px; margin-bottom: 20px;">
+                <button id="btn-generate" style="width: 100%; background: #f7fafc; color: #2b6cb0; border: 2px dashed #2b6cb0; padding: 12px; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 14px;">🎲 Сгенерировать новый личный ID</button>
+            </div>
+
+            <div style="border-top: 1px solid #edf2f7; padding-top: 16px; text-align: center;">
+                <button id="btn-guest" style="background: none; color: #4a5568; border: none; padding: 8px 16px; border-radius: 8px; font-size: 13px; cursor: pointer;">👀 Продолжить как гость (без сохранения прогресса)</button>
+            </div>
+
+            <!-- БЛОК ЕДИНОГО СОГЛАСИЯ НА ОБРАБОТКУ И КУКИ -->
+            <label style="display: flex; align-items: flex-start; gap: 10px; cursor: pointer; user-select: none;">
+                <input type="checkbox" id="chk-consent" aria-describedby="consent-error" style="margin-top: 3px; width: 16px; height: 16px; accent-color: #2b6cb0;">
+                <span style="font-size: 12px; color: #718096; line-height: 1.4;">
+                    Я ознакомлен(а) с <a href="privacy.html" target="_blank" rel="noopener" style="color: #2b6cb0;">политикой обработки данных</a>
+                    и даю согласие на сохранение локальных файлов кэша, куки, ответы на опросы, обезличенный журнал действий (страницы, время, прокрутка) и результаты итоговых эссе.
+                </span>
+            </label>
+            <!-- Ошибка согласия: показывается вместо системного alert -->
+            <p id="consent-error" class="consent-error" role="alert" hidden></p>
+        </div>
+    </div>
+
+    <div class="page-bottom-buffer"></div>
+
+    <!-- Общий подвал сайта: контакты и навигация -->
+    <footer class="site-footer">
+        <div class="site-footer__inner">
+        <div class="site-footer__top">
+            <div class="site-footer__brand">
+                <span class="site-footer__logo" aria-hidden="true">🧠</span>
+                <div>
+                    <p class="site-footer__brand-title">Психология образования</p>
+                    <p class="site-footer__brand-text">Учебный портал для студентов-психологов</p>
+                </div>
+            </div>
+            <div class="site-footer__contacts">
+                <h2 class="site-footer__heading">Связаться с автором</h2>
+                <p class="site-footer__note">Вопросы, идеи и замечания по порталу — напишите удобным способом.</p>
+                <div class="site-footer__chips">
+                    <a class="contact-chip" href="mailto:ansverd0@gmail.com">
+                        <span class="contact-chip__icon contact-chip__icon--mail" aria-hidden="true">✉</span>
+                        <span class="contact-chip__text">
+                            <span class="contact-chip__label">Почта</span>
+                            <span class="contact-chip__value">ansverd0@gmail.com</span>
+                        </span>
+                    </a>
+                    <a class="contact-chip" href="https://vk.com/ansverd0" target="_blank" rel="noopener noreferrer">
+                        <span class="contact-chip__icon contact-chip__icon--vk" aria-hidden="true">VK</span>
+                        <span class="contact-chip__text">
+                            <span class="contact-chip__label">ВКонтакте</span>
+                            <span class="contact-chip__value">@ansverd0</span>
+                        </span>
+                    </a>
+                    <a class="contact-chip" href="https://t.me/ansverd0" target="_blank" rel="noopener noreferrer">
+                        <span class="contact-chip__icon contact-chip__icon--tg" aria-hidden="true">TG</span>
+                        <span class="contact-chip__text">
+                            <span class="contact-chip__label">Telegram</span>
+                            <span class="contact-chip__value">@ansverd0</span>
+                        </span>
+                    </a>
+                </div>
+            </div>
+        </div>
+        <div class="site-footer__bottom">
+            <span class="site-footer__copy">© 2026 Психология образования</span>
+            <nav class="site-footer__nav" aria-label="Навигация в подвале">
+                <a href="index.html">Главное меню</a>
+                <a href="privacy.html">Политика данных</a>
+            </nav>
+        </div>
+    </div>
+    </footer>
+
+    <!-- Кнопка быстрой прокрутки наверх -->
+    <button id="scroll-top-btn" title="Наверх">▲</button>
+
+    <script src="js/disciplines.js"></script>
+    <script src="js/supabase-config.js"></script>
+    <script src="js/tracker.js"></script>
+    <script src="js/ui-notify.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/practice.js"></script>
+</body>
+</html>

@@ -2861,3 +2861,899 @@ textarea:focus-visible,
         width: 520px;
     }
 }
+
+/* ==========================================================================
+   ПРАКТИКУМ: задания верхних уровней Блума (practice.html)
+   Контракт: docs/SPEC-PRACTICE.md. Опирается на существующие цвета,
+   радиусы и тени портала, новый дизайн-язык не вводит.
+   ========================================================================== */
+
+/* --- Шапка страницы --- */
+.practice-header {
+    text-align: center;
+}
+
+.practice-header__row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+    flex-wrap: wrap;
+    margin-bottom: 8px;
+}
+
+.practice-header__intro {
+    min-width: 0;
+}
+
+.practice-header__intro h1 {
+    margin: 0 0 4px 0;
+}
+
+.practice-header__intro p {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 500;
+    color: #4a5568;
+}
+
+.practice-header > h2 {
+    max-width: 760px;
+    margin: 8px auto 0 auto;
+    font-size: 16px;
+    font-weight: 500;
+    line-height: 1.55;
+    color: #4a5568;
+}
+
+/* --- Сайдбар: прогресс, дисциплины, уровни --- */
+.practice-progress {
+    margin: 0 0 12px 0;
+    padding: 10px 12px;
+    background: #ebf8ff;
+    border: 1px solid #bee3f8;
+    border-radius: 12px;
+    color: #1a365d;
+    font-size: 14px;
+    font-weight: 700;
+    text-align: center;
+}
+
+.practice-sidebar__label {
+    margin: 12px 0 6px 0;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    color: #4a5568;
+}
+
+.practice-tiles {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    width: 100%;
+    margin: 0;
+}
+
+.practice-tiles .mobile-tile-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex: none;
+    width: 100%;
+    padding: 10px 12px;
+    font-size: 13px;
+    line-height: 1.3;
+    text-align: left;
+}
+
+.practice-tile__count {
+    margin-left: auto;
+    padding: 1px 7px;
+    background: rgba(43, 108, 176, 0.12);
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 700;
+    color: #2b6cb0;
+}
+
+.practice-tiles .mobile-tile-btn.active .practice-tile__count {
+    background: rgba(255, 255, 255, 0.24);
+    color: #ffffff;
+}
+
+.practice-levels {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+/* В сайдбаре ПК чипы стоят столбиком, как плитки дисциплин */
+@media screen and (min-width: 769px) {
+    .practice-levels {
+        flex-direction: column;
+    }
+
+    .practice-levels__chip {
+        width: 100%;
+        justify-content: space-between;
+    }
+
+    .practice-levels__count {
+        margin-left: auto;
+    }
+}
+
+.practice-levels__chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 44px;
+    padding: 8px 10px;
+    background: #ffffff;
+    border: 2px solid #e2e8f0;
+    border-radius: 10px;
+    color: #1a365d;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: border-color 0.2s ease, background-color 0.2s ease, color 0.2s ease;
+}
+
+.practice-levels__chip:hover {
+    background: #f7fafc;
+    border-color: #2b6cb0;
+}
+
+.practice-levels__chip.active {
+    background: #2b6cb0;
+    border-color: #2b6cb0;
+    color: #ffffff;
+}
+
+.practice-levels__count {
+    padding: 1px 7px;
+    background: rgba(43, 108, 176, 0.12);
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 700;
+    color: #2b6cb0;
+}
+
+.practice-levels__chip.active .practice-levels__count {
+    background: rgba(255, 255, 255, 0.24);
+    color: #ffffff;
+}
+
+/* --- Список заданий --- */
+/* Минимальная высота области: страница не «дёргается», когда данные
+   приезжают после первой отрисовки (полоса прокрутки появляется сразу) */
+#practice-app {
+    min-height: 70vh;
+}
+
+.practice-list {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    width: 100%;
+}
+
+.practice-card {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    width: 100%;
+    padding: 20px 22px;
+    background: #ffffff;
+    border: 2px solid #e2e8f0;
+    border-radius: 16px;
+    box-sizing: border-box;
+    text-align: left;
+    cursor: pointer;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.practice-card:hover,
+.practice-card:focus-within {
+    border-color: #2b6cb0;
+    box-shadow: 0 8px 18px rgba(49, 130, 206, 0.1);
+}
+
+.practice-card__meta {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.practice-card__status {
+    padding: 4px 10px;
+    background: #edf2f7;
+    border-radius: 999px;
+    color: #4a5568;
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.practice-card__status.is-correct {
+    background: #f0fff4;
+    color: #276749;
+}
+
+.practice-card__competence {
+    margin: 0;
+    font-size: 13px;
+    font-weight: 600;
+    color: #2b6cb0;
+}
+
+.practice-card__title {
+    margin: 0;
+    font-size: 18px;
+    line-height: 1.35;
+    color: #1a365d;
+}
+
+.practice-card__excerpt {
+    margin: 0;
+    font-size: 14px;
+    line-height: 1.55;
+    color: #4a5568;
+}
+
+.practice-card__open {
+    align-self: flex-start;
+    min-height: 44px;
+    margin-top: 4px;
+    padding: 12px 18px;
+    background: #2b6cb0;
+    border-radius: 10px;
+    color: #ffffff;
+    font-size: 14px;
+}
+
+.practice-card__open:hover {
+    background: #2c5282;
+}
+
+.practice-card__open:focus-visible {
+    outline: 3px solid #3182ce;
+    outline-offset: 3px;
+}
+
+/* --- Бейдж уровня Блума --- */
+.practice-level {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 10px;
+    border: 1px solid transparent;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.2px;
+    white-space: nowrap;
+}
+
+.practice-level--remember   { background: #edf2f7; border-color: #e2e8f0; color: #4a5568; }
+.practice-level--understand { background: #e6fffa; border-color: #b2f5ea; color: #00695c; }
+.practice-level--apply      { background: #ebf8ff; border-color: #bee3f8; color: #2b6cb0; }
+.practice-level--analyze    { background: #faf5ff; border-color: #e9d8fd; color: #6b46c1; }
+.practice-level--evaluate   { background: #fffaf0; border-color: #feebc8; color: #9c4221; }
+.practice-level--create     { background: #f0fff4; border-color: #c6f6d5; color: #276749; }
+.practice-level--other      { background: #edf2f7; border-color: #e2e8f0; color: #4a5568; }
+
+/* --- Карточка открытого задания --- */
+.practice-task {
+    width: 100%;
+    padding: 28px 32px;
+    background: #ffffff;
+    border-radius: 16px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
+    box-sizing: border-box;
+    text-align: left;
+}
+
+.practice-task__nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 18px;
+}
+
+.practice-task__back,
+.practice-task__next {
+    min-height: 44px;
+    padding: 10px 16px;
+    border-radius: 10px;
+    font-size: 13px;
+}
+
+.practice-task__back {
+    background: #edf2f7;
+    color: #2d3748;
+}
+
+.practice-task__back:hover {
+    background: #e2e8f0;
+}
+
+.practice-task__next {
+    background: #ffffff;
+    border: 2px solid #bee3f8;
+    color: #2b6cb0;
+}
+
+.practice-task__next:hover {
+    background: #ebf8ff;
+}
+
+.practice-task__next:disabled {
+    background: #f7fafc;
+    border-color: #e2e8f0;
+    color: #718096;
+    cursor: not-allowed;
+}
+
+.practice-task__meta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 10px;
+}
+
+.practice-task__competence {
+    font-size: 13px;
+    font-weight: 600;
+    color: #2b6cb0;
+}
+
+.practice-badge--ai {
+    padding: 3px 8px;
+    background: #edf2f7;
+    border-radius: 999px;
+    color: #4a5568;
+    font-size: 11px;
+    font-weight: 700;
+}
+
+.practice-task__title {
+    margin: 0 0 18px 0;
+    font-size: 24px;
+    line-height: 1.3;
+    color: #1a365d;
+}
+
+.practice-task__title:focus-visible {
+    outline: 3px solid #3182ce;
+    outline-offset: 4px;
+    border-radius: 6px;
+}
+
+.practice-task__block {
+    margin-bottom: 18px;
+}
+
+.practice-task__label {
+    margin: 0 0 6px 0;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    color: #718096;
+}
+
+.practice-task__text p {
+    margin: 0 0 10px 0;
+    font-size: 15px;
+    line-height: 1.6;
+    color: #2d3748;
+}
+
+.practice-task__text p:last-child {
+    margin-bottom: 0;
+}
+
+.practice-task__text ul,
+.practice-task__text ol {
+    margin: 0 0 10px 0;
+    padding-left: 22px;
+    font-size: 15px;
+    line-height: 1.6;
+    color: #2d3748;
+}
+
+/* --- Варианты ответа (choice) --- */
+.practice-options {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin: 8px 0 16px 0;
+}
+
+.practice-option {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 14px 16px;
+    background: #ffffff;
+    border: 2px solid #e2e8f0;
+    border-radius: 12px;
+    color: #2d3748;
+    font-size: 15px;
+    line-height: 1.5;
+    cursor: pointer;
+    box-sizing: border-box;
+    transition: border-color 0.2s ease, background-color 0.2s ease;
+}
+
+.practice-option:hover {
+    background: #f7fafc;
+    border-color: #2b6cb0;
+}
+
+.practice-option input {
+    flex: none;
+    width: 18px;
+    height: 18px;
+    margin: 3px 0 0 0;
+    accent-color: #2b6cb0;
+}
+
+.practice-option.is-correct {
+    background: #f0fff4;
+    border-color: #38a169;
+}
+
+.practice-option.is-wrong {
+    background: #fff5f5;
+    border-color: #e53e3e;
+}
+
+/* --- Кнопки и поля --- */
+.practice-actions {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin: 14px 0 6px 0;
+}
+
+.practice-btn {
+    min-height: 44px;
+    padding: 12px 22px;
+    background: #edf2f7;
+    border-radius: 10px;
+    color: #2d3748;
+    font-size: 15px;
+}
+
+.practice-btn:hover {
+    background: #e2e8f0;
+}
+
+.practice-btn--primary {
+    background: #2b6cb0;
+    color: #ffffff;
+}
+
+.practice-btn--primary:hover {
+    background: #2c5282;
+}
+
+.practice-btn:disabled,
+.practice-btn--primary:disabled {
+    background: #cbd5e0;
+    color: #4a5568;
+    cursor: not-allowed;
+}
+
+.practice-link-btn {
+    min-height: 0;
+    padding: 2px 0;
+    background: none;
+    border: none;
+    border-radius: 0;
+    color: #2b6cb0;
+    font-size: 13px;
+    font-weight: 700;
+    text-decoration: underline;
+    cursor: pointer;
+}
+
+.practice-link-btn:hover {
+    background: none;
+    color: #2c5282;
+}
+
+.practice-textarea {
+    width: 100%;
+    min-height: 160px;
+    padding: 14px 16px;
+    background: #ffffff;
+    border: 2px solid #e2e8f0;
+    border-radius: 12px;
+    box-sizing: border-box;
+    font-family: inherit;
+    font-size: 15px;
+    line-height: 1.55;
+    color: #2d3748;
+    resize: vertical;
+}
+
+.practice-textarea:focus {
+    border-color: #2b6cb0;
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(49, 130, 206, 0.16);
+}
+
+.practice-hint {
+    margin: 6px 0 0 0;
+    font-size: 13px;
+    line-height: 1.45;
+    color: #4a5568;
+}
+
+.practice-hint.is-ok {
+    color: #276749;
+    font-weight: 600;
+}
+
+/* --- Плашки: гость, приватность, ошибка --- */
+.practice-note {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin: 12px 0 0 0;
+    padding: 10px 12px;
+    background: #fffaf0;
+    border: 1px solid #fbd38d;
+    border-radius: 10px;
+    color: #744210;
+    font-size: 13px;
+    line-height: 1.5;
+}
+
+.practice-note--privacy {
+    background: #ebf8ff;
+    border-color: #bee3f8;
+    color: #2c5282;
+}
+
+.practice-note--guest {
+    background: #fffaf0;
+    border-color: #fbd38d;
+    color: #744210;
+}
+
+.practice-note--error {
+    background: #fff5f5;
+    border-color: #feb2b2;
+    color: #9b2c2c;
+}
+
+/* --- Рубрика самопроверки (open) --- */
+.practice-rubric {
+    margin: 18px 0 0 0;
+    padding: 18px;
+    background: #f7fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 14px;
+}
+
+.practice-rubric__title {
+    margin: 0 0 6px 0;
+    font-size: 16px;
+    color: #1a365d;
+}
+
+.practice-rubric__intro {
+    margin: 0 0 12px 0;
+    font-size: 13px;
+    line-height: 1.5;
+    color: #4a5568;
+}
+
+.practice-rubric__row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    flex-wrap: wrap;
+    padding: 12px 0;
+    border-top: 1px solid #e2e8f0;
+}
+
+.practice-rubric__text {
+    flex: 1 1 220px;
+    margin: 0;
+    font-size: 14px;
+    line-height: 1.5;
+    color: #2d3748;
+}
+
+.practice-rubric__scale {
+    display: flex;
+    gap: 6px;
+}
+
+.practice-score {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    min-width: 60px;
+    min-height: 44px;
+    padding: 8px 12px;
+    background: #ffffff;
+    border: 2px solid #e2e8f0;
+    border-radius: 10px;
+    box-sizing: border-box;
+    color: #2d3748;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: border-color 0.2s ease, background-color 0.2s ease;
+}
+
+.practice-score:hover {
+    border-color: #2b6cb0;
+}
+
+.practice-score input {
+    width: 16px;
+    height: 16px;
+    margin: 0;
+    accent-color: #2b6cb0;
+}
+
+.practice-score:has(input:checked) {
+    background: #ebf8ff;
+    border-color: #2b6cb0;
+    color: #2b6cb0;
+}
+
+.practice-score:has(input:focus-visible) {
+    outline: 3px solid #3182ce;
+    outline-offset: 2px;
+}
+
+.practice-rubric__total {
+    margin: 14px 0 4px 0;
+    font-size: 15px;
+    color: #1a365d;
+}
+
+.practice-rubric__total-value {
+    font-size: 18px;
+    color: #2b6cb0;
+}
+
+/* --- Результат попытки --- */
+.practice-result {
+    margin-top: 20px;
+    padding: 18px 20px;
+    background: #f7fafc;
+    border: 1px solid #e2e8f0;
+    border-left: 5px solid #2b6cb0;
+    border-radius: 14px;
+}
+
+.practice-result__verdict {
+    margin: 0 0 10px 0;
+    font-size: 18px;
+    font-weight: 800;
+    color: #1a365d;
+}
+
+.practice-result__verdict.is-correct {
+    color: #22543d;
+}
+
+.practice-result__verdict.is-wrong {
+    color: #742a2a;
+}
+
+.practice-result__answer,
+.practice-result__score,
+.practice-result__hint {
+    margin: 0 0 10px 0;
+    font-size: 14px;
+    line-height: 1.6;
+    color: #2d3748;
+}
+
+.practice-result__hint {
+    color: #4a5568;
+}
+
+.practice-result__saved {
+    margin: 10px 0 0 0;
+    font-size: 13px;
+    font-weight: 600;
+    color: #276749;
+}
+
+.practice-result__block {
+    margin-top: 14px;
+}
+
+.practice-result__label {
+    margin: 0 0 6px 0;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.4px;
+    text-transform: uppercase;
+    color: #718096;
+}
+
+.practice-result__text p {
+    margin: 0 0 10px 0;
+    font-size: 14px;
+    line-height: 1.65;
+    color: #2d3748;
+}
+
+.practice-result__text p:last-child {
+    margin-bottom: 0;
+}
+
+.practice-result__criteria {
+    margin: 10px 0 0 0;
+    padding-left: 20px;
+    font-size: 14px;
+    line-height: 1.6;
+    color: #2d3748;
+}
+
+.practice-result__criterion {
+    margin-bottom: 6px;
+}
+
+.practice-result__criterion-score {
+    margin-left: 8px;
+    color: #2b6cb0;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+/* --- Пустое состояние --- */
+.practice-empty {
+    width: 100%;
+    padding: 40px 24px;
+    background: #ffffff;
+    border-radius: 16px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.04);
+    box-sizing: border-box;
+    text-align: center;
+}
+
+.practice-empty__icon {
+    margin-bottom: 10px;
+    font-size: 40px;
+}
+
+.practice-empty__title {
+    margin: 0 0 8px 0;
+    font-size: 20px;
+    color: #1a365d;
+}
+
+.practice-empty__text {
+    margin: 0;
+    font-size: 14px;
+    line-height: 1.6;
+    color: #4a5568;
+}
+
+/* Скрытые блоки не должны перебиваться display из компонентов */
+#practice-list[hidden],
+#practice-task-view[hidden],
+#practice-empty[hidden],
+.practice-rubric[hidden],
+.practice-result[hidden],
+.practice-note[hidden],
+.practice-hint[hidden],
+.practice-actions[hidden] {
+    display: none !important;
+}
+
+/* --- Практикум на телефоне: одна колонка, плитки дисциплин по две в ряд --- */
+@media screen and (max-width: 768px) {
+    .practice-header__row {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 14px;
+        text-align: left;
+    }
+
+    .practice-header__intro h1,
+    .practice-header__intro p {
+        text-align: left;
+    }
+
+    .practice-header > h2 {
+        text-align: left;
+    }
+
+    #platform-user-widget {
+        width: 100%;
+    }
+
+    /* Открытая задача на телефоне: фильтры убираем, чтобы до задания
+       не приходилось прокручивать весь сайдбар. «К списку» их вернёт. */
+    body.practice-task-open .discipline-sidebar {
+        display: none;
+    }
+
+    .practice-tiles {
+        flex-direction: row;
+        flex-wrap: wrap;
+    }
+
+    .practice-tiles .mobile-tile-btn {
+        flex: 1 1 calc(50% - 5px);
+        width: auto;
+        justify-content: center;
+        text-align: center;
+    }
+
+    .practice-tiles .practice-tile__count {
+        margin-left: 6px;
+    }
+
+    .practice-levels__chip {
+        flex: 1 1 calc(50% - 5px);
+        justify-content: center;
+    }
+
+    .practice-levels__count {
+        margin-left: 6px;
+    }
+
+    .practice-task {
+        padding: 20px 16px;
+        border-radius: 14px;
+    }
+
+    .practice-task__title {
+        font-size: 20px;
+    }
+
+    .practice-task__nav {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .practice-task__back,
+    .practice-task__next {
+        width: 100%;
+    }
+
+    .practice-card {
+        padding: 18px 16px;
+    }
+
+    .practice-card__open {
+        align-self: stretch;
+        width: 100%;
+    }
+
+    .practice-rubric {
+        padding: 14px;
+    }
+
+    .practice-rubric__scale {
+        width: 100%;
+    }
+
+    .practice-score {
+        flex: 1 1 0;
+        min-width: 0;
+    }
+}
