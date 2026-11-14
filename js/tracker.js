@@ -98,7 +98,8 @@
         // иначе страница остаётся без навигации (раунд 3)
         try {
             if (!session) session = readSession();
-            var item = { page: PAGE, event: event, ts: nowIso() };
+            // event_id делает приём идемпотентным: ретрай батча не создаёт копий
+            var item = { page: PAGE, event: event, ts: nowIso(), event_id: makeId() };
             if (dwell != null) item.dwell_ms = Math.round(dwell);
             if (scroll != null) item.scroll_pct = Math.max(0, Math.min(100, Math.round(scroll)));
             if (meta && typeof meta === 'object') item.meta = meta;
@@ -232,7 +233,8 @@
 
     window.PsyTracker = {
         event: function (name, meta) { push(name, meta); },
-        flush: function () { flush(false); },
+        // keepalive нужен, когда событие досылается на pagehide (сегмент статьи)
+        flush: function (keepalive) { flush(Boolean(keepalive)); },
         session: function () { return session ? session.id : null; }
     };
 

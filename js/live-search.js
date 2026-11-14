@@ -132,6 +132,17 @@
 
         function pick(item) {
             if (!item) return;
+            // Поиск как обращение за помощью: длина запроса и категория, без текста
+            const query = input.value.trim();
+            if (window.PsyTracker && typeof window.PsyTracker.event === 'function') {
+                try {
+                    window.PsyTracker.event('search', {
+                        chars: query.length,
+                        results: matches.length,
+                        category: String(item.category || '').slice(0, 60)
+                    });
+                } catch (e) { /* журнал не критичен */ }
+            }
             input.value = item.label || item.title;
             close();
             if (typeof options.onPick === 'function') options.onPick(item);

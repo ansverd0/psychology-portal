@@ -75,7 +75,10 @@ function initFlashcards() {
             const toggleCard = () => {
                 const flipped = activeCard.classList.toggle('flipped');
                 activeCard.setAttribute('aria-pressed', flipped ? 'true' : 'false');
-                if (flipped && window.PsyTracker) PsyTracker.event('card_flip');
+                if (flipped && window.PsyTracker) {
+                    const card = currentActiveCards[currentCardIndex] || {};
+                    PsyTracker.event('card_flip', { discipline: String(card.discipline || '').slice(0, 40) });
+                }
             };
             activeCard.addEventListener('click', toggleCard);
             activeCard.addEventListener('keydown', (event) => {

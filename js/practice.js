@@ -496,6 +496,7 @@ function practiceOpenTask(id) {
 
     practiceTrack('task_open', {
         task_id: task.id,
+        discipline: task.discipline,
         slug: task.slug,
         level: task.level,
         competence: practiceShortCompetence(task),
@@ -966,6 +967,7 @@ function practiceAfterSavedAttempt(task, answer, res) {
         practiceRenderChoiceResult(task, Boolean(res && res.is_correct), { saved: true });
         practiceTrack('task_submit', {
             task_id: task.id,
+            discipline: task.discipline,
             slug: task.slug,
             level: task.level,
             competence: practiceShortCompetence(task),
@@ -980,12 +982,14 @@ function practiceAfterSavedAttempt(task, answer, res) {
         practiceRenderOpenResult(task, res, { saved: true });
         practiceTrack('self_check', {
             task_id: task.id,
+            discipline: task.discipline,
             level: task.level,
             self_score: selfScore,
             max_score: maxScore
         });
         practiceTrack('task_submit', {
             task_id: task.id,
+            discipline: task.discipline,
             slug: task.slug,
             level: task.level,
             competence: practiceShortCompetence(task),

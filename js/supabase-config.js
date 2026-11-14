@@ -415,7 +415,7 @@ function mapArticles(data) {
 
         const meta = typeof psyDiscipline === 'function' ? psyDiscipline(cleanId) : { title: cleanId, order: 999 };
         if (!groups[cleanId]) groups[cleanId] = { id: cleanId, title: meta.title, order: meta.order, articles: [] };
-        groups[cleanId].articles.push({ title: a.title, content: a.content, ai: Boolean(a.ai_generated) });
+        groups[cleanId].articles.push({ id: a.id, title: a.title, content: a.content, ai: Boolean(a.ai_generated) });
     });
 
     Object.keys(groups).forEach(key => {
@@ -510,7 +510,7 @@ const PAGE_LOADERS = {
 
     sections: async () => {
         const [articles, glossary] = await Promise.all([
-            fetchTable('articles', 'title, content, discipline_id, ai_generated'),
+            fetchTable('articles', 'id, title, content, discipline_id, ai_generated'),
             fetchTable('glossary', 'term, definition').catch(e => {
                 console.warn('⚠️ Глоссарий недоступен, статьи покажем без подсказок:', e.message);
                 return [];

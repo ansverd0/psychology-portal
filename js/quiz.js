@@ -1,6 +1,9 @@
 let currentActiveQuestions = [];
 let currentTestIndex = 0;
 let score = 0;
+// Тест «начат» фиксируем на первом ответе, а не на загрузке страницы: иначе
+// каждый заход на tests.html считался бы новой попыткой
+let quizStartedLogged = false;
 
 /** Прокрутка к блоку теста: на ПК оставляем запас сверху, чтобы не улетать
  *  в начало страницы, на телефоне — на 8 px выше, чем при block:'start' (раунд 3). */
@@ -40,6 +43,7 @@ function initQuiz() {
         
         currentTestIndex = 0;
         score = 0;
+        quizStartedLogged = false;
         
         const qw = document.getElementById('quiz-wrapper');
         const rw = document.getElementById('result-wrapper');
@@ -185,6 +189,18 @@ function handleAnswer(selectedButton, selectedIndex, correctIndex) {
     const currentQuestion = currentActiveQuestions[currentTestIndex];
 
     if (selectedButton.classList.contains('disabled')) return;
+
+    if (!quizStartedLogged && window.PsyTracker) {
+        quizStartedLogged = true;
+        const limitSelect = document.getElementById('quiz-limit-select');
+        try {
+            PsyTracker.event('test_start', {
+                discipline: String(currentQuestion.discipline || '').slice(0, 40),
+                total: currentActiveQuestions.length,
+                limit: limitSelect ? String(limitSelect.value) : '10'
+            });
+        } catch (e) { /* журнал не критичен */ }
+    }
 
     const oldBtn = document.querySelector('.review-theme-btn');
     if (oldBtn) oldBtn.remove();

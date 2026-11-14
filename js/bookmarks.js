@@ -71,12 +71,22 @@ function isBookmarked(id, type) {
 
 /** Переключить закладку (добавить/удалить) */
 function toggleBookmark(id, title, type, meta) {
-    if (isBookmarked(id, type)) {
-        removeBookmark(id, type);
-        return false; // удалена
-    } else {
+    const adding = !isBookmarked(id, type);
+    if (window.PsyTracker && typeof window.PsyTracker.event === 'function') {
+        try {
+            window.PsyTracker.event('bookmark', {
+                action: adding ? 'add' : 'remove',
+                kind: String(type || ''),
+                folder: String((meta && meta.folder) || '').slice(0, 60)
+            });
+        } catch (e) { /* журнал не критичен */ }
+    }
+    if (adding) {
         addBookmark(id, title, type, meta);
         return true; // добавлена
+    } else {
+        removeBookmark(id, type);
+        return false; // удалена
     }
 }
 

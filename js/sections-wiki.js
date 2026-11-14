@@ -2,9 +2,122 @@
 // в какой папке лежит статья.
 let sectionsActiveFolderId = null;
 
+// --- Цифровой след статьи: видимое время и глубина прокрутки сегментом ---
+// Сегмент открывается при показе статьи и закрывается при переходе к другой
+// статье или на pagehide; время скрытой вкладки вычитается. См.
+// docs/TECHSPEC-FOOTPRINT.md §5. Журнал не должен ломать чтение: все ошибки гасим.
+
+const ARTICLE_SEGMENT_MIN_MS = 1000;
+let articleTraceReady = false;
+
+const articleTrace = {
+    id: null,
+    discipline: '',
+    title: '',
+    openedAt: 0,
+    hiddenAt: 0,
+    awayMs: 0,
+    maxScroll: 0,
+    container: null
+};
+
+/** Доля высоты статьи, побывавшая во вьюпорте (0…100) */
+function articleTracePct(container) {
+    const el = container && container.querySelector('.content-text');
+    if (!el) return 0;
+    const rect = el.getBoundingClientRect();
+    const height = Math.max(rect.height, 1);
+    const seen = Math.min(height, Math.max(0, (window.innerHeight || 0) - rect.top));
+    return Math.min(100, Math.max(0, Math.round(seen / height * 100)));
+}
+
+function articleTraceTick() {
+    if (!articleTrace.id) return;
+    const pct = articleTracePct(articleTrace.container);
+    if (pct > articleTrace.maxScroll) articleTrace.maxScroll = pct;
+}
+
+/** Стабильный ключ статьи: uuid из базы, иначе discipline|title (ключ уникальности в БД) */
+function articleTraceId(article, group) {
+    if (article && article.id) return String(article.id);
+    const discipline = (group && group.id) || '';
+    const title = String((article && article.title) || '');
+    return discipline ? discipline + '|' + title : title;
+}
+
+function articleTraceClose() {
+    if (!articleTrace.id) return;
+    const now = Date.now();
+    let away = articleTrace.awayMs;
+    if (articleTrace.hiddenAt) away += now - articleTrace.hiddenAt;
+    const dwell = Math.max(0, now - articleTrace.openedAt - away);
+    articleTraceTick();
+    if (window.PsyTracker && typeof window.PsyTracker.event === 'function' && dwell >= ARTICLE_SEGMENT_MIN_MS) {
+        try {
+            window.PsyTracker.event('article_leave', {
+                article_id: articleTrace.id,
+                discipline: articleTrace.discipline,
+                dwell_ms: Math.round(dwell),
+                scroll_pct: articleTrace.maxScroll
+            });
+        } catch (e) { /* журнал не критичен */ }
+    }
+    articleTrace.id = null;
+    articleTrace.container = null;
+    articleTrace.hiddenAt = 0;
+    articleTrace.awayMs = 0;
+    articleTrace.maxScroll = 0;
+}
+
+function articleTraceStart(article, group) {
+    articleTraceClose();
+    const container = document.querySelector('.section-viewer');
+    articleTrace.id = articleTraceId(article, group);
+    articleTrace.discipline = (group && group.id) || '';
+    articleTrace.title = String((article && article.title) || '').slice(0, 80);
+    articleTrace.openedAt = Date.now();
+    articleTrace.hiddenAt = document.hidden ? Date.now() : 0;
+    articleTrace.awayMs = 0;
+    articleTrace.container = container;
+    articleTrace.maxScroll = articleTracePct(container);
+    if (window.PsyTracker && typeof window.PsyTracker.event === 'function') {
+        try {
+            window.PsyTracker.event('article_open', {
+                article_id: articleTrace.id,
+                discipline: articleTrace.discipline,
+                title: articleTrace.title
+            });
+        } catch (e) { /* журнал не критичен */ }
+    }
+}
+
+function initArticleTrace() {
+    if (articleTraceReady) return;
+    articleTraceReady = true;
+    document.addEventListener('visibilitychange', function () {
+        if (document.visibilityState === 'hidden') {
+            if (articleTrace.id && !articleTrace.hiddenAt) articleTrace.hiddenAt = Date.now();
+        } else if (articleTrace.hiddenAt) {
+            articleTrace.awayMs += Date.now() - articleTrace.hiddenAt;
+            articleTrace.hiddenAt = 0;
+        }
+    });
+    window.addEventListener('pagehide', function () {
+        if (!articleTrace.id) return;
+        articleTraceClose();
+        // keepalive: сегмент должен уйти до выгрузки страницы
+        if (window.PsyTracker && typeof window.PsyTracker.flush === 'function') {
+            window.PsyTracker.flush(true);
+        }
+    });
+    window.addEventListener('scroll', articleTraceTick, { passive: true });
+}
+
 function initSections() {
     const sections = appDatabase.sections;
     if (!sections || sections.length === 0) return;
+
+    initArticleTrace();
 
     const foldersCol = document.getElementById('sections-folders-col');
     const articlesCol = document.getElementById('sections-articles-col');
@@ -276,17 +389,15 @@ function showSectionContent(section) {
     const contentContainer = document.querySelector('.section-viewer');
     if (!contentContainer || !section) return;
 
-    if (window.PsyTracker) {
-        // Журнал поведения не должен мешать открытию статьи
-        try {
-            PsyTracker.event('article_open', {
-                title: String(section.title || '').slice(0, 80),
-                discipline: section.discipline_id || ''
-            });
-        } catch (e) {
-            console.warn('⚠️ Трекер: article_open не записан:', e);
-        }
-    }
+    if (sectionGroup) sectionsCurrentSection = sectionGroup;
+    sectionsCurrentArticle = section;
+    const currentGroup = sectionGroup || sectionsCurrentSection;
+
+    // Сегмент предыдущей статьи закрываем до замены содержимого: иначе
+    // прокрутку и высоту уже не измерить
+    const traceId = articleTraceId(section, currentGroup);
+    const sameArticle = traceId === articleTrace.id;
+    if (!sameArticle) articleTraceClose();
 
     // 1. Сначала санитизируем сырой контент статьи (убираем опасные теги/скрипты)
     const safeRawContent = sanitizeWikiHtml(section.content || '', {
@@ -313,6 +424,10 @@ function showSectionContent(section) {
 
     const contentText = contentContainer.querySelector('.content-text');
     applyWikiTerms(contentText, appGlossary);
+
+    // Новый сегмент начинает отсчёт после отрисовки: height и scroll уже реальные
+    if (sameArticle) articleTraceTick();
+    else articleTraceStart(section, currentGroup);
 
     // 4. Обработчик закладки: панель и звезда синхронизируются событием
     const starBtn = document.getElementById('section-bookmark-star');
