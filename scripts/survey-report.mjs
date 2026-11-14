@@ -98,9 +98,13 @@ const round = (v, d = 2) => (v == null ? null : Number(v.toFixed(d)));
 
 /** Полный расчёт по выгрузке: { profiles, responses, keys } */
 export function buildReport(data) {
-  const responses = data.responses || [];
-  const keys = data.keys || [];
   const profiles = data.profiles || [];
+  const testKeys = new Set(profiles.filter((p) => p.is_test).map((p) => p.user_key));
+  const allResponses = data.responses || [];
+  const responses = data.includeTest
+    ? allResponses
+    : allResponses.filter((r) => !testKeys.has(r.user_key));
+  const keys = data.keys || [];
   const byKey = new Map();
   for (const r of responses) {
     if (!byKey.has(r.user_key)) byKey.set(r.user_key, []);
@@ -156,6 +160,7 @@ export function buildReport(data) {
     profiles: profiles.length,
     responses: responses.length,
     pairs: pairs.length,
+    test_excluded: data.includeTest ? 0 : allResponses.length - responses.length,
     groups: [...new Set(pairs.map(([k]) => (profiles.find((p) => p.user_key === k) || {}).group_code))],
     excluded: excluded.map((r) => ({ user_key: r.user_key, instrument: r.instrument, per_item: round(secondsPerItem(r)) })),
     sham: shamScales,
@@ -198,7 +203,7 @@ async function query(sql) {
 }
 
 async function pull() {
-  const profiles = await query(`select user_key, group_code, course, survey_done, created_at
+  const profiles = await query(`select user_key, group_code, course, survey_done, is_test, created_at
     from public.users_profiles order by created_at`);
   const responses = await query(`select user_key, instrument, answers, duration_ms, finished_at
     from public.instrument_responses order by finished_at`);
@@ -215,6 +220,7 @@ function printReport(report) {
 
   lines.push('=== ОБЪЁМ ===');
   lines.push(`профилей ${report.profiles}, ответов ${report.responses}, полных пар ${report.pairs}`);
+  if (report.test_excluded) lines.push(`тестовых протоколов исключено: ${report.test_excluded}`);
   lines.push(`группы: ${report.groups.join(', ') || '—'}`);
   if (report.excluded.length) {
     lines.push('исключены как скоростные:');
@@ -320,6 +326,17 @@ function selftest() {
   ok(buildReport(paired).alpha.sspm === 1, 'альфа ССПМ считается по ключу (обратные пункты учтены)',
     buildReport(paired).alpha.sspm);
 
+  const withTestKey = {
+    profiles: [{ user_key: 'a', is_test: true }, { user_key: 'b' }],
+    keys,
+    responses: [
+      { user_key: 'a', instrument: 'sham', answers: fixtureAnswers(28, 4), duration_ms: 120000 },
+      { user_key: 'b', instrument: 'sham', answers: fixtureAnswers(28, 4), duration_ms: 120000 }
+    ]
+  };
+  ok(buildReport(withTestKey).responses === 1, 'тестовый ключ исключён из отчёта', buildReport(withTestKey).responses);
+  ok(buildReport({ ...withTestKey, includeTest: true }).responses === 2, '--include-test возвращает тестовый ключ');
+
   const failed = checks.filter((c) => !c.pass);
   for (const c of checks) {
     console.log(`${c.pass ? '✔' : '✘'} ${c.label}${c.pass ? '' : ' — ' + JSON.stringify(c.detail)}`);
@@ -336,6 +353,6 @@ if (args.includes('--selftest')) {
 }
 
 const data = await pull();
-const report = buildReport(data);
+const report = buildReport({ ...data, includeTest: args.includes('--include-test') });
 if (args.includes('--json')) console.log(JSON.stringify(report, null, 1));
 else printReport(report);

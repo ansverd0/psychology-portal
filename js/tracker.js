@@ -203,7 +203,11 @@
 
     function start() {
         session = readSession();
-        queue = readQueue();
+        // PsyTracker.event доступен раньше DOMContentLoaded: события, пришедшие
+        // до старта (первая статья), нельзя терять при чтении очереди с диска
+        const early = queue;
+        const saved = readQueue();
+        queue = (early.length ? saved.concat(early) : saved).slice(-MAX_QUEUE);
 
         if (SURVEY) {
             // На опросе только вехи: их присылает survey.js через PsyTracker.event
