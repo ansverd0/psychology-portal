@@ -98,14 +98,24 @@ try {
   check('записей методик ровно 2', r.json?.length, (n) => n === 2);
   check('первая версия ШАМ сохранена', r.json?.find((x) => x.instrument === 'sham')?.scales?.cognitive, (v) => v === 12);
 
-  // 5. События
+  // 5. События: event_id делает приём идемпотентным (db/2026-11-15_footprint_v1.sql)
   const batch = [
-    { page: 'index', event: 'page_view', ts: new Date().toISOString(), dwell_ms: 12000, scroll_pct: 40 },
-    { page: 'tickets', event: 'article_open', ts: new Date().toISOString(), dwell_ms: 90000, scroll_pct: 80, meta: { id: '42' } },
-    { page: 'tests', event: 'test_complete', ts: new Date().toISOString(), meta: { score: 7, total: 10 } },
+    { event_id: 'dsh-ev-0001', page: 'index', event: 'page_view', ts: new Date().toISOString(), dwell_ms: 12000, scroll_pct: 40 },
+    { event_id: 'dsh-ev-0002', page: 'tickets', event: 'article_open', ts: new Date().toISOString(), dwell_ms: 90000, scroll_pct: 80, meta: { id: '42' } },
+    { event_id: 'dsh-ev-0003', page: 'tests', event: 'test_complete', ts: new Date().toISOString(), meta: { score: 7, total: 10 } },
   ];
   r = await req('POST', 'rpc/log_events', { body: { p_key: key, p_session: 'test-session-0001', p_events: batch } });
   check('log_events вернул 3', r.json, (n) => n === 3, r.text.slice(0, 100));
+
+  // Ретрай того же батча (потерянный ответ сервера) не создаёт копий
+  r = await req('POST', 'rpc/log_events', { body: { p_key: key, p_session: 'test-session-0001', p_events: batch } });
+  check('повторный батч с теми же event_id отброшен', r.json, (n) => n === 0, r.text.slice(0, 100));
+
+  // Старый клиент без event_id по-прежнему пишется
+  r = await req('POST', 'rpc/log_events', {
+    body: { p_key: key, p_session: 'test-session-0001', p_events: [{ page: 'index', event: 'page_view', ts: new Date().toISOString() }] },
+  });
+  check('событие без event_id принято (старый клиент)', r.json, (n) => n === 1, r.text.slice(0, 100));
 
   r = await req('POST', 'rpc/log_events', {
     body: { p_key: key, p_session: 'test-session-0001', p_events: [{ page: 'index', event: 'BAD EVENT', ts: 'x' }] },
@@ -113,7 +123,7 @@ try {
   check('мусорное событие отброшено', r.json, (n) => n === 0);
 
   r = await req('GET', `events?user_key=eq.${key}&select=event`, { token: service });
-  check('в базе 3 события', r.json?.length, (n) => n === 3);
+  check('в базе 4 события', r.json?.length, (n) => n === 4);
 
   r = await req('GET', `events?user_key=eq.${key}&select=event`);
   check('anon не читает чужие события', r.json?.length, (n) => n === 0 || n === undefined);
@@ -178,8 +188,9 @@ try {
   check('эссе ровно одно', r.json?.length, (n) => n === 1);
 
   // 8. Флаги профиля
-  r = await req('GET', `users_profiles?user_key=eq.${key}&select=course,group_code,survey_done,essay_done,tests_completed_count`, { token: service });
+  r = await req('GET', `users_profiles?user_key=eq.${key}&select=course,group_code,survey_done,essay_done,tests_completed_count,is_test`, { token: service });
   const p = r.json?.[0];
+  check('новый профиль не тестовый', p?.is_test, (v) => v === false);
   check('курс записан', p?.course, (v) => v === 2);
   check('группа записана', p?.group_code, (v) => v === '821');
   check('survey_done', p?.survey_done, (v) => v === true);
