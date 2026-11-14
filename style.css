@@ -3757,3 +3757,1436 @@ textarea:focus-visible,
         min-width: 0;
     }
 }
+
+
+/* ==========================================================================
+   ПРАКТИКУМ: шапка-компонент, раздел практикума и модалка входа по ID.
+   Перенесено из спринта 2 (4870f3e) при откате главной и спринтов 1/3
+   до живой версии: остальные страницы сохраняют разметку с живой версии.
+   ========================================================================== */
+
+:root {
+    /* Поверхности и текст */
+    --bg:            #f5f7fa;
+    --surface:       #ffffff;
+    --surface-2:     #f7fafc;
+    --ink:           #1a202c;
+    --ink-heading:   #1a365d;
+    --ink-2:         #4a5568;
+    --ink-3:         #5b6b80;
+    --line:          #e2e8f0;
+    --line-strong:   #7c8fa6;
+
+    /* Акцент и статусы */
+    --accent:        #2b6cb0;
+    --accent-hover:  #2c5282;
+    --accent-soft:   #ebf8ff;
+    --ok:            #276749;
+    --ok-bg:         #f0fff4;
+    --warn:          #7b341e;
+    --warn-bg:       #fffaf0;
+    --danger:        #9b2c2c;
+    --danger-bg:     #fff5f5;
+    --focus:         #2b6cb0;
+
+    /* Типографическая шкала */
+    --fs-12: 12px;
+    --fs-13: 13px;
+    --fs-14: 14px;
+    --fs-16: 16px;
+    --fs-18: 18px;
+    --fs-20: 20px;
+    --fs-24: 24px;
+    --fs-32: 32px;
+    --lh-ui: 1.4;
+    --lh-body: 1.6;
+    --lh-heading: 1.25;
+
+    /* Шаг 4 px */
+    --s-1: 4px;
+    --s-2: 8px;
+    --s-3: 12px;
+    --s-4: 16px;
+    --s-5: 20px;
+    --s-6: 24px;
+    --s-7: 32px;
+    --s-8: 40px;
+    --s-9: 48px;
+    --s-10: 64px;
+
+    --r-sm: 6px;
+    --r-md: 10px;
+    --r-lg: 14px;
+    --r-pill: 999px;
+
+    --shadow-1: 0 1px 2px rgba(16, 24, 40, .06), 0 1px 3px rgba(16, 24, 40, .10);
+    --shadow-2: 0 8px 24px rgba(16, 24, 40, .12);
+
+    --measure: 62ch;
+    --container: 1200px;
+    --tap: 44px;
+
+    --bp-sm: 480px;
+    --bp-md: 768px;
+    --bp-lg: 1024px;
+    --bp-xl: 1280px;
+    --bp-2xl: 1600px;
+}
+
+/* ==========================================================================
+   ШАПКА СТРАНИЦЫ: один компонент на все страницы (UI2-02)
+   Лозунг h2 удалён, шапка выровнена по левому краю, высота ≤ 120 px на 390.
+   ========================================================================== */
+.page-head {
+    width: 100%;
+    max-width: var(--container);
+    margin: 0 auto var(--s-6);
+    padding: var(--s-1) 0 0;
+    box-sizing: border-box;
+    text-align: left;
+}
+
+.page-head__top,
+.topbar {
+    display: flex;
+    align-items: center;
+    gap: var(--s-3);
+    flex-wrap: wrap;
+}
+
+.page-head__back {
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--s-1);
+    min-width: var(--tap);
+    min-height: var(--tap);
+    margin-left: calc(var(--s-2) * -1);
+    padding: 0 var(--s-2);
+    border-radius: var(--r-md);
+    color: var(--accent);
+    font-size: var(--fs-13);
+    font-weight: 600;
+    text-decoration: none;
+    box-sizing: border-box;
+}
+
+.page-head__back:hover {
+    background: var(--accent-soft);
+    color: var(--accent-hover);
+}
+
+.page-head__back-arrow {
+    font-size: var(--fs-18);
+    line-height: 1;
+}
+
+.page-head__title {
+    flex: 1 1 auto;
+    min-width: 0;
+    margin: var(--s-1) 0 0;
+    color: var(--ink-heading);
+    font-size: var(--fs-24);
+    font-weight: 700;
+    line-height: var(--lh-heading);
+}
+
+.page-head__caption {
+    margin: 0;
+    max-width: var(--measure);
+    color: var(--ink-2);
+    font-size: var(--fs-14);
+    font-weight: 400;
+    line-height: 1.45;
+}
+
+/* Вход по ID в строке заголовка: шапка не растёт, кнопка не занимает
+   первый экран (UI2-09, H4) */
+.page-head__widget {
+    display: flex;
+    align-items: center;
+    flex: 0 0 auto;
+    margin-left: auto;
+}
+
+@media screen and (max-width: 480px) {
+    .page-head__back-text {
+        /* На узком экране остаётся стрелка 44×44, текст — в aria-label */
+        display: none;
+    }
+
+    .page-head__title {
+        font-size: var(--fs-20);
+    }
+}
+
+/* ==========================================================================
+   ПРАКТИКУМ: задания верхних уровней Блума (practice.html)
+   Контракт: docs/SPEC-PRACTICE.md. Опирается на существующие цвета,
+   радиусы и тени портала, новый дизайн-язык не вводит.
+   ========================================================================== */
+
+/* --- Шапка практикума: общий компонент .page-head (UI2-02) --- */
+/* .practice-header удалён: шапка строится на .page-head/.topbar */
+
+/* --- Сайдбар: прогресс, дисциплины, уровни --- */
+.practice-progress {
+    margin: 0 0 12px 0;
+    padding: 10px 12px;
+    background: #ebf8ff;
+    border: 1px solid #bee3f8;
+    border-radius: 12px;
+    color: #1a365d;
+    font-size: 14px;
+    font-weight: 700;
+    text-align: center;
+}
+
+.practice-sidebar__label {
+    margin: 12px 0 6px 0;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    color: #4a5568;
+}
+
+/* Плашка пилота (UI2-09, H9): «Пилот: 4 задания по дисциплине …» */
+.practice-pilot {
+    margin: 0 0 var(--s-2);
+    font-size: var(--fs-12);
+    line-height: 1.45;
+    color: var(--ink-2);
+}
+
+.practice-pilot[hidden] {
+    display: none;
+}
+
+/* Фильтры в аккордеоне (UI2-09, H4): на телефоне свёрнуты, на ПК раскрыты */
+.practice-filters {
+    margin: 0;
+}
+
+.practice-filters__summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--s-2);
+    min-height: var(--tap);
+    padding: 8px 12px;
+    background: var(--surface);
+    border: 2px solid var(--line);
+    border-radius: var(--r-md);
+    box-sizing: border-box;
+    color: var(--ink-heading);
+    font-size: var(--fs-14);
+    font-weight: 700;
+    line-height: 1.3;
+    cursor: pointer;
+    list-style: none;
+}
+
+.practice-filters__summary::-webkit-details-marker {
+    display: none;
+}
+
+.practice-filters__summary::after {
+    content: '▾';
+    margin-left: var(--s-1);
+    color: var(--accent);
+    font-size: var(--fs-13);
+}
+
+.practice-filters[open] > .practice-filters__summary::after {
+    content: '▴';
+}
+
+.practice-filters__state {
+    margin-left: auto;
+    min-width: 0;
+    overflow: hidden;
+    color: var(--ink-2);
+    font-size: var(--fs-12);
+    font-weight: 400;
+    text-align: right;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.practice-filters__body {
+    padding-top: var(--s-2);
+}
+
+.practice-filters__group[hidden] {
+    display: none;
+}
+
+.practice-filters__hint {
+    margin: var(--s-2) 0 0;
+    font-size: var(--fs-12);
+    line-height: 1.45;
+    color: var(--ink-2);
+}
+
+.practice-tiles {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    width: 100%;
+    margin: 0;
+}
+
+.practice-tiles .mobile-tile-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex: none;
+    width: 100%;
+    padding: 10px 12px;
+    font-size: 13px;
+    line-height: 1.3;
+    text-align: left;
+}
+
+.practice-tile__count {
+    margin-left: auto;
+    padding: 1px 7px;
+    background: rgba(43, 108, 176, 0.12);
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 700;
+    color: #2b6cb0;
+}
+
+.practice-tiles .mobile-tile-btn.active .practice-tile__count {
+    background: rgba(255, 255, 255, 0.24);
+    color: #ffffff;
+}
+
+.practice-levels {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+/* В сайдбаре ПК чипы стоят столбиком, как плитки дисциплин */
+@media screen and (min-width: 769px) {
+    .practice-levels {
+        flex-direction: column;
+    }
+
+    .practice-levels__chip {
+        width: 100%;
+        justify-content: space-between;
+    }
+
+    .practice-levels__count {
+        margin-left: auto;
+    }
+}
+
+.practice-levels__chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 44px;
+    padding: 8px 10px;
+    background: #ffffff;
+    border: 2px solid #e2e8f0;
+    border-radius: 10px;
+    color: #1a365d;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: border-color 0.2s ease, background-color 0.2s ease, color 0.2s ease;
+}
+
+.practice-levels__chip:hover {
+    background: #f7fafc;
+    border-color: #2b6cb0;
+}
+
+.practice-levels__chip.active {
+    background: #2b6cb0;
+    border-color: #2b6cb0;
+    color: #ffffff;
+}
+
+.practice-levels__count {
+    padding: 1px 7px;
+    background: rgba(43, 108, 176, 0.12);
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 700;
+    color: #2b6cb0;
+}
+
+.practice-levels__chip.active .practice-levels__count {
+    background: rgba(255, 255, 255, 0.24);
+    color: #ffffff;
+}
+
+/* --- Список заданий --- */
+/* Минимальная высота области: страница не «дёргается», когда данные
+   приезжают после первой отрисовки (полоса прокрутки появляется сразу) */
+#practice-app {
+    min-height: 70vh;
+}
+
+/* Одна плашка об ИИ на страницу (UI2-09, H14) */
+.practice-ai-note {
+    align-self: stretch;
+    margin: 0 0 var(--s-3);
+    font-size: var(--fs-12);
+    line-height: 1.45;
+    color: var(--ink-2);
+    text-align: left;
+}
+
+.practice-ai-note[hidden] {
+    display: none;
+}
+
+.practice-list {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    width: 100%;
+}
+
+.practice-card {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    width: 100%;
+    padding: 20px 22px;
+    background: #ffffff;
+    border: 2px solid #e2e8f0;
+    border-radius: 16px;
+    box-sizing: border-box;
+    text-align: left;
+    cursor: pointer;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.practice-card:hover,
+.practice-card:focus-within {
+    border-color: #2b6cb0;
+    box-shadow: 0 8px 18px rgba(49, 130, 206, 0.1);
+}
+
+.practice-card__meta {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.practice-card__status {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    background: var(--surface-2);
+    border-radius: var(--r-pill);
+    color: var(--ink-2);
+    font-size: var(--fs-12);
+    font-weight: 700;
+}
+
+.practice-card__status--ok {
+    background: var(--ok-bg);
+    color: var(--ok);
+}
+
+.practice-card__status--done {
+    background: var(--accent-soft);
+    color: var(--accent);
+}
+
+.practice-card__dot {
+    flex: none;
+    width: var(--s-2);
+    height: var(--s-2);
+    border-radius: 50%;
+    background: currentColor;
+}
+
+.practice-card__competence {
+    margin: 0;
+    font-size: 13px;
+    font-weight: 600;
+    color: #2b6cb0;
+}
+
+.practice-card__title {
+    margin: 0;
+    font-size: 18px;
+    line-height: 1.35;
+    color: #1a365d;
+}
+
+.practice-card__excerpt {
+    margin: 0;
+    font-size: 14px;
+    line-height: 1.55;
+    color: #4a5568;
+}
+
+.practice-card__open {
+    align-self: flex-start;
+    min-height: 44px;
+    margin-top: 4px;
+    padding: 12px 18px;
+    background: #2b6cb0;
+    border-radius: 10px;
+    color: #ffffff;
+    font-size: 14px;
+}
+
+.practice-card__open:hover {
+    background: #2c5282;
+}
+
+.practice-card__open:focus-visible {
+    outline: 3px solid #3182ce;
+    outline-offset: 3px;
+}
+
+/* --- Бейдж уровня Блума --- */
+.practice-level {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 10px;
+    border: 1px solid transparent;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.2px;
+    white-space: nowrap;
+}
+
+.practice-level--remember   { background: #edf2f7; border-color: #e2e8f0; color: #4a5568; }
+.practice-level--understand { background: #e6fffa; border-color: #b2f5ea; color: #00695c; }
+.practice-level--apply      { background: #ebf8ff; border-color: #bee3f8; color: #2b6cb0; }
+.practice-level--analyze    { background: #faf5ff; border-color: #e9d8fd; color: #6b46c1; }
+.practice-level--evaluate   { background: #fffaf0; border-color: #feebc8; color: #9c4221; }
+.practice-level--create     { background: #f0fff4; border-color: #c6f6d5; color: #276749; }
+.practice-level--other      { background: #edf2f7; border-color: #e2e8f0; color: #4a5568; }
+
+/* --- Карточка открытого задания --- */
+.practice-task {
+    width: 100%;
+    padding: 28px 32px;
+    background: #ffffff;
+    border-radius: 16px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
+    box-sizing: border-box;
+    text-align: left;
+}
+
+/* Верхняя панель задания закреплена (UI2-06, H1): даже после длинного
+   результата «Следующее / К списку» остаются в кадре */
+.practice-task__nav {
+    position: sticky;
+    top: var(--s-2);
+    z-index: 3;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin: calc(var(--s-2) * -1) calc(var(--s-2) * -1) var(--s-3);
+    padding: var(--s-2);
+    background: var(--surface);
+    border-radius: var(--r-md);
+    box-shadow: var(--shadow-1);
+}
+
+.practice-task__back,
+.practice-task__next {
+    min-height: 44px;
+    padding: 10px 16px;
+    border-radius: 10px;
+    font-size: 13px;
+}
+
+.practice-task__back {
+    background: #edf2f7;
+    color: #2d3748;
+}
+
+.practice-task__back:hover {
+    background: #e2e8f0;
+}
+
+.practice-task__next {
+    background: #ffffff;
+    border: 2px solid #bee3f8;
+    color: #2b6cb0;
+}
+
+.practice-task__next:hover {
+    background: #ebf8ff;
+}
+
+.practice-task__next:disabled {
+    background: #f7fafc;
+    border-color: #e2e8f0;
+    color: var(--ink-3);
+    cursor: not-allowed;
+}
+
+.practice-task__meta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 10px;
+}
+
+.practice-task__competence {
+    font-size: 13px;
+    font-weight: 600;
+    color: #2b6cb0;
+}
+
+.practice-task__title {
+    margin: 0 0 18px 0;
+    font-size: 24px;
+    line-height: 1.3;
+    color: #1a365d;
+}
+
+.practice-task__title:focus-visible {
+    outline: 3px solid #3182ce;
+    outline-offset: 4px;
+    border-radius: 6px;
+}
+
+.practice-task__block {
+    margin-bottom: 18px;
+}
+
+.practice-task__label {
+    margin: 0 0 6px 0;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    color: var(--ink-3);
+}
+
+.practice-task__text p {
+    margin: 0 0 10px 0;
+    font-size: 15px;
+    line-height: 1.6;
+    color: #2d3748;
+}
+
+.practice-task__text p:last-child {
+    margin-bottom: 0;
+}
+
+.practice-task__text ul,
+.practice-task__text ol {
+    margin: 0 0 10px 0;
+    padding-left: 22px;
+    font-size: 15px;
+    line-height: 1.6;
+    color: #2d3748;
+}
+
+/* --- Варианты ответа (choice) --- */
+.practice-options {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin: 8px 0 16px 0;
+}
+
+.practice-option {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 14px 16px;
+    background: #ffffff;
+    border: 2px solid #e2e8f0;
+    border-radius: 12px;
+    color: #2d3748;
+    font-size: 15px;
+    line-height: 1.5;
+    cursor: pointer;
+    box-sizing: border-box;
+    transition: border-color 0.2s ease, background-color 0.2s ease;
+}
+
+.practice-option:hover {
+    background: #f7fafc;
+    border-color: #2b6cb0;
+}
+
+.practice-option input {
+    flex: none;
+    width: 18px;
+    height: 18px;
+    margin: 3px 0 0 0;
+    accent-color: #2b6cb0;
+}
+
+.practice-option.is-correct {
+    background: #f0fff4;
+    border-color: #38a169;
+}
+
+.practice-option.is-wrong {
+    background: #fff5f5;
+    border-color: #e53e3e;
+}
+
+/* --- Кнопки и поля --- */
+.practice-actions {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin: 14px 0 6px 0;
+}
+
+/* «Проверить» / «Показать критерии» не уезжают за сгиб (UI2-06, H5):
+   кнопка прилипает к низу и поднимается над плашкой согласия. Фон панели
+   прозрачный — за кнопкой остаётся виден текст задания */
+.practice-actions--sticky {
+    position: sticky;
+    bottom: calc(var(--consent-h, 0px) + var(--s-2));
+    z-index: 2;
+    margin: var(--s-3) 0 0;
+    padding: 0;
+    background: none;
+}
+
+.practice-actions--sticky .practice-btn {
+    box-shadow: var(--shadow-2);
+}
+
+.practice-actions[hidden] {
+    display: none;
+}
+
+/* Схема шагов открытого ответа (UI2-09, H12): 1 → 2 → 3 до ответа */
+.practice-steps {
+    counter-reset: practice-step;
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--s-1) var(--s-3);
+    margin: 0 0 var(--s-3);
+    padding: 0;
+    list-style: none;
+    font-size: var(--fs-12);
+    line-height: 1.45;
+    color: var(--ink-2);
+}
+
+.practice-steps__item {
+    counter-increment: practice-step;
+}
+
+.practice-steps__item::before {
+    content: counter(practice-step) '.';
+    margin-right: var(--s-1);
+    color: var(--accent);
+    font-weight: 700;
+}
+
+.practice-btn {
+    min-height: 44px;
+    padding: 12px 22px;
+    background: #edf2f7;
+    border-radius: 10px;
+    color: #2d3748;
+    font-size: 15px;
+}
+
+.practice-btn:hover {
+    background: #e2e8f0;
+}
+
+.practice-btn--primary {
+    background: #2b6cb0;
+    color: #ffffff;
+}
+
+.practice-btn--primary:hover {
+    background: #2c5282;
+}
+
+.practice-btn:disabled,
+.practice-btn--primary:disabled {
+    background: #cbd5e0;
+    color: #4a5568;
+    cursor: not-allowed;
+}
+
+.practice-link-btn {
+    min-height: 0;
+    padding: 2px 0;
+    background: none;
+    border: none;
+    border-radius: 0;
+    color: #2b6cb0;
+    font-size: 13px;
+    font-weight: 700;
+    text-decoration: underline;
+    cursor: pointer;
+}
+
+.practice-link-btn:hover {
+    background: none;
+    color: #2c5282;
+}
+
+.practice-textarea {
+    width: 100%;
+    min-height: 160px;
+    padding: 14px 16px;
+    background: #ffffff;
+    border: 2px solid #e2e8f0;
+    border-radius: 12px;
+    box-sizing: border-box;
+    font-family: inherit;
+    font-size: 15px;
+    line-height: 1.55;
+    color: #2d3748;
+    resize: vertical;
+}
+
+.practice-textarea:focus {
+    border-color: #2b6cb0;
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(49, 130, 206, 0.16);
+}
+
+.practice-hint {
+    margin: 6px 0 0 0;
+    font-size: 13px;
+    line-height: 1.45;
+    color: #4a5568;
+}
+
+.practice-hint.is-ok {
+    color: #276749;
+    font-weight: 600;
+}
+
+/* --- Плашки: гость, приватность, ошибка --- */
+.practice-note {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin: 12px 0 0 0;
+    padding: 10px 12px;
+    background: #fffaf0;
+    border: 1px solid #fbd38d;
+    border-radius: 10px;
+    color: #744210;
+    font-size: 13px;
+    line-height: 1.5;
+}
+
+.practice-note--privacy {
+    background: #ebf8ff;
+    border-color: #bee3f8;
+    color: #2c5282;
+}
+
+.practice-note--guest {
+    background: #fffaf0;
+    border-color: #fbd38d;
+    color: #744210;
+}
+
+.practice-note--error {
+    background: #fff5f5;
+    border-color: #feb2b2;
+    color: #9b2c2c;
+}
+
+/* --- Рубрика самопроверки (open) --- */
+.practice-rubric {
+    margin: 18px 0 0 0;
+    padding: 18px;
+    background: #f7fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 14px;
+}
+
+.practice-rubric__title {
+    margin: 0 0 6px 0;
+    font-size: 16px;
+    color: #1a365d;
+}
+
+.practice-rubric__intro {
+    margin: 0 0 12px 0;
+    font-size: 13px;
+    line-height: 1.5;
+    color: #4a5568;
+}
+
+.practice-rubric__row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    flex-wrap: wrap;
+    padding: 12px 0;
+    border-top: 1px solid #e2e8f0;
+}
+
+.practice-rubric__text {
+    flex: 1 1 220px;
+    margin: 0;
+    font-size: 14px;
+    line-height: 1.5;
+    color: #2d3748;
+}
+
+.practice-rubric__scale {
+    display: flex;
+    gap: 6px;
+}
+
+.practice-score {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    min-width: 60px;
+    min-height: 44px;
+    padding: 8px 12px;
+    background: #ffffff;
+    border: 2px solid #e2e8f0;
+    border-radius: 10px;
+    box-sizing: border-box;
+    color: #2d3748;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: border-color 0.2s ease, background-color 0.2s ease;
+}
+
+.practice-score:hover {
+    border-color: #2b6cb0;
+}
+
+.practice-score input {
+    width: 16px;
+    height: 16px;
+    margin: 0;
+    accent-color: #2b6cb0;
+}
+
+.practice-score:has(input:checked) {
+    background: #ebf8ff;
+    border-color: #2b6cb0;
+    color: #2b6cb0;
+}
+
+.practice-score:has(input:focus-visible) {
+    outline: 3px solid #3182ce;
+    outline-offset: 2px;
+}
+
+.practice-rubric__total {
+    margin: 14px 0 4px 0;
+    font-size: 15px;
+    color: #1a365d;
+}
+
+.practice-rubric__total-value {
+    font-size: 18px;
+    color: #2b6cb0;
+}
+
+/* --- Результат попытки --- */
+.practice-result {
+    margin-top: 20px;
+    padding: 18px 20px;
+    background: #f7fafc;
+    border: 1px solid #e2e8f0;
+    border-left: 5px solid #2b6cb0;
+    border-radius: 14px;
+}
+
+.practice-result__verdict {
+    margin: 0 0 10px 0;
+    font-size: 18px;
+    font-weight: 800;
+    color: #1a365d;
+}
+
+.practice-result__verdict.is-correct {
+    color: #22543d;
+}
+
+.practice-result__verdict.is-wrong {
+    color: #742a2a;
+}
+
+.practice-result__answer,
+.practice-result__score,
+.practice-result__hint {
+    margin: 0 0 10px 0;
+    font-size: 14px;
+    line-height: 1.6;
+    color: #2d3748;
+}
+
+.practice-result__hint {
+    color: #4a5568;
+}
+
+.practice-result__saved {
+    margin: 10px 0 0 0;
+    font-size: 13px;
+    font-weight: 600;
+    color: #276749;
+}
+
+/* «Ваш ответ: …» и пометка верно/неверно (UI2-06, H13) */
+.practice-result__your {
+    margin: 0 0 10px 0;
+    font-size: var(--fs-14);
+    line-height: 1.6;
+    color: var(--ink);
+}
+
+.practice-result__mark {
+    font-size: var(--fs-12);
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.practice-result__mark.is-wrong {
+    color: var(--danger);
+}
+
+.practice-result__mark.is-correct {
+    color: var(--ok);
+}
+
+.practice-result__verdict.is-neutral {
+    color: var(--ink-heading);
+}
+
+/* Панель «Следующее / К списку» под результатом (UI2-06, H1) */
+.practice-result__actions {
+    display: flex;
+    gap: var(--s-3);
+    flex-wrap: wrap;
+    margin-top: var(--s-4);
+    padding-top: var(--s-3);
+    border-top: 1px solid var(--line);
+}
+
+.practice-result__actions[hidden] {
+    display: none;
+}
+
+.practice-result__back,
+.practice-result__next {
+    min-height: var(--tap);
+    padding: 12px 18px;
+    border-radius: var(--r-md);
+    font-size: var(--fs-14);
+}
+
+.practice-result__back {
+    background: var(--surface-2);
+    border: 2px solid var(--line);
+    color: var(--ink);
+}
+
+.practice-result__back:hover {
+    background: var(--line);
+}
+
+.practice-result__next {
+    background: var(--accent);
+    color: #ffffff;
+}
+
+.practice-result__next:hover {
+    background: var(--accent-hover);
+}
+
+.practice-result__next:disabled {
+    background: var(--line);
+    color: var(--ink-3);
+    cursor: not-allowed;
+}
+
+.practice-result__block {
+    margin-top: 14px;
+}
+
+.practice-result__label {
+    margin: 0 0 6px 0;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.4px;
+    text-transform: uppercase;
+    color: var(--ink-3);
+}
+
+.practice-result__text p {
+    margin: 0 0 10px 0;
+    font-size: 14px;
+    line-height: 1.65;
+    color: #2d3748;
+}
+
+.practice-result__text p:last-child {
+    margin-bottom: 0;
+}
+
+.practice-result__criteria {
+    margin: 10px 0 0 0;
+    padding-left: 20px;
+    font-size: 14px;
+    line-height: 1.6;
+    color: #2d3748;
+}
+
+.practice-result__criterion {
+    margin-bottom: 6px;
+}
+
+.practice-result__criterion-score {
+    margin-left: 8px;
+    color: #2b6cb0;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+/* --- Пустое состояние --- */
+.practice-empty {
+    width: 100%;
+    padding: 40px 24px;
+    background: #ffffff;
+    border-radius: 16px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.04);
+    box-sizing: border-box;
+    text-align: center;
+}
+
+.practice-empty__icon {
+    margin-bottom: 10px;
+    font-size: 40px;
+}
+
+.practice-empty__title {
+    margin: 0 0 8px 0;
+    font-size: 20px;
+    color: #1a365d;
+}
+
+.practice-empty__text {
+    margin: 0;
+    font-size: 14px;
+    line-height: 1.6;
+    color: #4a5568;
+}
+
+/* Скрытые блоки не должны перебиваться display из компонентов */
+#practice-list[hidden],
+#practice-task-view[hidden],
+#practice-empty[hidden],
+.practice-rubric[hidden],
+.practice-result[hidden],
+.practice-note[hidden],
+.practice-hint[hidden],
+.practice-actions[hidden] {
+    display: none !important;
+}
+
+/* --- Практикум на телефоне: одна колонка, плитки дисциплин по две в ряд --- */
+@media screen and (max-width: 768px) {
+    /* Открытая задача на телефоне: фильтры убираем, чтобы до задания
+       не приходилось прокручивать весь сайдбар. «К списку» их вернёт. */
+    body.practice-task-open .practice-sidebar {
+        display: none;
+    }
+
+    /* Сайдбар на телефоне — не карточка, а компактная строка прогресса и
+       аккордеон фильтров: первая карточка задания ≤ 300 px (UI2-09, H4) */
+    .practice-layout {
+        margin-top: var(--s-3);
+    }
+
+    .practice-sidebar {
+        gap: var(--s-2);
+        padding: 0;
+        background: none;
+        box-shadow: none;
+    }
+
+    .practice-progress {
+        margin: 0;
+        padding: 6px 12px;
+        border-radius: var(--r-md);
+        font-size: var(--fs-13);
+    }
+
+    .practice-pilot {
+        margin-bottom: var(--s-1);
+    }
+
+    .practice-ai-note {
+        margin-bottom: var(--s-2);
+    }
+
+    .practice-tiles {
+        flex-direction: row;
+        flex-wrap: wrap;
+    }
+
+    .practice-tiles .mobile-tile-btn {
+        flex: 1 1 calc(50% - 5px);
+        width: auto;
+        justify-content: center;
+        text-align: center;
+    }
+
+    .practice-tiles .practice-tile__count {
+        margin-left: 6px;
+    }
+
+    .practice-levels__chip {
+        flex: 1 1 calc(50% - 5px);
+        justify-content: center;
+    }
+
+    .practice-levels__count {
+        margin-left: 6px;
+    }
+
+    .practice-task {
+        padding: 20px 16px;
+        border-radius: 14px;
+    }
+
+    .practice-task__title {
+        font-size: 20px;
+    }
+
+    /* Панель навигации остаётся одной строкой: высота закреплённой панели
+       съедает кадр на телефоне */
+    .practice-task__nav {
+        flex-direction: row;
+        align-items: stretch;
+        gap: var(--s-2);
+        margin: 0 0 var(--s-3);
+    }
+
+    .practice-task__back,
+    .practice-task__next {
+        width: auto;
+        flex: 1 1 auto;
+        min-width: 0;
+        padding: 10px 12px;
+        font-size: var(--fs-13);
+    }
+
+    .practice-result__actions button {
+        flex: 1 1 auto;
+    }
+
+    .practice-card {
+        padding: 18px 16px;
+    }
+
+    .practice-card__open {
+        align-self: stretch;
+        width: 100%;
+    }
+
+    .practice-rubric {
+        padding: 14px;
+    }
+
+    .practice-rubric__scale {
+        width: 100%;
+    }
+
+    .practice-score {
+        flex: 1 1 0;
+        min-width: 0;
+    }
+}
+
+/* ==========================================================================
+   МОДАЛКА ВХОДА ПО ID НА ПРАКТИКУМЕ (UI2-10, H7)
+   Про учёбу, а не про исследование; согласие — отдельным шагом.
+   Позиционирование задаёт класс, показ/скрытие — inline display из js/auth.js.
+   ========================================================================== */
+.auth-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 100001;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    padding: var(--s-5) var(--s-3);
+    background: rgba(26, 32, 44, 0.6);
+    -webkit-backdrop-filter: blur(4px);
+    backdrop-filter: blur(4px);
+    box-sizing: border-box;
+}
+
+.auth-modal__panel {
+    position: relative;
+    width: 100%;
+    max-width: 500px;
+    margin: var(--s-5) auto;
+    padding: var(--s-7) var(--s-6);
+    background: var(--surface);
+    border-radius: var(--r-lg);
+    box-shadow: var(--shadow-2);
+    box-sizing: border-box;
+    text-align: left;
+}
+
+.auth-modal__title {
+    margin: 0 0 var(--s-3);
+    color: var(--ink-heading);
+    font-size: var(--fs-20);
+    font-weight: 800;
+    line-height: 1.3;
+}
+
+.auth-modal__lead {
+    margin: 0 0 var(--s-5);
+    color: var(--ink-2);
+    font-size: var(--fs-14);
+    line-height: 1.5;
+}
+
+.auth-modal__step {
+    margin-top: var(--s-4);
+    padding-top: var(--s-4);
+    border-top: 1px solid var(--line);
+}
+
+.auth-modal__step-label {
+    margin: 0 0 var(--s-2);
+    color: var(--ink-3);
+    font-size: var(--fs-12);
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+}
+
+.auth-modal__input {
+    display: block;
+    width: 100%;
+    margin-bottom: var(--s-3);
+    padding: 12px 15px;
+    border: 2px solid var(--line-strong);
+    border-radius: var(--r-md);
+    box-sizing: border-box;
+    background: var(--surface);
+    color: var(--ink);
+    font-family: inherit;
+    font-size: var(--fs-14);
+}
+
+.auth-modal__input:focus {
+    border-color: var(--accent);
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(49, 130, 206, 0.16);
+}
+
+.auth-modal__btn {
+    display: block;
+    width: 100%;
+    min-height: var(--tap);
+    margin-top: var(--s-2);
+    padding: 12px;
+    border: 0;
+    border-radius: var(--r-md);
+    background: var(--accent);
+    color: #ffffff;
+    font-family: inherit;
+    font-size: var(--fs-14);
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.auth-modal__btn:hover {
+    background: var(--accent-hover);
+}
+
+.auth-modal__btn--ghost {
+    background: var(--surface-2);
+    border: 2px dashed var(--accent);
+    color: var(--accent);
+}
+
+.auth-modal__btn--ghost:hover {
+    background: var(--accent-soft);
+}
+
+.auth-modal__consent {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--s-3);
+    min-height: var(--tap);
+    padding: var(--s-1) 0;
+    color: var(--ink-2);
+    font-size: var(--fs-12);
+    line-height: 1.45;
+    cursor: pointer;
+}
+
+.auth-modal__consent input {
+    flex: none;
+    width: 18px;
+    height: 18px;
+    margin-top: 2px;
+    accent-color: var(--accent);
+}
+
+.auth-modal__guest {
+    margin-top: var(--s-4);
+    padding-top: var(--s-3);
+    border-top: 1px solid var(--line);
+    text-align: center;
+}
+
+.auth-modal__guest-btn {
+    min-height: var(--tap);
+    padding: var(--s-2) var(--s-3);
+    background: none;
+    border: 0;
+    color: var(--ink-2);
+    font-family: inherit;
+    font-size: var(--fs-13);
+    cursor: pointer;
+}
+
+.auth-modal__guest-btn:hover {
+    background: none;
+    color: var(--accent-hover);
+}
+
+@media screen and (max-width: 480px) {
+    .auth-modal__panel {
+        padding: var(--s-6) var(--s-4);
+    }
+}

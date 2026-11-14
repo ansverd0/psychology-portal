@@ -6,7 +6,7 @@
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://mc.yandex.ru; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://mc.yandex.ru; connect-src 'self' https://lrjszannmammzzqotaro.supabase.co https://mc.yandex.ru; font-src 'self'; frame-src https://mc.yandex.ru; worker-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'">
     <meta name="referrer" content="strict-origin-when-cross-origin">
     <link rel="preconnect" href="https://lrjszannmammzzqotaro.supabase.co" crossorigin>
-    <title>Практикум: задания на компетентность / Психология</title>
+    <title>Практикум: задания с самопроверкой / Психология</title>
     <meta name="description" content="Практикум по психологии: задачи на применение, анализ, оценку и создание с критериями самопроверки и эталонным ответом.">
     <link rel="canonical" href="https://ansverd0.github.io/psychology-portal/practice.html">
     <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
@@ -20,7 +20,7 @@
     <meta property="og:type" content="website">
     <meta property="og:locale" content="ru_RU">
     <meta property="og:site_name" content="Психология образования">
-    <meta property="og:title" content="Практикум: задания на компетентность / Психология">
+    <meta property="og:title" content="Практикум: задания с самопроверкой / Психология">
     <meta property="og:description" content="Практикум по психологии: задачи на применение, анализ, оценку и создание с критериями самопроверки и эталонным ответом.">
     <meta property="og:url" content="https://ansverd0.github.io/psychology-portal/practice.html">
     <meta property="og:image" content="https://ansverd0.github.io/psychology-portal/assets/og-image.png">
@@ -33,40 +33,55 @@
 </head>
 
 <body data-page="practice">
-    <header class="practice-header">
-        <a href="index.html" class="capsule-back-btn">Главное меню</a>
-        <div class="practice-header__row">
-            <div class="practice-header__intro">
-                <h1>Практикум</h1>
-                <p>Задания на применение, анализ, оценку и создание</p>
-            </div>
-            <div id="platform-user-widget">
+    <a class="skip-link" href="#practice-app">К содержанию</a>
+    <!-- Шапка: возврат, заголовок и вход по ID в одной строке (UI2-09).
+         Кнопка ID больше не занимает первый экран, но остаётся под рукой. -->
+    <header class="page-head">
+        <div class="page-head__top">
+            <a href="index.html" class="page-head__back" aria-label="Главное меню"><span class="page-head__back-arrow" aria-hidden="true">←</span><span class="page-head__back-text">Главное меню</span></a>
+            <h1 class="page-head__title">Практикум</h1>
+            <div id="platform-user-widget" class="page-head__widget">
                 <div id="auth-status-logged" class="auth-widget" style="display: none;">
                     <span class="auth-widget__label">Ваш ID: <span id="research-key-output" class="auth-widget__key">...</span></span>
                     <button type="button" id="btn-logout" class="auth-widget__logout">Выйти</button>
                 </div>
                 <div id="auth-status-guest" style="display: block;">
-                    <button id="btn-open-auth-modal" style="background: #2b6cb0; color: white; border: none; padding: 10px 20px; border-radius: 20px; font-size: 13px; font-weight: 600; cursor: pointer; transition: background 0.2s;">🔑 Войти / Создать ID</button>
+                    <button id="btn-open-auth-modal" class="auth-cta" type="button" aria-label="Войти или создать ID"><span aria-hidden="true">🔑</span><span class="auth-cta__long">Войти / Создать ID</span><span class="auth-cta__short">ID</span></button>
                 </div>
             </div>
         </div>
-        <h2>Прочитайте ситуацию, выполните задание и сверьте ответ с критериями и эталоном. Это тренажёр с самопроверкой: он не заменяет практику и не ставит оценку за компетентность.</h2>
+        <p class="page-head__caption">Задания на применение, анализ, оценку и создание</p>
     </header>
 
-    <main class="content-with-sidebar" id="practice-app">
-        <!-- ЛЕВАЯ КОЛОНКА: прогресс, дисциплины, уровни -->
-        <div class="discipline-sidebar" id="practice-sidebar">
-            <p class="practice-progress" id="practice-progress" aria-live="polite">Пройдено 0 из 0</p>
+    <main class="content-with-sidebar practice-layout" id="practice-app">
+        <!-- ЛЕВАЯ КОЛОНКА: прогресс, пилот и фильтры в аккордеоне -->
+        <div class="discipline-sidebar practice-sidebar" id="practice-sidebar">
+            <p class="practice-progress" id="practice-progress" aria-live="polite">Решено 0 из 0</p>
+            <p class="practice-pilot" id="practice-pilot" hidden></p>
 
-            <p class="practice-sidebar__label">Дисциплины</p>
-            <div id="practice-discipline-tiles" class="practice-tiles" role="group" aria-label="Дисциплины"></div>
+            <details class="practice-filters" id="practice-filters" open>
+                <summary class="practice-filters__summary">
+                    <span class="practice-filters__title">Фильтры</span>
+                    <span class="practice-filters__state" id="practice-filters-state">Все задания</span>
+                </summary>
+                <div class="practice-filters__body">
+                    <div class="practice-filters__group" id="practice-discipline-group">
+                        <p class="practice-sidebar__label">Дисциплины</p>
+                        <div id="practice-discipline-tiles" class="practice-tiles" role="group" aria-label="Дисциплины"></div>
+                    </div>
 
-            <p class="practice-sidebar__label">Уровень задания</p>
-            <div class="practice-levels" id="practice-level-chips" role="group" aria-label="Уровень задания"></div>
+                    <div class="practice-filters__group">
+                        <p class="practice-sidebar__label">Уровень задания</p>
+                        <div class="practice-levels" id="practice-level-chips" role="group" aria-label="Уровень задания"></div>
+                        <p class="practice-filters__hint" id="practice-levels-hint">Уровень — это тип действия: разобрать случай, сравнить подходы, оценить вывод или составить план.</p>
+                    </div>
+                </div>
+            </details>
         </div>
 
         <!-- ПРАВАЯ КОЛОНКА: список задач или открытая задача -->
         <div class="content-area">
+            <p class="practice-ai-note" id="practice-ai-note" hidden>Тексты заданий сгенерированы ИИ.</p>
             <div class="practice-list" id="practice-list" aria-live="polite"></div>
 
             <article class="practice-task" id="practice-task-view" data-practice-task-view hidden></article>
@@ -75,38 +90,41 @@
         </div>
     </main>
 
-    <!-- ПОЛНОЭКРАННОЕ МОДАЛЬНОЕ ОКНО АВТОРИЗАЦИИ -->
-    <div id="research-auth-box" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100vh; height: 100dvh; background: rgba(26, 32, 44, 0.6); backdrop-filter: blur(4px); z-index: 100001; justify-content: center; align-items: flex-start; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 20px 12px; box-sizing: border-box; font-family: system-ui, sans-serif;" role="dialog" aria-modal="true" aria-labelledby="research-auth-title">
-        <div id="research-auth-panel" style="background: white; width: 100%; max-width: 500px; box-sizing: border-box; padding: 35px; border-radius: 20px; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1); position: relative; margin: 20px auto; text-align: left; flex: 0 0 auto;">
+    <!-- ПОЛНОЭКРАННОЕ МОДАЛЬНОЕ ОКНО ВХОДА ПО ID (UI2-10):
+         сначала — про учёбу («сохранить попытки»), согласие на исследование — отдельным шагом. -->
+    <div id="research-auth-box" class="auth-modal" style="display: none;" role="dialog" aria-modal="true" aria-labelledby="research-auth-title">
+        <div id="research-auth-panel" class="auth-modal__panel">
             <button type="button" id="btn-close-auth" class="modal-close" aria-label="Закрыть окно">×</button>
-            <h3 id="research-auth-title" style="margin: 0 0 12px 0; color: #1a365d; font-size: 20px; font-weight: 800;">🔑 Активация учебного профиля</h3>
-            <p style="margin: 0 0 20px 0; font-size: 14px; color: #4a5568; line-height: 1.5;">
-                Для сохранения личного прогресса тестов, закладок и лекций платформе необходим ваш анонимный идентификатор.
+
+            <h3 id="research-auth-title" class="auth-modal__title">🔑 Сохранить попытки и вернуться к ним</h3>
+            <p class="auth-modal__lead">
+                Личный ID — ключ к вашим попыткам в практикуме и прогрессу в тестах: с ним можно
+                вернуться к заданию с другого устройства. Без ID попытки остаются только в этом браузере.
             </p>
 
-            <div style="margin-bottom: 20px;">
-                <input type="text" id="research-key-input" placeholder="Введите ваш старый ID для синхронизации" style="width: 100%; padding: 12px 15px; border: 2px solid #cbd5e0; border-radius: 8px; font-size: 14px; outline: none; box-sizing: border-box; margin-bottom: 12px;">
-                <button id="btn-login" style="width: 100%; background: #2b6cb0; color: white; border: none; padding: 12px; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 14px;">Войти по существующему ID</button>
+            <div class="auth-modal__step auth-modal__step--consent">
+                <p class="auth-modal__step-label">Шаг 1. Согласие на исследование</p>
+                <label class="auth-modal__consent">
+                    <input type="checkbox" id="chk-consent" aria-describedby="consent-error">
+                    <span>
+                        Разрешаю сохранять мои обезличенные ответы на задания и журнал действий
+                        (страницы, время, прокрутка) для исследования. ФИО и группы не собираются.
+                        Без этого согласия личный ID не создаётся.
+                    </span>
+                </label>
+                <p id="consent-error" class="consent-error" role="alert" hidden></p>
             </div>
 
-            <div style="border-top: 1px solid #edf2f7; padding-top: 20px; margin-bottom: 20px;">
-                <button id="btn-generate" style="width: 100%; background: #f7fafc; color: #2b6cb0; border: 2px dashed #2b6cb0; padding: 12px; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 14px;">🎲 Сгенерировать новый личный ID</button>
+            <div class="auth-modal__step">
+                <p class="auth-modal__step-label">Шаг 2. Ваш ID</p>
+                <input type="text" id="research-key-input" class="auth-modal__input" placeholder="Введите ваш старый ID для синхронизации">
+                <button id="btn-login" class="auth-modal__btn" type="button">Войти по существующему ID</button>
+                <button id="btn-generate" class="auth-modal__btn auth-modal__btn--ghost" type="button">🎲 Сгенерировать новый личный ID</button>
             </div>
 
-            <div style="border-top: 1px solid #edf2f7; padding-top: 16px; text-align: center;">
-                <button id="btn-guest" style="background: none; color: #4a5568; border: none; padding: 8px 16px; border-radius: 8px; font-size: 13px; cursor: pointer;">👀 Продолжить как гость (без сохранения прогресса)</button>
+            <div class="auth-modal__guest">
+                <button id="btn-guest" class="auth-modal__guest-btn" type="button">👀 Продолжить как гость — попытки останутся на этом устройстве</button>
             </div>
-
-            <!-- БЛОК ЕДИНОГО СОГЛАСИЯ НА ОБРАБОТКУ И КУКИ -->
-            <label style="display: flex; align-items: flex-start; gap: 10px; cursor: pointer; user-select: none;">
-                <input type="checkbox" id="chk-consent" aria-describedby="consent-error" style="margin-top: 3px; width: 16px; height: 16px; accent-color: #2b6cb0;">
-                <span style="font-size: 12px; color: #718096; line-height: 1.4;">
-                    Я ознакомлен(а) с <a href="privacy.html" target="_blank" rel="noopener" style="color: #2b6cb0;">политикой обработки данных</a>
-                    и даю согласие на сохранение локальных файлов кэша, куки, ответы на опросы, обезличенный журнал действий (страницы, время, прокрутка) и результаты итоговых эссе.
-                </span>
-            </label>
-            <!-- Ошибка согласия: показывается вместо системного alert -->
-            <p id="consent-error" class="consent-error" role="alert" hidden></p>
         </div>
     </div>
 

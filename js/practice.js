@@ -4,13 +4,15 @@
 // Страница не ставит оценку за компетентность: задание, критерии и эталон нужны
 // для самопроверки, а исследование фиксирует работу с задачей.
 
+// label — название уровня (как в спеке), action — что студент делает на этом
+// уровне: подписи фильтра и строки пояснения (UI2-09, H10).
 const PRACTICE_LEVELS = {
-    remember:   { label: 'Запоминание', order: 1, className: 'practice-level--remember' },
-    understand: { label: 'Понимание',   order: 2, className: 'practice-level--understand' },
-    apply:      { label: 'Применение',  order: 3, className: 'practice-level--apply' },
-    analyze:    { label: 'Анализ',      order: 4, className: 'practice-level--analyze' },
-    evaluate:   { label: 'Оценка',      order: 5, className: 'practice-level--evaluate' },
-    create:     { label: 'Создание',    order: 6, className: 'practice-level--create' }
+    remember:   { label: 'Запоминание', action: 'Вспомнить',        order: 1, className: 'practice-level--remember' },
+    understand: { label: 'Понимание',   action: 'Объяснить',        order: 2, className: 'practice-level--understand' },
+    apply:      { label: 'Применение',  action: 'Разобрать случай', order: 3, className: 'practice-level--apply' },
+    analyze:    { label: 'Анализ',      action: 'Сравнить подходы', order: 4, className: 'practice-level--analyze' },
+    evaluate:   { label: 'Оценка',      action: 'Оценить вывод',    order: 5, className: 'practice-level--evaluate' },
+    create:     { label: 'Создание',    action: 'Составить план',   order: 6, className: 'practice-level--create' }
 };
 
 // Уровни, которые пилот использует в фильтре (порядок — как в спеке §3)
@@ -18,20 +20,28 @@ const PRACTICE_FILTER_LEVELS = ['apply', 'analyze', 'evaluate', 'create'];
 
 const PRACTICE_PROGRESS_STORE = 'hub_practice_progress_v1';
 const PRACTICE_DRAFT_PREFIX = 'hub_practice_draft_v1_';
+const PRACTICE_SCROLL_STORE = 'hub_practice_scroll_v1';
 const PRACTICE_MIN_ANSWER = 30;   // RPC принимает text длиной 30…8000
+const PRACTICE_FILTERS_BP = 768;  // на узком экране фильтры — в аккордеоне (UI2-09)
 
 const practiceState = {
     discipline: 'all',
     level: 'all',
     taskId: null,
-    view: 'list'
+    view: 'list',
+    navPushed: false,       // адрес задания добавлен в историю: «К списку» = back
+    pendingReturnId: null,  // карточка, к которой вернуться после popstate
+    pendingScrollList: false,
+    restoringScroll: false
 };
 
 let practiceInitialized = false;
 let practiceOpenedAt = 0;
 let practiceDraftTimer = null;
+let practiceScrollTimer = null;
 let practiceSubmitting = false;
 let practiceRetryPayload = null;
+
 
 // ---------------------------------------------------------------------------
 // Данные и уровни
@@ -54,7 +64,7 @@ function practiceLevelOrder(level) {
 }
 
 function practiceLevelMeta(level) {
-    return PRACTICE_LEVELS[level] || { label: level || 'Уровень', order: 99, className: 'practice-level--other' };
+    return PRACTICE_LEVELS[level] || { label: level || 'Уровень', action: level || 'Задание', order: 99, className: 'practice-level--other' };
 }
 
 function practiceFindTask(id) {
@@ -82,6 +92,97 @@ function practiceStorageSet(key, value) {
 function practiceStorageRemove(key) {
     try { localStorage.removeItem(key); } catch (e) { /* приватный режим */ }
 }
+
+function practiceSessionGet(key) {
+    try { return sessionStorage.getItem(key); } catch (e) { return null; }
+}
+
+function practiceSessionSet(key, value) {
+    try { sessionStorage.setItem(key, value); return true; } catch (e) { return false; }
+}
+
+// ---------------------------------------------------------------------------
+// Адрес задания и прокрутка (UI2-08, H3)
+// ---------------------------------------------------------------------------
+
+function practiceIsNarrowScreen() {
+    return window.matchMedia('(max-width: ' + PRACTICE_FILTERS_BP + 'px)').matches;
+}
+
+/** id задания из адреса `?task=<id>`, если такое задание есть в данных. */
+function practiceTaskIdFromUrl() {
+    let raw = null;
+    try { raw = new URLSearchParams(window.location.search).get('task'); } catch (e) { raw = null; }
+    if (!raw) return null;
+    const task = practiceFindTask(raw);
+    return task ? task.id : null;
+}
+
+/** Адрес списка (без параметра) или адрес задания — для pushState/replaceState. */
+function practiceUrl(taskId) {
+    const url = new URL(window.location.href);
+    if (taskId) url.searchParams.set('task', String(taskId));
+    else url.searchParams.delete('task');
+    url.hash = '';
+    return url.pathname + (url.search || '');
+}
+
+/** Запоминаем позицию чтения: после F5 задание и прокрутка возвращаются. */
+function practiceRememberScroll() {
+    if (practiceState.restoringScroll) return;
+    const payload = {
+        view: practiceState.view,
+        taskId: practiceState.taskId,
+        y: Math.round(window.scrollY || 0)
+    };
+    practiceSessionSet(PRACTICE_SCROLL_STORE, JSON.stringify(payload));
+}
+
+function practiceRememberScrollSoon() {
+    if (practiceScrollTimer) return;
+    practiceScrollTimer = setTimeout(() => {
+        practiceScrollTimer = null;
+        practiceRememberScroll();
+    }, 120);
+}
+
+function practiceSavedScroll() {
+    const raw = practiceSessionGet(PRACTICE_SCROLL_STORE);
+    if (!raw) return null;
+    try {
+        const parsed = JSON.parse(raw);
+        if (!parsed || typeof parsed !== 'object') return null;
+        return {
+            view: parsed.view === 'task' ? 'task' : 'list',
+            taskId: parsed.taskId === null || parsed.taskId === undefined ? null : Number(parsed.taskId),
+            y: Math.max(0, Math.round(Number(parsed.y) || 0))
+        };
+    } catch (e) {
+        return null;
+    }
+}
+
+/** Прокрутка к элементу с запасом сверху. */
+function practiceScrollTo(element, offset, behavior) {
+    if (!element) return;
+    const gap = typeof offset === 'number' ? offset : 16;
+    const top = element.getBoundingClientRect().top + window.scrollY - gap;
+    const mode = behavior || ((typeof getScrollBehavior === 'function') ? getScrollBehavior() : 'auto');
+    window.scrollTo({ top: Math.max(0, top), behavior: mode });
+}
+
+function practiceScrollToY(y) {
+    practiceState.restoringScroll = true;
+    try {
+        window.scrollTo({ top: Math.max(0, Number(y) || 0), behavior: 'auto' });
+    } catch (e) {
+        window.scrollTo(0, Math.max(0, Number(y) || 0));
+    }
+    // Флаг снимаем после кадра: событие scroll от нашей же прокрутки не должно
+    // перезаписать сохранённую позицию нулём
+    setTimeout(() => { practiceState.restoringScroll = false; }, 250);
+}
+
 
 function readPracticeProgress() {
     const raw = practiceStorageGet(PRACTICE_PROGRESS_STORE);
@@ -282,17 +383,55 @@ function practiceRefresh() {
     practiceState.view = 'list';
     practiceState.taskId = null;
     practiceRenderList(tasks);
-    practiceShowList();
+    practiceRevealList();
 }
 
 function practiceRenderSidebar(tasks) {
+    practiceRenderProgress(tasks);
+    practiceRenderPilot(tasks);
+    practiceRenderDisciplineTiles(tasks);
+    practiceRenderLevelChips(tasks);
+    practiceRenderFiltersState(tasks);
+}
+
+/** Честный прогресс (UI2-07, H2): считаем попытки, а не только сохранённые в БД. */
+function practiceRenderProgress(tasks) {
     const progress = readPracticeProgress();
     const done = tasks.filter(t => progress[String(t.id)] && Number(progress[String(t.id)].attempts) > 0).length;
     const progressEl = document.getElementById('practice-progress');
-    if (progressEl) progressEl.textContent = 'Пройдено ' + done + ' из ' + tasks.length;
+    if (!progressEl) return;
+    progressEl.textContent = 'Решено ' + done + ' из ' + tasks.length;
+    progressEl.setAttribute('aria-label', 'Решено ' + done + ' из ' + tasks.length + ' заданий');
+}
 
-    practiceRenderDisciplineTiles(tasks);
-    practiceRenderLevelChips(tasks);
+/** Плашка пилота (UI2-09, H9): пока заданий мало, говорим об этом прямо. */
+function practiceRenderPilot(tasks) {
+    const el = document.getElementById('practice-pilot');
+    if (!el) return;
+    const disciplines = [];
+    tasks.forEach((task) => {
+        if (disciplines.indexOf(task.discipline) === -1) disciplines.push(task.discipline);
+    });
+    if (!tasks.length || tasks.length > 12 || disciplines.length > 1) {
+        el.hidden = true;
+        el.textContent = '';
+        return;
+    }
+    const meta = practiceDisciplineMeta(disciplines[0]);
+    const word = tasks.length === 1 ? 'задание' : (tasks.length < 5 ? 'задания' : 'заданий');
+    el.textContent = 'Пилот: ' + tasks.length + ' ' + word + ' по дисциплине «' + meta.title + '». Остальные — позже.';
+    el.hidden = false;
+}
+
+/** Строка в свёрнутом фильтре: видно, что выбрано, без раскрытия панели. */
+function practiceRenderFiltersState(tasks) {
+    const el = document.getElementById('practice-filters-state');
+    if (!el) return;
+    const parts = [];
+    if (practiceState.level !== 'all') parts.push(practiceLevelMeta(practiceState.level).action.toLowerCase());
+    if (practiceState.discipline !== 'all') parts.push(practiceDisciplineMeta(practiceState.discipline).short.toLowerCase());
+    const total = practiceFiltered(tasks).length;
+    el.textContent = (parts.length ? parts.join(' · ') + ' · ' : '') + total + ' из ' + tasks.length;
 }
 
 function practiceRenderDisciplineTiles(tasks) {
@@ -306,6 +445,12 @@ function practiceRenderDisciplineTiles(tasks) {
         if (!byDiscipline[id]) byDiscipline[id] = { id: id, count: 0 };
         byDiscipline[id].count += 1;
     });
+
+    // Фильтр из одного варианта не фильтрует — прячем его (UI2-09, H9).
+    const group = document.getElementById('practice-discipline-group');
+    const manyDisciplines = Object.keys(byDiscipline).length >= 2;
+    if (group) group.hidden = !manyDisciplines;
+    if (!manyDisciplines) return;
 
     const all = practiceEl('button', 'mobile-tile-btn practice-tile');
     all.type = 'button';
@@ -346,13 +491,17 @@ function practiceRenderLevelChips(tasks) {
         counts[task.level] += 1;
     });
 
-    const addChip = (value, label, count) => {
+    const addChip = (value, label, count, hint) => {
         const chip = practiceEl('button', 'practice-levels__chip');
         chip.type = 'button';
         chip.setAttribute('data-practice-level', value);
         const active = practiceState.level === value;
         chip.setAttribute('aria-pressed', active ? 'true' : 'false');
         if (active) chip.classList.add('active');
+        if (hint) {
+            chip.title = hint;
+            chip.setAttribute('aria-label', label + ' (' + hint + ')');
+        }
         chip.appendChild(document.createTextNode(label));
         chip.appendChild(practiceEl('span', 'practice-levels__count', count));
         container.appendChild(chip);
@@ -372,7 +521,11 @@ function practiceRenderLevelChips(tasks) {
         return practiceLevelOrder(a) - practiceLevelOrder(b);
     });
 
-    ordered.forEach((level) => addChip(level, practiceLevelMeta(level).label, counts[level]));
+    // Подпись фильтра — действие студента, название уровня — в подсказке (H10)
+    ordered.forEach((level) => {
+        const meta = practiceLevelMeta(level);
+        addChip(level, meta.action, counts[level], 'Уровень: ' + meta.label.toLowerCase());
+    });
 }
 
 function practiceFiltered(tasks) {
@@ -383,11 +536,12 @@ function practiceFiltered(tasks) {
     });
 }
 
-function practiceStatusText(task) {
+/** Статус карточки (UI2-07, H14): «Не начато» с точкой-индикатором, затем «Решено». */
+function practiceStatusOf(task) {
     const progress = practiceProgressOf(task.id);
-    if (!progress || !Number(progress.attempts)) return 'не начата';
-    if (task.kind === 'choice') return progress.lastCorrect === true ? 'верно' : 'есть попытка';
-    return 'есть попытка';
+    if (!progress || !Number(progress.attempts)) return { text: 'Не начато', tone: 'todo' };
+    if (task.kind === 'choice' && progress.lastCorrect === false) return { text: 'Решено', tone: 'done' };
+    return { text: 'Решено', tone: 'ok' };
 }
 
 function practiceRenderList(tasks) {
@@ -418,8 +572,14 @@ function practiceCard(task) {
 
     const meta = practiceEl('div', 'practice-card__meta');
     meta.appendChild(practiceLevelChip(task.level));
-    const status = practiceEl('span', 'practice-card__status', practiceStatusText(task));
-    if (practiceStatusText(task) === 'верно') status.classList.add('is-correct');
+    const statusInfo = practiceStatusOf(task);
+    const status = practiceEl('span', 'practice-card__status practice-card__status--' + statusInfo.tone, statusInfo.text);
+    const dot = practiceEl('span', 'practice-card__dot');
+    dot.setAttribute('aria-hidden', 'true');
+    status.insertBefore(dot, status.firstChild);
+    if (task.kind === 'choice' && practiceProgressOf(task.id) && practiceProgressOf(task.id).lastCorrect !== null) {
+        status.title = practiceProgressOf(task.id).lastCorrect === true ? 'Последний выбор был верным' : 'Последний выбор был неверным';
+    }
     meta.appendChild(status);
     card.appendChild(meta);
 
@@ -456,7 +616,7 @@ function practiceHideEmpty() {
     if (empty) empty.hidden = true;
 }
 
-function practiceShowList() {
+function practiceRevealList() {
     const list = document.getElementById('practice-list');
     if (list) list.hidden = false;
 }
@@ -477,14 +637,36 @@ function practiceNextTask(task) {
     return visible[index + 1];
 }
 
-function practiceOpenTask(id) {
+/**
+ * Открыть задание. options.history === false — не трогать историю (popstate,
+ * восстановление из адреса); options.restoreScroll — вернуть позицию после F5.
+ */
+function practiceOpenTask(id, options) {
     const task = practiceFindTask(id);
     if (!task) return;
+    const opts = options || {};
+    const fromList = practiceState.view !== 'task';
 
     practiceState.taskId = task.id;
     practiceState.view = 'task';
     practiceOpenedAt = Date.now();
     practiceRetryPayload = null;
+
+    if (opts.history !== false) {
+        // Из списка — новая запись истории (Back вернёт список), следующее
+        // задание — замена текущей, чтобы история не превращалась в лестницу.
+        try {
+            if (fromList) {
+                history.pushState({ practiceTask: task.id }, '', practiceUrl(task.id));
+                practiceState.navPushed = true;
+            } else {
+                history.replaceState({ practiceTask: task.id }, '', practiceUrl(task.id));
+            }
+        } catch (e) {
+            practiceState.navPushed = false;
+        }
+    }
+
     practiceSyncBodyState();
 
     const view = document.getElementById('practice-task-view');
@@ -493,6 +675,14 @@ function practiceOpenTask(id) {
     practiceHideList();
     view.hidden = false;
     practiceRenderTaskBody(view, task);
+
+    const saved = opts.restoreScroll ? practiceSavedScroll() : null;
+    if (saved && saved.view === 'task' && saved.taskId === task.id) {
+        requestAnimationFrame(() => practiceScrollToY(saved.y));
+    } else {
+        practiceScrollTo(view, 90, 'auto');
+    }
+    practiceRememberScrollSoon();
 
     practiceTrack('task_open', {
         task_id: task.id,
@@ -508,8 +698,9 @@ function practiceRenderTaskBody(view, task) {
     view.innerHTML = '';
 
     const nav = practiceEl('div', 'practice-task__nav');
+    nav.setAttribute('data-practice-task-nav', '');
     nav.appendChild(practiceButton('practice-task__back', '← К списку', 'data-practice-back', ''));
-    const next = practiceButton('practice-task__next', 'Следующее задание →', 'data-practice-next', '');
+    const next = practiceButton('practice-task__next', 'Следующее →', 'data-practice-next', '');
     const nextTask = practiceNextTask(task);
     if (!nextTask) {
         next.disabled = true;
@@ -521,7 +712,6 @@ function practiceRenderTaskBody(view, task) {
     const meta = practiceEl('div', 'practice-task__meta');
     meta.appendChild(practiceLevelChip(task.level));
     if (task.competence) meta.appendChild(practiceEl('span', 'practice-task__competence', task.competence));
-    if (task.ai) meta.appendChild(practiceEl('span', 'practice-badge practice-badge--ai', 'Текст сгенерирован ИИ'));
     view.appendChild(meta);
 
     const title = practiceEl('h2', 'practice-task__title', task.title);
@@ -552,23 +742,38 @@ function practiceRenderTaskBody(view, task) {
     }
     view.appendChild(answer);
 
+    // Панель «Проверить» прилипает к низу кадра в границах всей карточки, а не
+    // только блока ответа: иначе её зажимает верх вариантов (UI2-06, H5)
+    const stickyActions = answer.querySelector('.practice-actions--sticky');
+    if (stickyActions) view.appendChild(stickyActions);
+
     const result = practiceEl('div', 'practice-result');
     result.setAttribute('data-practice-result', '');
     result.setAttribute('aria-live', 'polite');
     result.hidden = true;
     view.appendChild(result);
 
-    // Фокус — на заголовок задачи (спека §6.1)
-    try { title.focus({ preventScroll: true }); } catch (e) { title.focus(); }
-    practiceScrollTo(view, 90);
-}
+    // Плашка «попытка сохранена на этом устройстве» идёт ПОСЛЕ вердикта (H11)
+    const guest = practiceEl('p', 'practice-note practice-note--guest', '');
+    guest.setAttribute('data-practice-guest-note', '');
+    guest.hidden = true;
+    view.appendChild(guest);
 
-function practiceScrollTo(element, offset) {
-    if (!element) return;
-    const gap = typeof offset === 'number' ? offset : 16;
-    const top = element.getBoundingClientRect().top + window.scrollY - gap;
-    const behavior = (typeof getScrollBehavior === 'function') ? getScrollBehavior() : 'auto';
-    window.scrollTo({ top: Math.max(0, top), behavior: behavior });
+    // Панель «Следующее / К списку» под результатом (UI2-06, H1)
+    const resultActions = practiceEl('div', 'practice-result__actions');
+    resultActions.setAttribute('data-practice-result-actions', '');
+    resultActions.hidden = true;
+    resultActions.appendChild(practiceButton('practice-result__back', '← К списку', 'data-practice-back', ''));
+    const resultNext = practiceButton('practice-result__next', 'Следующее →', 'data-practice-next', '');
+    if (!nextTask) {
+        resultNext.disabled = true;
+        resultNext.title = 'Это последнее задание в выбранном фильтре';
+    }
+    resultActions.appendChild(resultNext);
+    view.appendChild(resultActions);
+
+    // Фокус — на заголовок задачи (спека §6.1), прокрутку делает practiceOpenTask
+    try { title.focus({ preventScroll: true }); } catch (e) { title.focus(); }
 }
 
 function practiceBuildChoice(container, task) {
@@ -590,7 +795,7 @@ function practiceBuildChoice(container, task) {
 
     container.appendChild(options);
 
-    const actions = practiceEl('div', 'practice-actions');
+    const actions = practiceEl('div', 'practice-actions practice-actions--sticky');
     actions.appendChild(practiceButton('practice-btn practice-btn--primary', 'Проверить', 'data-practice-check', ''));
     container.appendChild(actions);
 
@@ -598,15 +803,17 @@ function practiceBuildChoice(container, task) {
     status.setAttribute('data-practice-status', '');
     status.hidden = true;
     container.appendChild(status);
-
-    const guest = practiceEl('p', 'practice-note practice-note--guest', '');
-    guest.setAttribute('data-practice-guest-note', '');
-    guest.hidden = true;
-    container.appendChild(guest);
 }
 
 function practiceBuildOpen(container, task) {
     container.appendChild(practiceEl('p', 'practice-note practice-note--privacy', 'Не указывайте ФИО и названия групп: это данные исследования.'));
+
+    // Схема шагов (UI2-09, H12): до ответа видно, что будет дальше
+    const steps = practiceEl('ol', 'practice-steps');
+    ['Ответьте своими словами', 'Отметьте критерии', 'Сверьте с эталоном'].forEach((text) => {
+        steps.appendChild(practiceEl('li', 'practice-steps__item', text));
+    });
+    container.appendChild(steps);
 
     const textarea = document.createElement('textarea');
     textarea.className = 'practice-textarea';
@@ -622,7 +829,7 @@ function practiceBuildOpen(container, task) {
     container.appendChild(hint);
     practiceUpdateAnswerHint(container);
 
-    const actions = practiceEl('div', 'practice-actions');
+    const actions = practiceEl('div', 'practice-actions practice-actions--sticky');
     actions.appendChild(practiceButton('practice-btn', 'Показать критерии', 'data-practice-show-criteria', ''));
     container.appendChild(actions);
 
@@ -669,7 +876,9 @@ function practiceBuildOpen(container, task) {
     rubric.appendChild(completeHint);
 
     const rubricActions = practiceEl('div', 'practice-actions');
-    const save = practiceButton('practice-btn practice-btn--primary', 'Сохранить попытку', 'data-practice-save', '');
+    // Гость не «сохраняет попытку», а проверяет себя: с ID — сохраняет (H6)
+    const saveLabel = practiceSavedKey() ? 'Сохранить попытку' : 'Проверить себя';
+    const save = practiceButton('practice-btn practice-btn--primary', saveLabel, 'data-practice-save', '');
     save.disabled = true;
     rubricActions.appendChild(save);
     rubric.appendChild(rubricActions);
@@ -680,11 +889,6 @@ function practiceBuildOpen(container, task) {
     status.setAttribute('data-practice-status', '');
     status.hidden = true;
     container.appendChild(status);
-
-    const guest = practiceEl('p', 'practice-note practice-note--guest', '');
-    guest.setAttribute('data-practice-guest-note', '');
-    guest.hidden = true;
-    container.appendChild(guest);
 
     // Черновик ответа возвращаем при открытии задачи
     const draft = practiceStorageGet(PRACTICE_DRAFT_PREFIX + task.id);
@@ -750,6 +954,11 @@ function practiceHtmlBlock(title, html) {
     return block;
 }
 
+function practiceShowResultActions() {
+    const actions = document.querySelector('#practice-task-view [data-practice-result-actions]');
+    if (actions) actions.hidden = false;
+}
+
 function practiceRenderChoiceResult(task, isCorrect, options) {
     const box = practiceResultBox();
     if (!box) return;
@@ -757,6 +966,17 @@ function practiceRenderChoiceResult(task, isCorrect, options) {
 
     const verdict = practiceEl('p', 'practice-result__verdict ' + (isCorrect ? 'is-correct' : 'is-wrong'), isCorrect ? 'Верно' : 'Неверно');
     box.appendChild(verdict);
+
+    // «Ваш ответ: …» — чтобы выбор был виден в результате, а не только выше (H13)
+    const picked = document.querySelector('#practice-task-view input[name="practice-choice"]:checked');
+    const chosenIndex = picked ? Number(picked.value) : null;
+    if (chosenIndex !== null && (task.options || [])[chosenIndex]) {
+        const your = practiceEl('p', 'practice-result__your');
+        your.appendChild(document.createTextNode('Ваш ответ: '));
+        your.appendChild(practiceEl('strong', '', (task.options || [])[chosenIndex]));
+        your.appendChild(practiceEl('span', 'practice-result__mark ' + (isCorrect ? 'is-correct' : 'is-wrong'), isCorrect ? ' верно' : ' неверно'));
+        box.appendChild(your);
+    }
 
     const correctText = (task.options || [])[task.correct] || '';
     const line = practiceEl('p', 'practice-result__answer');
@@ -772,6 +992,7 @@ function practiceRenderChoiceResult(task, isCorrect, options) {
     }
 
     box.hidden = false;
+    practiceShowResultActions();
     practiceScrollTo(box, 90);
 }
 
@@ -784,7 +1005,7 @@ function practiceRenderOpenResult(task, res, options) {
     const selfScore = Number(res && res.self_score);
     const maxScore = Number(res && res.max_score) || (task.criteria || []).length * 2;
     const title = saved ? 'Самопроверка сохранена' : 'Самопроверка';
-    box.appendChild(practiceEl('p', 'practice-result__verdict ' + (saved ? 'is-correct' : 'is-wrong'), title));
+    box.appendChild(practiceEl('p', 'practice-result__verdict ' + (saved ? 'is-correct' : 'is-neutral'), title));
 
     const score = practiceEl('p', 'practice-result__score');
     score.appendChild(document.createTextNode('Ваша самооценка: '));
@@ -809,6 +1030,7 @@ function practiceRenderOpenResult(task, res, options) {
     if (task.model) box.appendChild(practiceHtmlBlock('Эталон', task.model));
 
     box.hidden = false;
+    practiceShowResultActions();
     practiceScrollTo(box, 90);
 }
 
@@ -1007,7 +1229,11 @@ function practiceLockChoice() {
     if (!view) return;
     view.querySelectorAll('input[name="practice-choice"]').forEach((input) => { input.disabled = true; });
     const check = view.querySelector('[data-practice-check]');
-    if (check) check.hidden = true;
+    if (check) {
+        check.hidden = true;
+        const bar = check.closest('.practice-actions');
+        if (bar) bar.hidden = true;
+    }
 }
 
 function practiceLockOpenAnswer() {
@@ -1017,9 +1243,26 @@ function practiceLockOpenAnswer() {
     if (textarea) textarea.readOnly = true;
     view.querySelectorAll('input[type="radio"]').forEach((input) => { input.disabled = true; });
     const save = view.querySelector('[data-practice-save]');
-    if (save) save.hidden = true;
+    if (save) {
+        save.hidden = true;
+        const bar = save.closest('.practice-actions');
+        if (bar) bar.hidden = true;
+    }
     const show = view.querySelector('[data-practice-show-criteria]');
-    if (show) show.hidden = true;
+    if (show) {
+        show.hidden = true;
+        const bar = show.closest('.practice-actions');
+        if (bar) bar.hidden = true;
+    }
+}
+
+/** Гостевая попытка: пишем локально и говорим правду — «на этом устройстве» (H2, H6). */
+function practiceFinishGuestAttempt(task, res) {
+    practiceRememberAttempt(task, res);
+    practiceStorageRemove(PRACTICE_DRAFT_PREFIX + task.id);
+    practiceRenderSidebar(practiceTasks());
+    practiceHideStatus();
+    practiceRememberScrollSoon();
 }
 
 function practiceMarkChoice(task, choice) {
@@ -1055,8 +1298,9 @@ function practiceSelectChoice() {
     if (!practiceSavedKey()) {
         const isCorrect = choice === task.correct;
         practiceLockChoice();
+        practiceFinishGuestAttempt(task, { is_correct: isCorrect });
         practiceRenderChoiceResult(task, isCorrect, { local: true });
-        practiceShowGuestInvite('Результат не сохранён. Создайте ID, чтобы сохранить попытку.');
+        practiceShowGuestInvite('Попытка сохранена на этом устройстве. Создайте ID, чтобы вернуться к ней с другого устройства.');
         return;
     }
 
@@ -1071,6 +1315,14 @@ function practiceShowCriteria() {
     const rubric = view.querySelector('[data-practice-criteria]');
     if (!rubric) return;
     rubric.hidden = false;
+
+    // Критерии открыты — кнопка «Показать критерии» больше не нужна (H5)
+    const showBtn = view.querySelector('[data-practice-show-criteria]');
+    if (showBtn) {
+        showBtn.hidden = true;
+        const bar = showBtn.closest('.practice-actions');
+        if (bar) bar.hidden = true;
+    }
 
     const textarea = view.querySelector('[data-practice-answer]');
     const answerLength = textarea ? (textarea.value || '').trim().length : 0;
@@ -1102,8 +1354,11 @@ function practiceSaveOpenAttempt() {
     }
 
     if (!practiceSavedKey()) {
-        practiceRenderOpenResult(task, { self_score: totals.total, max_score: (task.criteria || []).length * 2 }, { saved: false });
-        practiceShowGuestInvite('Попытка не сохранена. Создайте ID, чтобы результат попал в исследование.');
+        const maxScore = (task.criteria || []).length * 2;
+        practiceLockOpenAnswer();
+        practiceFinishGuestAttempt(task, { self_score: totals.total, max_score: maxScore });
+        practiceRenderOpenResult(task, { self_score: totals.total, max_score: maxScore }, { saved: false });
+        practiceShowGuestInvite('Попытка сохранена на этом устройстве. Создайте ID, чтобы вернуться к ней с другого устройства.');
         return;
     }
 
@@ -1121,10 +1376,14 @@ function practiceGoToNext() {
     practiceOpenTask(next.id);
 }
 
-function practiceBackToList() {
-    const returnId = practiceState.taskId;
+/** Показать список: без записи в историю, с возвратом фокуса и прокрутки (H15). */
+function practiceShowList(options) {
+    const opts = options || {};
+    const returnId = opts.returnId === undefined ? practiceState.taskId : opts.returnId;
+
     practiceState.view = 'list';
     practiceState.taskId = null;
+    practiceState.navPushed = false;
     practiceSyncBodyState();
 
     const view = document.getElementById('practice-task-view');
@@ -1135,12 +1394,49 @@ function practiceBackToList() {
     practiceHideStatus();
     practiceRefresh();
 
-    if (returnId) {
-        const cardButton = document.querySelector('[data-practice-task="' + returnId + '"] [data-practice-open-task]');
+    if (opts.history !== false) {
+        try { history.replaceState({}, '', practiceUrl(null)); } catch (e) { /* file:// и старые браузеры */ }
+    }
+
+    if (opts.scrollList) {
+        practiceScrollTo(document.getElementById('practice-list'), 40, 'auto');
+    } else if (returnId) {
+        const card = document.querySelector('[data-practice-task="' + returnId + '"]');
+        const cardButton = card ? card.querySelector('[data-practice-open-task]') : null;
+        if (card) practiceScrollTo(card, 80, 'auto');
         if (cardButton) {
             try { cardButton.focus({ preventScroll: true }); } catch (e) { cardButton.focus(); }
         }
     }
+    practiceRememberScrollSoon();
+}
+
+/** «К списку»: если адрес задания добавлен в историю — шаг назад, иначе замена адреса. */
+function practiceBackToList(options) {
+    const opts = options || {};
+    const returnId = opts.returnId === undefined ? practiceState.taskId : opts.returnId;
+
+    if (practiceState.navPushed && history.state && history.state.practiceTask) {
+        practiceState.pendingReturnId = returnId;
+        practiceState.pendingScrollList = Boolean(opts.scrollList);
+        try { history.back(); } catch (e) { practiceShowList({ returnId: returnId, scrollList: opts.scrollList }); }
+        return;
+    }
+    practiceShowList({ returnId: returnId, scrollList: opts.scrollList });
+}
+
+/** Кнопка «Назад» браузера: адрес решает, что показать. */
+function practiceOnPopState() {
+    const taskId = practiceTaskIdFromUrl();
+    if (taskId) {
+        practiceOpenTask(taskId, { history: false });
+        return;
+    }
+    const returnId = practiceState.pendingReturnId;
+    const scrollList = practiceState.pendingScrollList;
+    practiceState.pendingReturnId = null;
+    practiceState.pendingScrollList = false;
+    practiceShowList({ returnId: returnId, scrollList: scrollList, history: false });
 }
 
 // ---------------------------------------------------------------------------
@@ -1154,16 +1450,16 @@ function practiceOnClick(event) {
     const disciplineBtn = target.closest('[data-practice-discipline]');
     if (disciplineBtn) {
         practiceState.discipline = disciplineBtn.getAttribute('data-practice-discipline') || 'all';
-        practiceBackToList();
-        practiceScrollTo(document.getElementById('practice-list'), 40);
+        practiceCollapseFiltersOnNarrow();
+        practiceBackToList({ returnId: null, scrollList: true });
         return;
     }
 
     const levelBtn = target.closest('[data-practice-level]');
     if (levelBtn) {
         practiceState.level = levelBtn.getAttribute('data-practice-level') || 'all';
-        practiceBackToList();
-        practiceScrollTo(document.getElementById('practice-list'), 40);
+        practiceCollapseFiltersOnNarrow();
+        practiceBackToList({ returnId: null, scrollList: true });
         return;
     }
 
@@ -1266,6 +1562,35 @@ function practiceSyncBodyState() {
     document.body.classList.toggle('practice-task-open', open);
 }
 
+/** Одна плашка об ИИ на страницу, а не на каждой карточке (UI2-09, H14). */
+function practiceRenderAiNote(tasks) {
+    const note = document.getElementById('practice-ai-note');
+    if (!note) return;
+    note.hidden = !(tasks || []).some((task) => task.ai);
+}
+
+/** На ПК фильтры раскрыты, на телефоне свёрнуты в аккордеон (UI2-09, H4). */
+function practiceSyncFiltersDisclosure() {
+    const filters = document.getElementById('practice-filters');
+    if (!filters || filters.tagName !== 'DETAILS') return;
+    filters.open = !practiceIsNarrowScreen();
+}
+
+/** После выбора фильтра на телефоне панель сворачивается, чтобы список был выше. */
+function practiceCollapseFiltersOnNarrow() {
+    const filters = document.getElementById('practice-filters');
+    if (filters && filters.tagName === 'DETAILS' && practiceIsNarrowScreen()) filters.open = false;
+}
+
+function practiceIsReload() {
+    try {
+        const nav = performance.getEntriesByType('navigation')[0];
+        return Boolean(nav && nav.type === 'reload');
+    } catch (e) {
+        return false;
+    }
+}
+
 function initPractice() {
     const app = document.getElementById('practice-app');
     if (!app) return;
@@ -1275,21 +1600,38 @@ function initPractice() {
         app.addEventListener('click', practiceOnClick);
         app.addEventListener('input', practiceOnInput);
         app.addEventListener('change', practiceOnChange);
+        window.addEventListener('popstate', practiceOnPopState);
+        window.addEventListener('scroll', practiceRememberScrollSoon, { passive: true });
+        window.addEventListener('pagehide', practiceRememberScroll);
+        if (window.history && 'scrollRestoration' in history) {
+            try { history.scrollRestoration = 'manual'; } catch (e) { /* старые браузеры */ }
+        }
     }
 
     const tasks = practiceTasks();
+    practiceSyncFiltersDisclosure();
     practiceRenderSidebar(tasks);
-    practiceSyncBodyState();
+    practiceRenderAiNote(tasks);
+    practiceRenderList(tasks);
 
-    if (practiceState.view === 'task' && practiceState.taskId && practiceFindTask(practiceState.taskId)) {
-        practiceRenderList(tasks);
-        practiceHideList();
-        practiceHideEmpty();
+    // Адрес задания (UI2-08): ?task=<id> открывает задание, F5 возвращает
+    // и задание, и позицию чтения.
+    const urlTaskId = practiceTaskIdFromUrl();
+    const reload = practiceIsReload();
+
+    if (urlTaskId) {
+        practiceOpenTask(urlTaskId, { history: false, restoreScroll: reload });
     } else {
         practiceState.view = 'list';
         practiceState.taskId = null;
-        practiceRenderList(tasks);
-        practiceShowList();
+        practiceSyncBodyState();
+        practiceHideEmpty();
+        practiceRevealList();
+        const saved = reload ? practiceSavedScroll() : null;
+        if (saved && saved.view === 'list') {
+            requestAnimationFrame(() => practiceScrollToY(saved.y));
+        }
+        practiceRememberScrollSoon();
     }
 
     practiceLoadProgress();

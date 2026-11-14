@@ -1084,20 +1084,29 @@ const scenarios = {
     const list = await cdp.eval(`(() => {
       const cards = [...document.querySelectorAll('[data-practice-task]')];
       const levels = [...document.querySelectorAll('[data-practice-level]')].map((b) => (b.innerText || '').trim());
-      const tiles = [...document.querySelectorAll('[data-practice-discipline]')].map((b) => (b.innerText || '').trim());
       const progress = (document.getElementById('practice-progress') || {}).textContent || '';
+      const filters = document.getElementById('practice-filters');
+      const summary = filters ? filters.querySelector('.practice-filters__summary') : null;
+      const disciplineGroup = document.getElementById('practice-discipline-group');
+      const aiPlates = [...document.querySelectorAll('.practice-ai-note, .practice-badge--ai')]
+        .filter((el) => el.offsetParent !== null).length;
       return {
         tasks: cards.length,
         levels,
-        tiles,
         progress,
+        filtersOpen: filters ? Boolean(filters.open) : null,
+        filtersSummary: summary ? (summary.innerText || '').replace(/\\s+/g, ' ').trim() : '',
+        disciplineFilterHidden: disciplineGroup ? Boolean(disciplineGroup.hidden) : null,
+        aiPlates,
         overflow: document.documentElement.scrollWidth - innerWidth
       };
     })()`);
     c.atLeast(list.tasks, 4, '1440: задач практикума не меньше четырёх', list.tasks);
     c.ok(list.levels.length >= 5, '1440: чипы уровней «Все» + уровни из данных', list.levels);
-    c.ok(list.tiles.length >= 2, '1440: плитки дисциплин есть, «Все» первая', list.tiles);
-    c.ok(/Пройдено\s+\d+\s+из\s+\d+/.test(list.progress), '1440: прогресс «Пройдено X из Y»', list.progress);
+    c.ok(list.filtersOpen === true && list.filtersSummary.length > 0, '1440: фильтры раскрыты, в подписи видно состав фильтра', list);
+    c.ok(list.disciplineFilterHidden === true, '1440: фильтр дисциплины из одного варианта скрыт', list);
+    c.ok(list.aiPlates === 1, '1440: ИИ-предупреждение одно на страницу, а не на каждой карточке', list.aiPlates);
+    c.ok(/Решено\s+\d+\s+из\s+\d+/.test(list.progress), '1440: прогресс «Решено X из Y»', list.progress);
     c.ok(list.overflow <= 1, '1440: нет горизонтального переполнения', list.overflow);
 
     // Service Worker: страница и модуль практикума лежат в кэше текущей версии
@@ -1189,20 +1198,94 @@ const scenarios = {
         const result = document.querySelector('[data-practice-result]');
         const note = document.querySelector('[data-practice-guest-note]');
         const verdict = result ? (result.querySelector('.practice-result__verdict') || {}).textContent : '';
+        const nexts = [...document.querySelectorAll('[data-practice-next]')].map((el) => {
+          const r = el.getBoundingClientRect();
+          const on = r.width > 0 && r.height > 0 && getComputedStyle(el).visibility !== 'hidden';
+          return { top: Math.round(r.top), bottom: Math.round(r.bottom), on };
+        }).filter((n) => n.on);
         return {
           resultVisible: Boolean(result && !result.hidden),
           verdict: (verdict || '').trim(),
           guestVisible: Boolean(note && !note.hidden),
-          saved: localStorage.getItem('research_user_key')
+          saved: localStorage.getItem('research_user_key'),
+          yourAnswer: result ? /Ваш ответ/i.test(result.innerText || '') : false,
+          verdictAboveNote: Boolean(result && note && result.getBoundingClientRect().top < note.getBoundingClientRect().top),
+          locked: [...document.querySelectorAll('#practice-task-view input[name="practice-choice"]')].every((i) => i.disabled),
+          saveVisible: Boolean(document.querySelector('[data-practice-save]') && document.querySelector('[data-practice-save]').offsetParent),
+          nexts,
+          nextInFrame: nexts.some((n) => n.top >= 0 && n.bottom <= innerHeight),
+          progress: (document.getElementById('practice-progress') || {}).textContent || ''
         };
       })()`);
       c.ok(guest.resultVisible && /^(Верно|Неверно)$/.test(guest.verdict), '1440: choice показывает «Верно»/«Неверно» (гость)', guest);
-      c.ok(guest.guestVisible && !guest.saved, '1440: гость видит «не сохранено» и предложение создать ID', guest);
+      c.ok(guest.guestVisible && !guest.saved, '1440: гость видит «попытка на этом устройстве» и предложение создать ID', guest);
+      c.ok(guest.yourAnswer, '1440: в результате есть строка «Ваш ответ»', guest);
+      c.ok(guest.verdictAboveNote && guest.locked && !guest.saveVisible, '1440: вердикт выше плашки, форма заблокирована после проверки', guest);
+      c.ok(guest.nextInFrame, '1440: после ответа «Следующее» в кадре (nextTop ≥ 0 и ≤ vh)', guest.nexts);
+      c.ok(/Решено\s+1\s+из\s+\d+/.test(guest.progress), '1440: гостевой ответ сразу считается решённым', guest.progress);
       choiceChecked = true;
       await cdp.eval(`document.querySelector('[data-practice-back]').click()`);
-      await sleep(200);
+      await sleep(300);
     }
     c.ok(choiceChecked, '1440: найдено задание с вариантами ответа');
+
+    // Гостевой прогресс переживает F5 (UI2-07, H2)
+    await cdp.send('Page.reload');
+    await waitFor(cdp, 'document.querySelectorAll("[data-practice-task]").length > 0', 25000);
+    const afterF5 = await cdp.eval(`(() => ({
+      progress: (document.getElementById('practice-progress') || {}).textContent || '',
+      statuses: [...document.querySelectorAll('.practice-card__status')].map((s) => (s.textContent || '').trim())
+    }))()`);
+    c.ok(/Решено\s+1\s+из\s+\d+/.test(afterF5.progress) && afterF5.statuses.filter((s) => s === 'Решено').length === 1,
+      'после F5: «Решено 1 из 4» и статус решённого задания', afterF5);
+
+    // Адрес задания и Back (UI2-08, H3)
+    const firstTaskId = await cdp.eval(`Number(document.querySelector('[data-practice-task]').getAttribute('data-practice-task'))`);
+    await cdp.eval(`document.querySelector('[data-practice-open-task]').click()`);
+    await waitFor(cdp, '(() => { const v = document.querySelector("[data-practice-task-view]"); return v && !v.hidden; })()', 8000);
+    const taskUrl = await cdp.eval('location.search');
+    c.ok(taskUrl === '?task=' + firstTaskId, 'адрес задания — ?task=<id>', { url: taskUrl, id: firstTaskId });
+    await cdp.eval('history.back()');
+    await sleep(900);
+    const afterHistoryBack = await cdp.eval(`(() => ({
+      search: location.search,
+      listVisible: Boolean(document.getElementById('practice-list') && !document.getElementById('practice-list').hidden),
+      taskVisible: Boolean(document.querySelector('[data-practice-task-view]') && !document.querySelector('[data-practice-task-view]').hidden)
+    }))()`);
+    c.ok(afterHistoryBack.listVisible && !afterHistoryBack.taskVisible && afterHistoryBack.search === '',
+      'history.back() из задания возвращает к списку', afterHistoryBack);
+
+    // Ссылка на задание открывается напрямую (UI2-08)
+    await goto(cdp, base, 'practice.html?task=' + firstTaskId, 1500);
+    await waitFor(cdp, '(() => { const v = document.querySelector("[data-practice-task-view]"); return v && !v.hidden; })()', 25000);
+    const deepLink = await cdp.eval(`(() => ({
+      title: ((document.querySelector('.practice-task__title') || {}).textContent || '').trim(),
+      search: location.search,
+      listHidden: Boolean(document.getElementById('practice-list') && document.getElementById('practice-list').hidden)
+    }))()`);
+    c.ok(deepLink.title.length > 5 && deepLink.search === '?task=' + firstTaskId && deepLink.listHidden,
+      'ссылка ?task=<id> открывает задание напрямую', deepLink);
+
+    // Модалка ID на практикуме — про учёбу (UI2-10, H7)
+    await cdp.eval(`(() => { const b = document.getElementById('btn-open-auth-modal'); if (b) b.click(); return true; })()`);
+    await sleep(300);
+    const practiceModal = await cdp.eval(`(() => {
+      const box = document.getElementById('research-auth-box');
+      const text = box ? (box.innerText || '') : '';
+      return {
+        title: ((document.getElementById('research-auth-title') || {}).textContent || '').trim(),
+        length: text.length,
+        forbidden: ['активаци', 'опросы', 'эссе'].filter((word) => new RegExp(word, 'i').test(text)),
+        saveAttempts: /сохранить попытки/i.test(text),
+        consentStep: /согласие/i.test(text)
+      };
+    })()`);
+    c.ok(practiceModal.forbidden.length === 0 && practiceModal.length > 100,
+      'в модалке с практикума нет слов «активация», «опросы», «эссе»', practiceModal);
+    c.ok(practiceModal.saveAttempts && practiceModal.consentStep,
+      'модалка про сохранение попыток, согласие — отдельным шагом', practiceModal);
+    await cdp.eval(`document.getElementById('btn-close-auth').click()`);
+    await sleep(200);
 
     // Открытый ответ: критерии и шкала 0/1/2 появляются по кнопке
     let rubricChecked = false;
@@ -1256,24 +1339,56 @@ const scenarios = {
     }
     c.ok(rubricChecked, '1440: найдено задание с открытым ответом');
 
-    // 390: нет переполнения, плитки и поля не вылезают
+    // 360: первая карточка задания и «Проверить» в кадре (UI2-09, UI2-06)
+    await setViewport(cdp, 360, 740, true);
+    await goto(cdp, base, 'practice.html', 1200);
+    await waitFor(cdp, 'document.querySelectorAll("[data-practice-task]").length > 0', 20000);
+    const firstScreen = await cdp.eval(`(() => {
+      const card = document.querySelector('.practice-card');
+      const r = card ? card.getBoundingClientRect() : null;
+      const summary = document.querySelector('.practice-filters__summary');
+      const sr = summary ? summary.getBoundingClientRect() : null;
+      const filters = document.getElementById('practice-filters');
+      return {
+        firstCardTop: r ? Math.round(r.top + scrollY) : null,
+        filtersOpen: filters ? Boolean(filters.open) : null,
+        summary: sr ? { left: Math.round(sr.left), right: Math.round(sr.right) } : null,
+        headerHeight: Math.round((document.querySelector('header') || { getBoundingClientRect: () => ({ height: 0 }) }).getBoundingClientRect().height),
+        aiPlates: [...document.querySelectorAll('.practice-ai-note')].filter((el) => el.offsetParent !== null).length
+      };
+    })()`);
+    c.ok(firstScreen.firstCardTop !== null && firstScreen.firstCardTop <= 300,
+      '360: первая карточка задания ≤ 300 px от верха', firstScreen);
+    c.ok(firstScreen.filtersOpen === false && firstScreen.summary && firstScreen.summary.right <= 361,
+      '360: фильтры в свёрнутом аккордеоне и не вылезают', firstScreen);
+    c.ok(firstScreen.headerHeight <= 120 && firstScreen.aiPlates === 1,
+      '360: шапка ≤ 120 px, ИИ-плашку видно один раз', firstScreen);
+
+    await cdp.eval(`document.querySelector('[data-practice-open-task]').click()`);
+    await waitFor(cdp, '(() => { const v = document.querySelector("[data-practice-task-view]"); return v && !v.hidden; })()', 8000);
+    await sleep(500);
+    const checkInFrame = await cdp.eval(`(() => {
+      const r = document.querySelector('[data-practice-check]').getBoundingClientRect();
+      return { top: Math.round(r.top), bottom: Math.round(r.bottom), vh: innerHeight, inFrame: r.top >= 0 && r.bottom <= innerHeight };
+    })()`);
+    c.ok(checkInFrame.inFrame, '360: «Проверить» в кадре сразу после открытия задания', checkInFrame);
+
+    // 390: нет переполнения, панель фильтров и поля не вылезают
     await setViewport(cdp, 390, 844, true);
     await goto(cdp, base, 'practice.html', 1200);
     await waitFor(cdp, 'document.querySelectorAll("[data-practice-task]").length > 0', 20000);
     const mobile = await cdp.eval(`(() => {
       const over = document.documentElement.scrollWidth - innerWidth;
-      const tiles = [...document.querySelectorAll('#practice-discipline-tiles .mobile-tile-btn')].map((b) => {
-        const r = b.getBoundingClientRect();
-        return { left: Math.round(r.left), right: Math.round(r.right) };
-      });
+      const summary = document.querySelector('.practice-filters__summary');
+      const sr = summary ? summary.getBoundingClientRect() : null;
       const wide = [...document.querySelectorAll('#practice-app *')].filter((el) => {
         const r = el.getBoundingClientRect();
         return r.width > 0 && (r.right > innerWidth + 1 || r.left < -1);
       }).slice(0, 4).map((el) => String(el.className || el.tagName).slice(0, 40));
-      return { over, tiles, wide };
+      return { over, summary: sr ? { left: Math.round(sr.left), right: Math.round(sr.right) } : null, wide };
     })()`);
     c.ok(mobile.over <= 1, '390: нет горизонтального переполнения', mobile);
-    c.ok(mobile.tiles.length > 0 && mobile.tiles.every((t) => t.right <= 391 && t.left >= -1), '390: плитки дисциплин не вылезают', mobile.tiles);
+    c.ok(mobile.summary && mobile.summary.right <= 391 && mobile.summary.left >= -1, '390: панель фильтров не вылезает', mobile.summary);
     c.ok(mobile.wide.length === 0, '390: элементы практикума не выходят за экран', mobile.wide);
 
     await cdp.eval(`document.querySelector('[data-practice-open-task]').click()`);
@@ -1295,6 +1410,9 @@ const scenarios = {
     await setViewport(cdp, 1440, 900, false);
     await goto(cdp, base, 'practice.html', 1200);
     await waitFor(cdp, 'document.querySelectorAll("[data-practice-task]").length > 0', 20000);
+    // Гостевые попытки уже лежат в localStorage: для проверки «ключ пишет ровно
+    // одну попытку» начинаем с чистого прогресса
+    await cdp.eval('localStorage.removeItem("hub_practice_progress_v1")');
 
     const stub = `(() => {
       localStorage.setItem('research_user_key', 'test-key-11');
