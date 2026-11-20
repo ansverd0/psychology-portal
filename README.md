@@ -5,7 +5,7 @@
 - **Рабочий сайт:** https://ansverd0.github.io/psychology-portal/
 - **Репозиторий:** https://github.com/ansverd0/psychology-portal
 - **Supabase:** проект `lrjszannmammzzqotaro` (PostgreSQL + REST)
-- **Документация:** [TECHCARD.md](TECHCARD.md) — устройство проекта, [TECH-ROADMAP.md](TECH-ROADMAP.md) — бэклог и правила, [docs/RUNBOOK.md](docs/RUNBOOK.md) — эксплуатация.
+- **Документация:** [TECHCARD.md](TECHCARD.md) — устройство проекта, [TECH-ROADMAP.md](TECH-ROADMAP.md) — бэклог и правила, [docs/RUNBOOK.md](docs/RUNBOOK.md) — эксплуатация. Промты разборов: [пользовательский аудит](docs/PROMPT-USER-AUDIT.md), [UI-дизайн](docs/PROMPT-UI-DESIGNER.md).
 
 > Vercel-зеркало `psy-education.vercel.app` из России не открывается (обрыв TLS), для проверок используйте GitHub Pages или локальный сервер.
 
