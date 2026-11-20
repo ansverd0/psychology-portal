@@ -5190,3 +5190,29 @@ textarea:focus-visible,
         padding: var(--s-6) var(--s-4);
     }
 }
+
+/* ==========================================================================
+   ПРОПУСК НАВИГАЦИИ (U-28): первая ссылка в body, видна только с клавиатуры
+   ========================================================================== */
+.skip-link {
+    position: absolute;
+    left: var(--s-2);
+    top: calc(var(--s-10) * -1);
+    z-index: 100010;
+    display: inline-flex;
+    align-items: center;
+    min-height: var(--tap);
+    padding: 12px 20px;
+    border-radius: var(--r-md);
+    background: var(--accent);
+    color: #ffffff;
+    font-size: var(--fs-14);
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.skip-link:focus,
+.skip-link:focus-visible {
+    top: var(--s-2);
+    color: #ffffff;
+}

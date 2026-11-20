@@ -10,6 +10,11 @@ let sectionsActiveFolderId = null;
 const ARTICLE_SEGMENT_MIN_MS = 1000;
 let articleTraceReady = false;
 
+// Раздел и статья, открытые сейчас: нужны сегментам цифрового следа,
+// чтобы article_leave знал, что именно закрывается.
+let sectionsCurrentSection = null;
+let sectionsCurrentArticle = null;
+
 const articleTrace = {
     id: null,
     discipline: '',
@@ -180,7 +185,7 @@ function initSections() {
                     articleBtn.innerText = article.title;
 
                     articleBtn.addEventListener('click', () => {
-                        showSectionContent(article);
+                        showSectionContent(article, section);
                         // Автопрокрутка к началу статьи с зазором сверху (раунд 4)
                         scrollBlockIntoView(document.querySelector('.section-viewer'), 16);
                     });
@@ -237,7 +242,7 @@ function sanitizeWikiHtml(html, config) {
 
 /** Рисует список статей во второй колонке навигации.
  *  activeTitle — статья, которую нужно подсветить и подматривать в неё */
-function renderArticlesColumn(articles, container, activeTitle) {
+function renderArticlesColumn(articles, container, activeTitle, section) {
     container.innerHTML = '';
     let activeBtn = null;
 
@@ -251,7 +256,7 @@ function renderArticlesColumn(articles, container, activeTitle) {
             document.querySelectorAll('.question-nav-btn').forEach(btn => { btn.classList.remove('active'); btn.removeAttribute('aria-current'); });
             articleBtn.classList.add('active');
             articleBtn.setAttribute('aria-current', 'true');
-            showSectionContent(article);
+            showSectionContent(article, section);
         });
 
         container.appendChild(articleBtn);
@@ -275,6 +280,7 @@ function openSectionInNav(section, article) {
 
     const target = article || section.articles[0] || null;
     sectionsActiveFolderId = section.id;
+    sectionsCurrentSection = section;
 
     foldersCol.querySelectorAll('.folder-nav-btn').forEach(btn => {
         const isActive = btn.dataset.sectionId === section.id;
@@ -288,8 +294,8 @@ function openSectionInNav(section, article) {
         return;
     }
 
-    renderArticlesColumn(section.articles, articlesCol, target.title);
-    showSectionContent(target);
+    renderArticlesColumn(section.articles, articlesCol, target.title, section);
+    showSectionContent(target, section);
 }
 
 
@@ -385,7 +391,7 @@ function openDeepLinkedDiscipline(id, attempt = 0) {
     }
 }
 
-function showSectionContent(section) {
+function showSectionContent(section, sectionGroup) {
     const contentContainer = document.querySelector('.section-viewer');
     if (!contentContainer || !section) return;
 

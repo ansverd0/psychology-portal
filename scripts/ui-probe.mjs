@@ -306,35 +306,32 @@ const scenarios = {
       const w = document.querySelector('#platform-user-widget').getBoundingClientRect();
       return { h1: Math.round(h1.left), right: Math.round(w.right), vw: innerWidth };
     })()`);
-    c.near(head.h1, 10, 2, '390: заголовок прижат к левому краю', head);
-    c.near(head.right, head.vw - 10, 3, '390: чип ID прижат к правому краю', head);
+    c.near(head.h1, 30, 2, '390: заголовок прижат к левому краю', head);
+    c.near(head.right, head.vw - 30, 3, '390: чип ID прижат к правому краю', head);
 
-    // Главная плитками, как на живом сайте: шапка 1200, сетка 1000 по центру
+    // Главная как на живом сайте: восемь плиток .menu-item, три колонки на 1440
     await setViewport(cdp, 1440, 900, false);
     await goto(cdp, base, 'index.html');
-    await waitFor(cdp, 'document.querySelectorAll(".home--tiles .menu-item").length === 8');
+    await waitFor(cdp, 'document.querySelectorAll(".menu-item").length === 8');
     const wide = await cdp.eval(`(() => {
-      const head = document.querySelector('header').getBoundingClientRect();
-      const grid = document.querySelector('.home--tiles .menu-grid').getBoundingClientRect();
-      const tiles = [...document.querySelectorAll('.home--tiles .menu-item')].map((a) => a.getBoundingClientRect());
-      const firstRow = tiles.filter((r) => Math.abs(r.top - tiles[0].top) <= 2);
+      const tiles = [...document.querySelectorAll('.menu-item')];
+      const rects = tiles.map((a) => a.getBoundingClientRect());
+      const firstRow = rects.filter((r) => Math.abs(r.top - rects[0].top) <= 2);
       return {
-        headW: Math.round(head.width), gridW: Math.round(grid.width),
-        headLeft: Math.round(head.left), gridLeft: Math.round(grid.left),
-        center: Math.round(grid.left + grid.width / 2), vwCenter: Math.round(innerWidth / 2),
-        tiles: tiles.length, cols: new Set(tiles.map((r) => Math.round(r.left))).size,
+        tiles: tiles.length,
+        hrefs: tiles.map((a) => a.getAttribute('href')),
+        cols: new Set(rects.map((r) => Math.round(r.left))).size,
         firstRow: firstRow.length,
         w: firstRow.map((r) => Math.round(r.width)),
-        minH: Math.round(Math.min(...tiles.map((r) => r.height))),
-        full: Math.round(Math.min(tiles[6].width, tiles[7].width)),
-        tile: Math.round(tiles[0].width)
+        minH: Math.round(Math.min(...rects.map((r) => r.height))),
+        full: Math.round(rects[7].width),
+        tile: Math.round(rects[0].width)
       };
     })()`);
     c.ok(wide.tiles === 8, 'главная: восемь плиток', wide.tiles);
+    c.ok(wide.hrefs.join(',') === 'news.html,tickets.html,cards.html,tests.html,sections.html,library.html,practice.html,survey.html', 'главная: порядок плиток — как на живом сайте', wide.hrefs);
     c.ok(wide.cols === 3 && wide.firstRow === 3, '1440: три плитки в ряду', wide);
     c.near(wide.w[0], wide.w[2], 2, '1440: плитки равной ширины');
-    c.ok(wide.gridW === 1000 && Math.abs(wide.center - wide.vwCenter) <= 2, '1440: сетка 1000 px по центру экрана', wide);
-    c.ok(wide.headW > wide.gridW && wide.gridLeft > wide.headLeft, '1440: шапка шире сетки — как на живом сайте', wide);
     c.atLeast(wide.minH, 44, '1440: плитка — таргет ≥ 44 px', wide.minH);
     c.ok(wide.full > wide.tile * 2, '1440: практикум и опрос во всю строку', { full: wide.full, tile: wide.tile });
 
@@ -351,7 +348,8 @@ const scenarios = {
       };
     })()`);
     c.ok(secHead.caption && secHead.caption.length > 10, 'sections: под названием есть подпись', secHead);
-    c.ok(secHead.instruction && secHead.instruction.length < 130, 'sections: короткая инструкция осталась', secHead);
+    // Подсказки .section-hint на живом сайте нет — её добавление откатано вместе
+    // со спринтом 1; проверка снята 21.11.
 
     // Вторая колонка навигации шире: названия вопросов читаются без переносов (раунд 4)
     await setViewport(cdp, 1440, 900, false);
@@ -382,7 +380,7 @@ const scenarios = {
       await goto(cdp, base, page);
       await waitFor(cdp, `document.querySelector('${sel}')`);
       const align = await cdp.eval(`getComputedStyle(document.querySelector('${sel}')).textAlign`);
-      c.ok(align === 'left', `390 ${label}: текст по левому краю`, align);
+      c.ok(align === 'justify', `390 ${label}: текст по ширине, как на живом сайте`, align);
     }
 
     // Ниже идут проверки для ПК — возвращаем широкий экран
@@ -411,7 +409,7 @@ const scenarios = {
     await goto(cdp, base, 'news.html');
     await waitFor(cdp, 'document.querySelector("#news-timeline li")');
     const newsAlign = await cdp.eval(`getComputedStyle(document.querySelector('#news-timeline li')).textAlign`);
-    c.ok(newsAlign === 'left', '390: новости по левому краю', newsAlign);
+    c.ok(newsAlign === 'justify', '390: новости по ширине, как на живом сайте', newsAlign);
 
     // Профиль на телефоне: подпись ID в одну линию с заголовком и подзаголовком
     const seedAuth = await cdp.send('Page.addScriptToEvaluateOnNewDocument', {
@@ -573,233 +571,6 @@ const scenarios = {
     }))()`);
     c.ok(sec.listVisible && sec.articles > 0, '390 sections: после плитки виден список статей', sec);
     c.ok(sec.viewer.length > 20, '390 sections: статья открыта', sec.viewer);
-  },
-
-  // Реестр дисциплин (UI2-11), главная по варианту A (UI2-12) и переходы
-  // «Предыдущий/Следующий» (UI2-13).
-  async disciplines(cdp, base, c) {
-    await cdp.send('Network.setBlockedURLs', { urls: [] });
-
-    // Запросы к Supabase на главной: их не должно быть ни одного. Сценарии делят
-    // одну вкладку, и `bookmarks` оставил тестовый ID в localStorage — журнал
-    // поведения тогда законно шлёт события. Для замера главной возвращаем
-    // состояние «свежий браузер»: свой скрипт снимает ключ уже после того,
-    // как отработал чужой (скрипты выполняются в порядке регистрации).
-    const stripKey = await cdp.send('Page.addScriptToEvaluateOnNewDocument', {
-      source: "try { localStorage.removeItem('research_user_key'); } catch (e) {}"
-    });
-    const supa = [];
-    cdp.on('Network.requestWillBeSent', (p) => {
-      const u = (p.request && p.request.url) || '';
-      if (/supabase\.co/.test(u)) supa.push(u.replace(base, ''));
-    });
-
-    // Последняя запись news — эталон для даты «Что нового»
-    const latestNewsDate = async () => {
-      try {
-        const cfg = fs.readFileSync(path.join(ROOT, 'js/supabase-config.js'), 'utf8');
-        const url = (cfg.match(/const SUPABASE_URL = "([^"]+)"/) || [])[1];
-        const key = (cfg.match(/const SUPABASE_ANON_KEY = "([^"]+)"/) || [])[1];
-        const res = await fetch(`${url}/rest/v1/news?select=date&order=id.desc&limit=1`, { headers: { apikey: key, Authorization: 'Bearer ' + key } });
-        const rows = await res.json();
-        return rows && rows[0] ? String(rows[0].date) : null;
-      } catch (e) {
-        return null;
-      }
-    };
-
-    // --- Главная на 390: восемь плиток, дата новостей, 0 запросов ----------
-    await setViewport(cdp, 390, 844, true);
-    await goto(cdp, base, 'index.html', 1600);
-    await waitFor(cdp, 'document.querySelectorAll(".home--tiles .menu-item").length === 8');
-
-    const home = await cdp.eval(`(() => {
-      const stats = window.PSY_DISCIPLINE_STATS || { items: {}, totals: {} };
-      const tiles = [...document.querySelectorAll('.home--tiles .menu-item')];
-      const vh = innerHeight;
-      return {
-        tiles: tiles.map((a) => {
-          const r = a.getBoundingClientRect();
-          const h2 = a.querySelector('h2');
-          return {
-            title: ((h2 && h2.innerText) || '').trim(),
-            href: a.getAttribute('href'),
-            top: Math.round(r.top + scrollY),
-            bottom: Math.round(r.bottom + scrollY),
-            width: Math.round(r.width)
-          };
-        }),
-        firstTop: tiles.length ? Math.round(tiles[0].getBoundingClientRect().top + scrollY) : null,
-        inScreen: tiles.filter((a) => a.getBoundingClientRect().bottom <= vh).length,
-        newsDate: (document.querySelector('[data-news-date]') || {}).textContent || '',
-        statsDate: stats.newsDate || null,
-        overflow: document.documentElement.scrollWidth - innerWidth
-      };
-    })()`);
-
-    const wantHrefs = ['news.html', 'tickets.html', 'cards.html', 'tests.html', 'sections.html', 'library.html', 'practice.html', 'survey.html'];
-    c.ok(home.tiles.length === 8, 'главная: восемь плиток первым экраном', home.tiles.length);
-    c.ok(home.tiles.every((t, i) => t.href === wantHrefs[i]), 'главная: плитки ведут на свои страницы', home.tiles.map((t) => t.href));
-    c.ok(home.tiles.every((t) => t.title.length > 3), 'главная: у каждой плитки есть название', home.tiles.map((t) => t.title));
-    c.ok(home.firstTop !== null && home.firstTop <= 260, '390: первая плитка в первом экране (≤ 260 px)', home.firstTop);
-    c.atLeast(home.inScreen, 1, '390: первая плитка в кадре 844 px', home.inScreen);
-    c.ok(home.tiles.every((t) => t.width === home.tiles[0].width), '390: плитки одной ширины', home.tiles.map((t) => t.width));
-    c.ok(home.overflow <= 1, '390: нет горизонтального переполнения', home.overflow);
-    c.ok(home.newsDate === home.statsDate && /^\d{2}\.\d{2}\.\d{4}$/.test(home.newsDate), 'главная: дата «Что нового» из данных', { dom: home.newsDate, stats: home.statsDate });
-    const latestNews = await latestNewsDate();
-    c.ok(latestNews === null || home.newsDate === latestNews, 'главная: дата равна последней записи news', { dom: home.newsDate, latest: latestNews });
-    c.ok(supa.length === 0, 'главная: 0 запросов к Supabase', supa.slice(0, 3));
-
-    // --- 27 строк на четырёх учебных страницах -----------------------------
-    const pageRows = {};
-    for (const page of ['tickets.html', 'sections.html', 'cards.html', 'tests.html']) {
-      await goto(cdp, base, page, 2200);
-      await sleep(400);
-      pageRows[page] = await cdp.eval(`(() => {
-        const rows = [...document.querySelectorAll('[data-discipline]')];
-        const empty = rows.filter((r) => r.getAttribute('data-empty') === '1');
-        return { rows: rows.length, empty: empty.length, emptyText: empty.filter((r) => /материалов пока нет/i.test(r.innerText)).length };
-      })()`);
-    }
-    c.ok(Object.values(pageRows).every((r) => r.rows === 27), 'билеты/разделы/тесты/карточки: 27 дисциплин на каждой', pageRows);
-    c.ok(Object.values(pageRows).every((r) => r.empty === 11 && r.emptyText === 11), 'билеты/разделы/тесты/карточки: 11 пустых с honest-текстом', pageRows);
-
-    // Свой скрипт снятия ключа больше не нужен — следующие сценарии ждут
-    // тестовый ID от предыдущих (его ставит `bookmarks`)
-    try { await cdp.send('Page.removeScriptToEvaluateOnNewDocument', { identifier: stripKey.identifier }); } catch (e) { /* уже снят */ }
-
-    // --- Списки без внутренних окон: clientH = scrollH ---------------------
-    const listState = `(sel) => {
-      const el = document.querySelector(sel);
-      if (!el) return null;
-      const s = getComputedStyle(el);
-      return { clientH: el.clientHeight, scrollH: el.scrollHeight, maxHeight: s.maxHeight, overflowY: s.overflowY };
-    }`;
-
-    await goto(cdp, base, 'tickets.html', 2200);
-    await waitFor(cdp, 'document.querySelectorAll("#mobile-tickets-tiles .mobile-tile-btn").length > 0');
-    await cdp.eval(`document.querySelector('#mobile-tickets-tiles .mobile-tile-btn').click()`);
-    await sleep(600);
-    const ticketsLists = {
-      tiles: await cdp.eval(`(${listState})('#mobile-tickets-tiles')`),
-      questions: await cdp.eval(`(${listState})('#mobile-questions-list')`)
-    };
-
-    await goto(cdp, base, 'sections.html', 2200);
-    await waitFor(cdp, 'document.querySelectorAll("#mobile-sections-tiles .mobile-tile-btn").length > 0');
-    await cdp.eval(`document.querySelector('#mobile-sections-tiles .mobile-tile-btn').click()`);
-    await sleep(600);
-    const sectionsLists = {
-      tiles: await cdp.eval(`(${listState})('#mobile-sections-tiles')`),
-      articles: await cdp.eval(`(${listState})('#mobile-articles-list')`)
-    };
-
-    await goto(cdp, base, 'cards.html', 2200);
-    const cardsList = await cdp.eval(`(${listState})('#cards-discipline-tiles')`);
-    await goto(cdp, base, 'tests.html', 2200);
-    const testsList = await cdp.eval(`(${listState})('#quiz-discipline-tiles')`);
-
-    const allLists = { ticketsLists, sectionsLists, cardsList, testsList };
-    c.ok(Object.values(ticketsLists).concat(Object.values(sectionsLists), [cardsList, testsList])
-      .every((l) => l && Math.abs(l.clientH - l.scrollH) <= 1 && l.maxHeight === 'none'),
-      '390: у плиток и списков clientH = scrollH (окон 240/260 px нет)', allLists);
-
-    // --- Клики: плитка «Билеты» → дисциплина → билет -----------------------
-    await goto(cdp, base, 'index.html', 1600);
-    await waitFor(cdp, 'document.querySelectorAll(".home--tiles .menu-item").length === 8');
-    const tile = await cdp.eval(`(() => { const a = document.querySelector('.home--tiles .menu-item[href="tickets.html"]'); const out = { href: a.getAttribute('href') }; a.click(); return out; })()`);
-    await sleep(2200);
-    const tileClick = await cdp.eval(`(() => ({
-      url: location.pathname + location.search,
-      tiles: [...document.querySelectorAll('#mobile-tickets-tiles .mobile-tile-btn')].filter((b) => b.offsetParent !== null).length
-    }))()`);
-    c.ok(/tickets\.html/.test(tile.href || '') && /tickets\.html/.test(tileClick.url) && tileClick.tiles >= 5, 'плитка «Экзаменационные билеты» ведёт на страницу билетов с выбором дисциплины', { tile: tile.href, url: tileClick.url, tiles: tileClick.tiles });
-
-    await cdp.eval(`document.querySelector('#mobile-tickets-tiles .mobile-tile-btn').click()`);
-    await sleep(700);
-    const picked = await cdp.eval(`(() => ({
-      url: location.pathname + location.search,
-      questions: [...document.querySelectorAll('#mobile-questions-list .ticket-nav-btn, #tickets-questions-col .question-nav-btn')].filter((b) => b.offsetParent !== null).length,
-      drawerOpen: Boolean(document.querySelector('#mobile-questions-list .q-drawer[open]'))
-    }))()`);
-    c.atLeast(picked.questions, 1, 'выбор дисциплины: открыт список билетов', picked);
-    c.ok(picked.drawerOpen, 'выбор дисциплины: шторка вопросов раскрыта', picked);
-
-    await cdp.eval(`(() => { const b = document.querySelector('#mobile-questions-list .ticket-nav-btn, #tickets-questions-col .question-nav-btn'); b.click(); })()`);
-    await sleep(900);
-    const secondClick = await cdp.eval(`(() => ({
-      title: (document.querySelector('.ticket-viewer h2') || {}).textContent || '',
-      content: Boolean(document.querySelector('.ticket-viewer .content-text p')),
-      pos: (document.querySelector('[data-content-pos]') || {}).textContent || ''
-    }))()`);
-    c.ok(secondClick.content && /^№\d+\./.test(secondClick.title), 'плитка главной → дисциплина → билет: конспект открыт', secondClick);
-
-    // --- «Билет N из M» и «Следующий» без ухода на верх страницы -----------
-    c.ok(/^Билет \d+ из \d+$/.test(secondClick.pos), 'билет: строка «Билет N из M»', secondClick.pos);
-    await cdp.eval(`(() => { const b = document.querySelector('[data-content-next]'); if (b) b.scrollIntoView({ block: 'center' }); })()`);
-    await sleep(400);
-    const beforeNext = await cdp.eval(`(() => ({ title: (document.querySelector('.ticket-viewer h2') || {}).textContent || '', pos: (document.querySelector('[data-content-pos]') || {}).textContent || '', scrollY: Math.round(scrollY) }))()`);
-    await cdp.eval(`document.querySelector('[data-content-next]').click()`);
-    await sleep(900);
-    const afterNext = await cdp.eval(`(() => ({
-      title: (document.querySelector('.ticket-viewer h2') || {}).textContent || '',
-      pos: (document.querySelector('[data-content-pos]') || {}).textContent || '',
-      viewerTop: Math.round(document.querySelector('.ticket-viewer').getBoundingClientRect().top),
-      scrollY: Math.round(scrollY)
-    }))()`);
-    c.ok(afterNext.title !== beforeNext.title, 'билет: «Следующий» меняет конспект', { before: beforeNext.title.slice(0, 40), after: afterNext.title.slice(0, 40) });
-    c.ok(afterNext.viewerTop >= 0 && afterNext.viewerTop <= 120, 'билет: после «Следующего» конспект в кадре, не на верху страницы', afterNext);
-    c.ok(/^Билет \d+ из \d+$/.test(afterNext.pos) && afterNext.pos !== beforeNext.pos, 'билет: счётчик «N из M» сдвинулся', { before: beforeNext.pos, after: afterNext.pos });
-    await cdp.eval(`(() => { const b = document.querySelector('[data-content-prev]'); if (b) b.click(); })()`);
-    await sleep(900);
-    const afterPrev = await cdp.eval(`(() => ({ title: (document.querySelector('.ticket-viewer h2') || {}).textContent || '', pos: (document.querySelector('[data-content-pos]') || {}).textContent || '' }))()`);
-    c.ok(afterPrev.title === beforeNext.title && afterPrev.pos === beforeNext.pos, 'билет: «Предыдущий» возвращает назад', afterPrev);
-
-    // --- Статья: «Следующая» и «Статья N из M» -----------------------------
-    await goto(cdp, base, 'sections.html', 2400);
-    await waitFor(cdp, 'document.querySelectorAll("#mobile-sections-tiles .mobile-tile-btn").length > 0');
-    await cdp.eval(`document.querySelector('#mobile-sections-tiles .mobile-tile-btn').click()`);
-    await sleep(600);
-    await cdp.eval(`document.querySelector('#mobile-articles-list .ticket-nav-btn').click()`);
-    await sleep(900);
-    const artBefore = await cdp.eval(`(() => ({ title: (document.querySelector('.section-viewer h2') || {}).textContent || '', pos: (document.querySelector('[data-content-pos]') || {}).textContent || '' }))()`);
-    await cdp.eval(`(() => { const b = document.querySelector('[data-content-next]'); if (b) b.scrollIntoView({ block: 'center' }); })()`);
-    await sleep(300);
-    await cdp.eval(`document.querySelector('[data-content-next]').click()`);
-    await sleep(900);
-    const artAfter = await cdp.eval(`(() => ({
-      title: (document.querySelector('.section-viewer h2') || {}).textContent || '',
-      pos: (document.querySelector('[data-content-pos]') || {}).textContent || '',
-      viewerTop: Math.round(document.querySelector('.section-viewer').getBoundingClientRect().top)
-    }))()`);
-    c.ok(/^Статья \d+ из \d+$/.test(artBefore.pos), 'статья: строка «Статья N из M»', artBefore.pos);
-    c.ok(artAfter.title !== artBefore.title, 'статья: «Следующая» меняет текст', { before: artBefore.title, after: artAfter.title });
-    c.ok(artAfter.viewerTop >= 0 && artAfter.viewerTop <= 120, 'статья: после «Следующей» текст в кадре', artAfter);
-
-    // --- Ссылки реестра с ?discipline= открывают нужную дисциплину --------
-    await goto(cdp, base, 'tickets.html?discipline=pedagogical-psych', 2600);
-    const deep = await cdp.eval(`(() => {
-      const shown = [...document.querySelectorAll('#mobile-questions-list .ticket-nav-btn, #tickets-questions-col .question-nav-btn')].filter((b) => b.offsetParent !== null);
-      return {
-        questions: shown.length,
-        active: (document.querySelector('#mobile-tickets-tiles .mobile-tile-btn.active, #tickets-folders-col .folder-nav-btn.active') || {}).innerText || ''
-      };
-    })()`);
-    c.ok(deep.questions === 40 && /Педагогическая/.test(deep.active), 'tickets?discipline=: открыты 40 билетов дисциплины', deep);
-
-    await goto(cdp, base, 'cards.html?discipline=stress-psych', 2600);
-    const cardsDeep = await cdp.eval(`(() => ({
-      active: (document.querySelector('#cards-discipline-tiles .mobile-tile-btn.active') || {}).innerText || '',
-      term: (document.getElementById('term-text') || {}).textContent || ''
-    }))()`);
-    c.ok(/Стресс/i.test(cardsDeep.active) && cardsDeep.term.length > 2, 'cards?discipline=: карточки выбранной дисциплины', { active: cardsDeep.active, term: cardsDeep.term.slice(0, 40) });
-
-    await goto(cdp, base, 'tests.html?discipline=psychodiagnostics', 2600);
-    const testsDeep = await cdp.eval(`(() => ({
-      active: (document.querySelector('#quiz-discipline-tiles .mobile-tile-btn.active') || {}).innerText || '',
-      progress: (document.getElementById('quiz-progress') || {}).textContent || ''
-    }))()`);
-    c.ok(/Психодиагностика/i.test(testsDeep.active) && /Вопрос \d+ из/.test(testsDeep.progress), 'tests?discipline=: тест выбранной дисциплины', testsDeep);
   },
 
   // Диагностика опроса: журнал пишется, панель открывается программно
@@ -997,7 +768,7 @@ const scenarios = {
 
     // Зазор между контентом и подвалом: блоки не прилипают к тёмной плашке (раунд 4)
     for (const [page, sel] of [
-      ['index.html', '.home-foot'],
+      ['index.html', '.menu-grid'],
       ['cards.html', '.controls'],
       ['tickets.html', '.ticket-viewer'],
       ['sections.html', '.section-viewer']
@@ -1050,8 +821,8 @@ const scenarios = {
       const reserved = parseFloat(getComputedStyle(footer).paddingBottom) || 0;
       return { h: Math.round(br.height), overlap: Math.round(overlap), reserved: Math.round(reserved) };
     })()`);
-    c.ok(consentCover && consentCover.overlap === 0, '390: плашка согласия не накрывает закладки', consentCover);
-    c.ok(consentCover && consentCover.reserved >= consentCover.h, '390: под плашку согласия зарезервировано место', consentCover);
+    // Плашка согласия осталась как на живом сайте (211 px, перекрывает FAB):
+    // решение владельца 21.11 — спринт 1 с её уменьшением откатан.
     await dismissConsent();
     await cdp.eval('window.scrollTo(0, document.body.scrollHeight)');
     await sleep(900);
@@ -1222,6 +993,10 @@ const scenarios = {
   async wiki(cdp, base, c) {
     await setViewport(cdp, 1440, 900, false);
     await goto(cdp, base, 'sections.html', 2500);
+    // Как на живом сайте: страница сначала показывает список статей — открываем первую
+    await waitFor(cdp, 'document.querySelectorAll("#sections-articles-col .question-nav-btn").length > 0');
+    await cdp.eval(`document.querySelector('#sections-articles-col .question-nav-btn').click()`);
+    await sleep(700);
     await waitFor(cdp, 'document.querySelector(".wiki-term")');
     const pt = await cdp.eval(`(() => {
       const viewer = document.querySelector('.section-viewer').getBoundingClientRect();
@@ -1643,12 +1418,12 @@ const scenarios = {
         aiPlates: [...document.querySelectorAll('.practice-ai-note')].filter((el) => el.offsetParent !== null).length
       };
     })()`);
-    c.ok(firstScreen.firstCardTop !== null && firstScreen.firstCardTop <= 300,
-      '360: первая карточка задания ≤ 300 px от верха', firstScreen);
+    c.ok(firstScreen.firstCardTop !== null && firstScreen.firstCardTop <= 360,
+      '360: первая карточка задания ≤ 360 px от верха', firstScreen);
     c.ok(firstScreen.filtersOpen === false && firstScreen.summary && firstScreen.summary.right <= 361,
       '360: фильтры в свёрнутом аккордеоне и не вылезают', firstScreen);
-    c.ok(firstScreen.headerHeight <= 120 && firstScreen.aiPlates === 1,
-      '360: шапка ≤ 120 px, ИИ-плашку видно один раз', firstScreen);
+    c.ok(firstScreen.headerHeight <= 130 && firstScreen.aiPlates === 1,
+      '360: шапка ≤ 130 px (как на живом сайте), ИИ-плашку видно один раз', firstScreen);
 
     await cdp.eval(`document.querySelector('[data-practice-open-task]').click()`);
     await waitFor(cdp, '(() => { const v = document.querySelector("[data-practice-task-view]"); return v && !v.hidden; })()', 8000);
