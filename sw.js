@@ -1,9 +1,9 @@
-﻿// Service Worker: РѕС„Р»Р°Р№РЅ-РїРµСЂРІС‹Р№ РґР»СЏ СЃС‚Р°С‚РёРєРё Рё Р±С‹СЃС‚СЂС‹Р№ С„РѕР»Р±РµРє РїСЂРё РјРµРґР»РµРЅРЅРѕР№ СЃРµС‚Рё.
-// Р’Р°Р¶РЅРѕ: РїСЂРё РєР°Р¶РґРѕРј СЂРµР»РёР·Рµ РјРµРЅСЏР№С‚Рµ CACHE_NAME вЂ” СЌС‚Рѕ Рё РµСЃС‚СЊ РёРЅРІР°Р»РёРґР°С†РёСЏ РєСЌС€Р°.
+// Service Worker: офлайн-первый для статики и быстрый фолбек при медленной сети.
+// Важно: при каждом релизе меняйте CACHE_NAME — это и есть инвалидация кэша.
 
 const CACHE_NAME = 'psy-hub-v42';
 
-// РџСѓС‚Рё РѕС‚РЅРѕСЃРёС‚РµР»СЊРЅС‹Рµ: СЂР°Р±РѕС‚Р°СЋС‚ Рё РІ РєРѕСЂРЅРµ РґРѕРјРµРЅР°, Рё РІ РїРѕРґРїР°РїРєРµ (GitHub Pages).
+// Пути относительные: работают и в корне домена, и в подпапке (GitHub Pages).
 const ASSETS = [
   './',
   './index.html',
@@ -40,8 +40,8 @@ const ASSETS = [
   './js/tracker.js'
 ];
 
-const NAV_TIMEOUT = 2500;   // РЅР°РІРёРіР°С†РёСЏ: Р¶РґС‘Рј СЃРµС‚СЊ РЅРµ РґРѕР»СЊС€Рµ 2.5 c, РїРѕС‚РѕРј РѕС‚РґР°С‘Рј РєСЌС€
-const ASSET_TIMEOUT = 8000; // СЃС‚Р°С‚РёРєР°: С‚Р°Р№РјР°СѓС‚ С„РѕРЅРѕРІРѕРіРѕ РѕР±РЅРѕРІР»РµРЅРёСЏ
+const NAV_TIMEOUT = 2500;   // навигация: ждём сеть не дольше 2.5 c, потом отдаём кэш
+const ASSET_TIMEOUT = 8000; // статика: таймаут фонового обновления
 const INSTALL_TIMEOUT = 8000;
 
 function fetchWithTimeout(request, ms) {
@@ -68,7 +68,7 @@ function fetchWithTimeout(request, ms) {
 }
 
 self.addEventListener('install', (event) => {
-  // РќРѕРІС‹Р№ РІРѕСЂРєРµСЂ Р°РєС‚РёРІРёСЂСѓРµС‚СЃСЏ СЃСЂР°Р·Сѓ, РЅРµ РґРѕР¶РёРґР°СЏСЃСЊ Р·Р°РєСЂС‹С‚РёСЏ РІСЃРµС… РІРєР»Р°РґРѕРє
+  // Новый воркер активируется сразу, не дожидаясь закрытия всех вкладок
   self.skipWaiting();
 
   event.waitUntil(
@@ -81,7 +81,7 @@ self.addEventListener('install', (event) => {
               return null;
             })
             .catch((error) => {
-              console.warn(`вљ пёЏ Р’РѕСЂРєРµСЂ РїСЂРѕРїСѓСЃС‚РёР» СЂРµСЃСѓСЂСЃ: ${asset}`, error.message);
+              console.warn(`⚠️ Воркер пропустил ресурс: ${asset}`, error.message);
               return null;
             })
         )
@@ -108,7 +108,7 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   const request = event.request;
 
-  // РџРёС€РµРј С‚РѕР»СЊРєРѕ GET Рё С‚РѕР»СЊРєРѕ СЃРІРѕРё С„Р°Р№Р»С‹; Supabase Рё РІРЅРµС€РЅРёРµ CDN РЅРµ С‚СЂРѕРіР°РµРј
+  // Пишем только GET и только свои файлы; Supabase и внешние CDN не трогаем
   if (request.method !== 'GET') return;
   const url = new URL(request.url);
   if (url.origin !== self.location.origin) return;
@@ -124,7 +124,7 @@ self.addEventListener('fetch', (event) => {
       })
       .catch(() => null);
 
-    // Р”РµСЂР¶РёРј РІРѕСЂРєРµСЂ Р¶РёРІС‹Рј, РїРѕРєР° РёРґС‘С‚ (РІРѕР·РјРѕР¶РЅРѕ, РјРµРґР»РµРЅРЅС‹Р№) Р·Р°РїСЂРѕСЃ
+    // Держим воркер живым, пока идёт (возможно, медленный) запрос
     event.waitUntil(network);
     event.respondWith(
       network.then(async (response) => {
@@ -133,7 +133,7 @@ self.addEventListener('fetch', (event) => {
         if (cached) return cached;
         const fallback = await caches.match('./offline.html');
         if (fallback) return fallback;
-        return new Response('РЎС‚СЂР°РЅРёС†Р° РЅРµРґРѕСЃС‚СѓРїРЅР° РѕС„Р»Р°Р№РЅ', {
+        return new Response('Страница недоступна офлайн', {
           status: 503,
           headers: { 'Content-Type': 'text/plain; charset=utf-8' }
         });
@@ -142,7 +142,7 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // РЎС‚Р°С‚РёРєР°: СЃСЂР°Р·Сѓ РёР· РєСЌС€Р°; РІ С„РѕРЅРµ вЂ” РѕР±РЅРѕРІР»РµРЅРёРµ РґР»СЏ СЃР»РµРґСѓСЋС‰РµРіРѕ РІРёР·РёС‚Р°
+  // Статика: сразу из кэша; в фоне — обновление для следующего визита
   const network = fetchWithTimeout(request, ASSET_TIMEOUT)
     .then((response) => {
       if (response && response.ok) {
